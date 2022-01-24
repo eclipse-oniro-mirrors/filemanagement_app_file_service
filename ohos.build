@@ -1,0 +1,14 @@
+{
+    "subsystem": "filemanagement",
+    "parts": {
+        "app_file_service": {
+            "variants": [
+                "wearable",
+                "phone"
+            ],
+            "module_list": [
+                "//foundation/filemanagement/app_file_service/interfaces/kits/js/:remotefileshare"
+            ]
+        }
+    }
+}
