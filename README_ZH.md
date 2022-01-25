@@ -18,19 +18,17 @@
 | --- | --- |
 | createSharePath(fd: number, cid: string, callback: AsyncCallback\<string>): void <br> createSharePath(fd: number, cid: string): Promise\<string> | 将文件fd与设备cid传递给分布式文件系统，创建跨设备分享路径 |
 ### 使用说明
-- createSharePath 
+createSharePath接口为分享文件fd创建能够跨设备访问的分布式路径，异步返回创建结果，设备号cid用于指定分享设备。
 
-通过该接口进行操作前，需要先打开分享文件获取fd并指定分享目标设备号cid，调用createSharePath创建分享路径后，远端设备可以直接通过该路径打开本地分享文件，同时具备读写该文件能力。
+示例：
 ```
-import remotefileshare from'@ohos.remotefileshare'
+import remotefileshare from '@ohos.remotefileshare'
+
+remotefileshare.createSharePath(fd, cid, function(err, path) {
+    // callback
+});
 
 remotefileshare.createSharePath(fd, cid).then(function(path) {
     // promise
 });
-
-remotefileshare.createSharePath(fd, cid, function(err, path) {
-    // aysnc
-})
 ```
-
-## **相关仓**
