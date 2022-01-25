@@ -13,12 +13,14 @@
 
 ## **说明**
 ### 接口说明
-**表1**应用文件服务接口说明
+**表1** 应用文件服务接口说明
 | **接口名** | **说明** |
 | --- | --- |
-| createSharePath(fd: number, cid: string, callback: AsyncCallback\<string>): void \| Promise\<string> | 将文件fd与设备cid传递给分布式文件系统，创建跨设备分享路径 |
+| createSharePath(fd: number, cid: string, callback: AsyncCallback\<string>): void <br> createSharePath(fd: number, cid: string): Promise\<string> | 将文件fd与设备cid传递给分布式文件系统，创建跨设备分享路径 |
 ### 使用说明
-- createSharePath
+- createSharePath 
+
+通过该接口进行操作前，需要先打开分享文件获取fd并指定分享目标设备号cid，调用createSharePath创建分享路径后，远端设备可以直接通过该路径打开本地分享文件，同时具备读写该文件能力。
 ```
 import remotefileshare from'@ohos.remotefileshare'
 

@@ -56,15 +56,18 @@ struct AddonData {
 void ExecuteWork(napi_env env, void *data)
 {
     struct AddonData *addonData = (struct AddonData *)data;
+#ifdef CONFIG_PERMISSION
     struct hmdfs_share_control sc;
     int32_t err = 0;
     int32_t dirFd;
     std::string packagePath = "/mnt/hmdfs/0/device_view/local/data/com.example.filesharetestcase";
     std::string sharePath = packagePath + "/.share";
+#endif
 
     if (addonData->status == 0)
         return;
 
+#ifdef CONFIG_PERMISSION
     dirFd = open(sharePath.c_str(), O_RDONLY);
     if (dirFd < 0) {
         addonData->status = 0;
@@ -82,6 +85,14 @@ void ExecuteWork(napi_env env, void *data)
     }
 
     close(dirFd);
+#else
+    if (addonData->fd <= 0)
+    {
+        addonData->err = EBADF;
+        addonData->status = 0;
+        return;
+    }
+#endif
 }
 
 void WorkComplete(napi_env env, napi_status status, void *data)
