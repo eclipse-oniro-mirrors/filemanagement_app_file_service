@@ -1,0 +1,30 @@
+{
+    "name": "@ohos/app_file_service",
+    "description": "App file service provides sharing and file management for apps",
+    "optional": "false",
+    "version": "3.1",
+    "license": "Apache License 2.0",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "foundation/filemanagement/app_file_service"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+        "name": "app_file_service",
+        "subsystem": "filemanagement",
+        "syscap": [
+            "SystemCapability.FileManagement.RemoteFileShare"
+        ],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "build": {
+            "sub_component": [
+                "//foundation/filemanagement/app_file_service:libremotefileshare"
+            ]
+        }
+    }
+}
