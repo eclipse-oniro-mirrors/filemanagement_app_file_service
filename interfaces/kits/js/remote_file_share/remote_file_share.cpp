@@ -62,9 +62,6 @@ void ExecuteWork(napi_env env, void *data)
     std::string packagePath = "/mnt/hmdfs/0/device_view/local/data/com.example.filesharetestcase";
     std::string sharePath = packagePath + "/.share";
 
-    if (addonData->status == 0)
-        return;
-
     dirFd = open(sharePath.c_str(), O_RDONLY);
     if (dirFd < 0) {
         addonData->status = 0;
