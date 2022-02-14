@@ -13,13 +13,17 @@
  * limitations under the License.
  */
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
+
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 #define HMDFS_IOC 0xf2
 #define HMDFS_IOC_SET_SHARE_PATH    _IOW(HMDFS_IOC, 1, \
@@ -59,8 +63,16 @@ void ExecuteWork(napi_env env, void *data)
     struct hmdfs_share_control sc;
     int32_t err = 0;
     int32_t dirFd;
-    std::string packagePath = "/mnt/hmdfs/0/device_view/local/data/com.example.filesharetestcase";
-    std::string sharePath = packagePath + "/.share";
+    std::string sharePath = "/data/storage/el2/distributedfiles/.share";
+
+    if (access(sharePath.c_str(), F_OK) != 0) {
+        err = mkdir(sharePath.c_str(), S_IRWXU | S_IRWXG | S_IXOTH);
+        if (err < 0) {
+            addonData->status = 0;
+            addonData->err = errno;
+            return;
+        }
+    }
 
     dirFd = open(sharePath.c_str(), O_RDONLY);
     if (dirFd < 0) {
@@ -96,7 +108,7 @@ void WorkComplete(napi_env env, napi_status status, void *data)
         napi_get_global(env, &global);
         if (addonData->status) {
             napi_get_null(env, &argv[NUM::ZERO]);
-            napi_create_string_utf8(env, "/mnt/hmdfs/0/merge_view/data/com.example.filesharetestcase/.share/test.editshare.txt",
+            napi_create_string_utf8(env, "/data/storage/el2/distributedfiles/.share",
                 NAPI_AUTO_LENGTH, &argv[NUM::ONE]);
             napi_call_function(env, global, callback, NUM::TWO, argv, result);
         } else {
@@ -107,7 +119,7 @@ void WorkComplete(napi_env env, napi_status status, void *data)
         napi_delete_reference(env, addonData->callbackRef);
     } else {
         if (addonData->status) {
-            napi_create_string_utf8(env, "/mnt/hmdfs/0/merge_view/data/com.example.filesharetestcase/.share/test.editshare.txt",
+            napi_create_string_utf8(env, "/data/storage/el2/distributedfiles/.share",
                             NAPI_AUTO_LENGTH, &path);
             napi_resolve_deferred(env, addonData->deferred, path);
         } else {
