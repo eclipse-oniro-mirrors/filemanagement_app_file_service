@@ -15,13 +15,14 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
+#include "securec.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -82,7 +83,7 @@ void ExecuteWork(napi_env env, void *data)
     }
 
     sc.src_fd = addonData->fd;
-    memcpy(sc.cid, addonData->cid, HMDFS_CID_SIZE);
+    memcpy_s(sc.cid, HMDFS_CID_SIZE, addonData->cid, HMDFS_CID_SIZE);
 
     err = ioctl(dirFd, HMDFS_IOC_SET_SHARE_PATH, &sc);
     if (err < 0) {
