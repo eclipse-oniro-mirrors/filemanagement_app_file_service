@@ -28,8 +28,8 @@ declare namespace Remotefileshare {
    *
    * @since 8
    */
-  function createSharePath(fd: number, cid: string, callback: AsyncCallback<number>): void;
-  function createSharePath(fd: number, cid: string): Promise<number>;
+  function createSharePath(fd: number, cid: string, callback: AsyncCallback<string>): void;
+  function createSharePath(fd: number, cid: string): Promise<string>;
 }
 
 export default Remotefileshare;
