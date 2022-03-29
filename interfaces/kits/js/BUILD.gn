@@ -20,11 +20,12 @@ ohos_shared_library("remotefileshare") {
   ]
 
   sources = [
-    "remote_file_share/remote_file_share.cpp",
+    "remote_file_share/remotefileshare_n_exporter.cpp",
+    "remote_file_share/remotefileshare_napi.cpp",
   ]
 
   deps = [
-    "//foundation/ace/napi:ace_napi",
+    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libn",
     "//utils/native/base:utilsecurec",
   ]
 
