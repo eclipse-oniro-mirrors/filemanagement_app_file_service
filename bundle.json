@@ -1,0 +1,42 @@
+{
+    "name": "@ohos/filemanagement/backup",
+    "description": "The backup component belongs to the filemanagement subsystem of OpenHarmony, which provides the capability of backing up applications.",
+    "optional": "true",
+    "version": "4.0.0",
+    "license": "Apache License 2.0",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "foundation/filemanagement/backup"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+        "name": "backup",
+        "subsystem": "filemanagement",
+        "syscap": [
+            "SystemCapability.FileManagement.StorageService.Backup"
+        ],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "build": {
+            "sub_component": [
+                "//foundation/filemanagement/backup/services:sa_targets",
+                "//foundation/filemanagement/backup/tools:backup_tool"
+            ],
+            "inner_kits": [
+                {
+                    "name": "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
+                    "header": {
+                        "header_files": [
+                            "i_service.h"
+                        ],
+                        "header_base": "//foundation/filemanagement/backup/interfaces/inner_api/native"
+                    }
+                }
+            ]
+        }
+    }
+}

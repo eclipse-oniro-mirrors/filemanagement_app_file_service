@@ -1,0 +1,24 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/ohos.gni")
+import("//build/ohos/sa_profile/sa_profile.gni")
+
+ohos_sa_profile("backup_sa_profile") {
+  sources = [ "5203.xml" ]
+  part_name = "backup"
+}
+
+ohos_prebuilt_etc("backup_sa_etc") {
+  source = "backup.cfg"
+  relative_install_dir = "init"
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+}
+
+group("sa_targets") {
+  deps = [
+    ":backup_sa_etc",
+    ":backup_sa_profile",
+    "backup_sa:backup_sa",
+  ]
+}
