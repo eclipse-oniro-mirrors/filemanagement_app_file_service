@@ -1,0 +1,32 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/ohos.gni")
+
+ohos_executable("backup_tool") {
+  sources = [ "src/main.cpp" ]
+
+  defines = [
+    "LOG_DOMAIN=0xD001600",
+    "LOG_TAG=\"BackupTool\"",
+  ]
+
+  include_dirs = [ "include" ]
+
+  external_deps = [
+    "ability_base:want",
+    "backup:backup_api",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr_standard:samgr_proxy",
+  ]
+
+  deps = [
+    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
+  ]
+
+  install_enable = true
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+}
