@@ -42,7 +42,7 @@ struct hmdfs_share_control {
     char cid[HMDFS_CID_SIZE];
 };
 
-static NError CreateSharePath(const int src_fd, const std::string cid)
+static NError CreateSharePath(const int src_fd, const std::string &cid)
 {
     struct hmdfs_share_control sc;
     int32_t ret = 0;
@@ -56,13 +56,18 @@ static NError CreateSharePath(const int src_fd, const std::string cid)
         }
     }
 
-    dirFd = open(sharePath.c_str(), O_RDONLY);
+    char *realPath = realpath(sharePath.c_str(), nullptr);
+    if (realPath == nullptr) {
+        return NError(errno);
+    }
+    dirFd = open(realPath, O_RDONLY);
+    free(realPath);
     if (dirFd < 0) {
         return NError(errno);
     }
 
     sc.src_fd = src_fd;
-    if (memcpy_s(sc.cid, HMDFS_CID_SIZE, cid.c_str(), HMDFS_CID_SIZE) != 0) {
+    if (memcpy_s(sc.cid, HMDFS_CID_SIZE, cid.c_str(), cid.size()) != 0) {
         close(dirFd);
         return NError(ENOMEM);
     }
@@ -80,7 +85,7 @@ static NError CreateSharePath(const int src_fd, const std::string cid)
 napi_value CreateSharePath(napi_env env, napi_callback_info info)
 {
     NFuncArg funcArg(env, info);
-    if (!funcArg.InitArgs(static_cast<int>(NARG_CNT::TWO), static_cast<int>(NARG_CNT::THREE))) {
+    if (!funcArg.InitArgs(static_cast<size_t>(NARG_CNT::TWO), static_cast<size_t>(NARG_CNT::THREE))) {
         NError(EINVAL).ThrowErr(env, "Number of arguments unmatched");
         return nullptr;
     }
@@ -89,12 +94,12 @@ napi_value CreateSharePath(napi_env env, napi_callback_info info)
     int src_fd;
     std::unique_ptr<char []> cid;
     size_t cidLen;
-    tie(succ, src_fd) = NVal(env, funcArg[NARG_POS::FIRST]).ToInt32();
+    tie(succ, src_fd) = NVal(env, funcArg[static_cast<size_t>(NARG_POS::FIRST)]).ToInt32();
     if (!succ) {
         NError(EINVAL).ThrowErr(env, "Invalid fd");
         return nullptr;
     }
-    tie(succ, cid, cidLen) = NVal(env, funcArg[NARG_POS::SECOND]).ToUTF8String();
+    tie(succ, cid, cidLen) = NVal(env, funcArg[static_cast<size_t>(NARG_POS::SECOND)]).ToUTF8String();
     if (!succ || cidLen != HMDFS_CID_SIZE) {
         NError(EINVAL).ThrowErr(env, "Invalid cid");
         return nullptr;
@@ -114,10 +119,10 @@ napi_value CreateSharePath(napi_env env, napi_callback_info info)
     };
     std::string procedureName = "CreateSharePath";
     NVal thisVar(env, funcArg.GetThisVar());
-    if (funcArg.GetArgc() == static_cast<int>(NARG_CNT::TWO)) {
+    if (funcArg.GetArgc() == static_cast<size_t>(NARG_CNT::TWO)) {
         return NAsyncWorkPromise(env, thisVar).Schedule(procedureName, cbExec, cbComplete).val_;
     } else {
-        NVal cb(env, funcArg[static_cast<int>(NARG_POS::THIRD)]);
+        NVal cb(env, funcArg[static_cast<size_t>(NARG_POS::THIRD)]);
         if (cb.TypeIs(napi_function)) {
             return NAsyncWorkCallback(env, thisVar, cb).Schedule(procedureName, cbExec, cbComplete).val_;
         } else {
