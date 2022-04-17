@@ -34,7 +34,7 @@ AlwaysBreakAfterReturnType: None
 # 总是在多行string字面量前换行
 AlwaysBreakBeforeMultilineStrings: true
 # 总是在template声明后换行
-AlwaysBreakTemplateDeclarations: false
+AlwaysBreakTemplateDeclarations: true
 # false表示函数实参要么都在同一行，要么都各自一行
 BinPackArguments: true
 # false表示所有形参要么都在同一行，要么都各自一行
@@ -152,8 +152,10 @@ SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 # 在方括号的[后和]前添加空格，lamda表达式和未指明大小的数组的声明不受影响
 SpacesInSquareBrackets: false
-# 标准: Cpp03, Cpp11, Auto
-Standard: Cpp11
+# 在C++11的列表初始化的大括号之前添加空格
+SpaceBeforeCpp11BracedList: true
+# 标准: c++03,c++11,c++14,c++17,c++20,Latest,Auto
+Standard: c++17
 # tab宽度
 TabWidth: 4
 # 使用tab字符: Never, ForIndentation, ForContinuationAndIndentation, Always

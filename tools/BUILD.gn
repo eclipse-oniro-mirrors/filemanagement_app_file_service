@@ -3,7 +3,12 @@
 import("//build/ohos.gni")
 
 ohos_executable("backup_tool") {
-  sources = [ "src/main.cpp" ]
+  sources = [
+    "src/main.cpp",
+    "src/tools_op.cpp",
+    "src/tools_op_check_sa.cpp",
+    "src/tools_op_help.cpp",
+  ]
 
   defines = [
     "LOG_DOMAIN=0xD001600",

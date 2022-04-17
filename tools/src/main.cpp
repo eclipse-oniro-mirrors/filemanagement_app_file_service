@@ -2,40 +2,39 @@
  * 版权所有 (c) 华为技术有限公司 2022
  */
 
-#include <cerrno>
-#include <cstring>
-#include <unistd.h>
-
-#include "filemgmt_libhilog.h"
-#include "i_service.h"
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
-#include "unique_fd.h"
+#include "errors.h"
+#include "tools_op.h"
 
 namespace OHOS {
 namespace FileManagement {
 namespace Backup {
 using namespace std;
 
-static void Foo()
+int ParseOpAndExecute(int argc, char const *argv[])
 {
-    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    HILOGE("Get samgr %{public}p", samgr.GetRefPtr());
+    for (int i = 1; i < argc; i++) {
+        // 暂存 {argv[1]...argv[i]};
+        std::vector<string_view> curOp;
+        for (int j = 1; j <= i; ++j) {
+            curOp.emplace_back(argv[j]);
+        }
 
-    auto remote = samgr->GetSystemAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID);
-    HILOGE("Get remote %{public}p", remote.GetRefPtr());
+        // 尝试匹配当前命令，成功后执行
+        auto tryOpSucceed = [&curOp](const ToolsOp &op) { return op.TryMatch(curOp); };
+        auto &&opeartions = ToolsOp::GetAllOperations();
+        auto matchedOp = std::find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
+        if (matchedOp != opeartions.end()) {
+            // 暂存 {argv[i + 1]...argv[argc - 1]};
+            std::vector<string_view> curArgs;
+            for (int j = i + 1; j < argc; ++j) {
+                curArgs.emplace_back(argv[j]);
+            }
 
-    auto proxy = iface_cast<Backup::IService>(remote);
-    HILOGE("Get proxy %{public}p", proxy.GetRefPtr());
-
-    proxy->EchoServer("hello, world");
-    proxy->DumpObj({12, 34});
-
-    UniqueFd fd(proxy->GetFd());
-    const string str = "hello, world";
-    if (write(fd.Get(), str.c_str(), str.length()) == -1) {
-        HILOGI("write error %{public}d %{public}s", errno, strerror(errno));
+            return matchedOp->Execute(curArgs);
+        }
     }
+    fprintf(stderr, "Invalid operation\n");
+    return -EPERM;
 }
 } // namespace Backup
 } // namespace FileManagement
@@ -43,7 +42,5 @@ static void Foo()
 
 int main(int argc, char const *argv[])
 {
-    OHOS::FileManagement::Backup::Foo();
-
-    return 0;
+    return OHOS::FileManagement::Backup::ParseOpAndExecute(argc, argv);
 }
