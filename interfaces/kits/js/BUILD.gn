@@ -15,7 +15,7 @@ import("//build/ohos.gni")
 
 ohos_shared_library("remotefileshare") {
   include_dirs = [
-    "//foundation/ace/napi/interfaces/kits",
+    "//foundation/arkui/napi/interfaces/kits",
     "//utils/native/base/include",
   ]
 
