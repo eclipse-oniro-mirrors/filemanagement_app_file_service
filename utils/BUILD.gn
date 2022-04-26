@@ -1,0 +1,37 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/ohos.gni")
+
+config("utils_private_config") {
+  defines = [
+    "LOG_DOMAIN=0xD001600",
+    "LOG_TAG=\"BackupUtils\"",
+  ]
+}
+
+config("utils_public_config") {
+  include_dirs = [
+    "include",
+    "//utils/native/base/include",
+  ]
+}
+
+ohos_shared_library("backup_utils") {
+  sources = [ "src/b_filesystem/b_file.cpp" ]
+
+  configs = [ ":utils_private_config" ]
+  public_configs = [ ":utils_public_config" ]
+
+  deps = [
+    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
+  ]
+
+  public_deps = [
+    "//third_party/jsoncpp:jsoncpp",
+    "//utils/native/base:utils",
+  ]
+
+  use_exceptions = true
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+}
