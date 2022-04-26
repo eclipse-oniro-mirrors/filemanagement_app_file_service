@@ -13,12 +13,16 @@ namespace FileManagement {
 namespace Backup {
 class ServiceProxy : public IRemoteProxy<IService> {
 public:
-    explicit ServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IService>(impl) {}
-    ~ServiceProxy() override {}
-
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
     int32_t GetFd() override;
+
+public:
+    explicit ServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IService>(impl) {}
+    ~ServiceProxy() override {}
+
+public:
+    static sptr<IService> GetInstance();
 
 private:
     static inline BrokerDelegator<ServiceProxy> delegator_;

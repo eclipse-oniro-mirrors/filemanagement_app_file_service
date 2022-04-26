@@ -6,9 +6,7 @@
 #include <sstream>
 
 #include "errors.h"
-#include "i_service.h"
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
+#include "service_proxy.h"
 #include "tools_op.h"
 
 namespace OHOS {
@@ -23,19 +21,7 @@ static std::string GenHelpMsg()
 
 static int Exec(ToolsOp::CRefVStrView args)
 {
-    auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (!samgr) {
-        fprintf(stderr, "Get an empty samgr\n");
-        return -EFAULT;
-    }
-
-    auto remote = samgr->GetSystemAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID);
-    if (!remote) {
-        fprintf(stderr, "Get an empty backup sa\n");
-        return -EFAULT;
-    }
-
-    auto proxy = iface_cast<Backup::IService>(remote);
+    auto proxy = ServiceProxy::GetInstance();
     if (!proxy) {
         fprintf(stderr, "Get an empty backup sa proxy\n");
         return -EFAULT;
