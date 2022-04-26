@@ -15,7 +15,8 @@ class ServiceProxy : public IRemoteProxy<IService> {
 public:
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
-    int32_t GetFd() override;
+    int32_t InitRestoreSession(std::vector<AppId> apps) override;
+    int32_t GetLocalCapabilities() override;
 
 public:
     explicit ServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IService>(impl) {}

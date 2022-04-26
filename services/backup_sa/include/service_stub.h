@@ -25,7 +25,8 @@ private:
 
     int32_t CmdEchoServer(MessageParcel &data, MessageParcel &reply);
     int32_t CmdDumpObj(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdGetFd(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdInitRestoreSession(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdGetLocalCapabilities(MessageParcel &data, MessageParcel &reply);
 };
 } // namespace Backup
 } // namespace FileManagement
