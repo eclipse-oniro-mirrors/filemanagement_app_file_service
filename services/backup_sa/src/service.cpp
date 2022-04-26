@@ -9,7 +9,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/vfs.h>
 
+#include "b_json/b_json_cached_entity.h"
+#include "b_json_entity_caps.h"
 #include "filemgmt_libhilog.h"
 #include "system_ability_definition.h"
 
@@ -43,13 +46,35 @@ void Service::DumpObj(const ComplexObject &obj)
     HILOGI("field1 = %{public}d, field2 = %{public}d", obj.field1_, obj.field2_);
 }
 
-int32_t Service::GetFd()
+int32_t Service::GetLocalCapabilities()
 {
-    int fd = open("/data/backup/tmp", O_RDWR | O_CREAT, 0600);
-    if (fd < 0) {
-        HILOGI("ServiceStub::CmdGeTtutorialFd %{public}d %{public}s", errno, strerror(errno));
+    try {
+        struct statfs fsInfo = {};
+        if (statfs(SA_ROOT_DIR, &fsInfo) == -1) {
+            HILOGI("Failed to statfs because of %{public}s", strerror(errno));
+            throw system_error(errno, std::generic_category());
+        }
+
+        BJsonCachedEntity<BJsonEntityCaps> cachedEntity(UniqueFd(open(SA_ROOT_DIR, O_TMPFILE | O_RDWR, 0600)));
+        auto cache = cachedEntity.Structuralize();
+        cache.SetFreeDiskSpace(fsInfo.f_bfree);
+        cachedEntity.Persist();
+
+        return cachedEntity.GetFd().Release();
+    } catch (const system_error &e) {
+        return -1 * e.code().value();
+    } catch (const exception &e) {
+        return -EPERM;;
     }
-    return fd;
+}
+
+int32_t Service::InitRestoreSession(std::vector<AppId> apps)
+{
+    if (apps.empty()) {
+        HILOGE("Invalid argument: No app was selected");
+        return -EINVAL;
+    }
+    return ERR_NONE;
 }
 } // namespace Backup
 } // namespace FileManagement

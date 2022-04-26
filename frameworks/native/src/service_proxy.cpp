@@ -36,20 +36,39 @@ void ServiceProxy::DumpObj(const ComplexObject &obj)
     Remote()->SendRequest(IService::SERVICE_CMD_DUMPOBJ, data, reply, option);
 }
 
-int32_t ServiceProxy::GetFd()
+int32_t ServiceProxy::InitRestoreSession(std::vector<AppId> apps)
 {
-    HILOGI("Begin to GetFd");
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+    MessageParcel reply;
+    MessageOption option;
+
+    if (!data.WriteStringVector(apps)) {
+        HILOGE("Failed to send appIds");
+        return -EPIPE;
+    }
+
+    Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
+int32_t ServiceProxy::GetLocalCapabilities()
+{
+    HILOGI("Start");
     MessageParcel data;
     data.WriteInterfaceToken(GetDescriptor());
 
     MessageParcel reply;
     MessageOption option;
-    auto ret = Remote()->SendRequest(IService::SERVICE_CMD_OUTFD, data, reply, option);
+    auto ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, data, reply, option);
     if (ret != NO_ERROR) {
-        HILOGE("Get GetFd SendRequest %{public}d", ret);
-        return -1;
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return ret;
     }
 
+    HILOGI("Successful");
     int fd = reply.ReadFileDescriptor();
     return fd;
 }

@@ -14,7 +14,8 @@ ServiceStub::ServiceStub()
 {
     opToInterfaceMap_[SERVICE_CMD_ECHO] = &ServiceStub::CmdEchoServer;
     opToInterfaceMap_[SERVICE_CMD_DUMPOBJ] = &ServiceStub::CmdDumpObj;
-    opToInterfaceMap_[SERVICE_CMD_OUTFD] = &ServiceStub::CmdGetFd;
+    opToInterfaceMap_[SERVICE_CMD_INIT_RESTORE_SESSION] = &ServiceStub::CmdInitRestoreSession;
+    opToInterfaceMap_[SERVICE_CMD_GET_LOCAL_CAPABILITIES] = &ServiceStub::CmdGetLocalCapabilities;
 }
 
 int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
@@ -54,15 +55,35 @@ int32_t ServiceStub::CmdDumpObj(MessageParcel &data, MessageParcel &reply)
 
     return ERR_NONE;
 }
-int32_t ServiceStub::CmdGetFd(MessageParcel &data, MessageParcel &reply)
+
+int32_t ServiceStub::CmdInitRestoreSession(MessageParcel &data, MessageParcel &reply)
 {
-    HILOGI("Begin to dispatch Cmd GetFd");
-    int fd = GetFd();
-    auto ret = reply.WriteFileDescriptor(fd);
-    if (!ret) {
-        HILOGI("ServiceStub::WriteFileDescriptor %{public}d", ret);
+    HILOGE("Begin");
+    std::vector<string> appIds;
+    if (!data.ReadStringVector(&appIds)) {
+        HILOGE("Failed to receive appIds");
+        return -EINVAL;
     }
-    return ret;
+    int32_t res = InitRestoreSession(appIds);
+
+    if (!reply.WriteInt32(res)) {
+        HILOGE("Failed to send the result %{public}d", res);
+        return -EPIPE;
+    }
+    HILOGE("Successful");
+    return ERR_NONE;
+}
+
+int32_t ServiceStub::CmdGetLocalCapabilities(MessageParcel &data, MessageParcel &reply)
+{
+    HILOGE("Begin");
+    int fd = GetLocalCapabilities();
+    if (!reply.WriteFileDescriptor(fd)) {
+        HILOGI("Failed to send the result");
+        return -EPIPE;
+    }
+    HILOGE("Successful");
+    return ERR_NONE;
 }
 } // namespace Backup
 } // namespace FileManagement

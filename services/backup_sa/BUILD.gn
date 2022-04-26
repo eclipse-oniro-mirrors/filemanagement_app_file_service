@@ -11,6 +11,7 @@ ohos_shared_library("backup_sa") {
   defines = [
     "LOG_DOMAIN=0xD001600",
     "LOG_TAG=\"BackupSA\"",
+    "SA_ROOT_DIR=\"/data/backup/\"",
   ]
 
   include_dirs = [ "include" ]
@@ -18,6 +19,7 @@ ohos_shared_library("backup_sa") {
   deps = [
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
     "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
+    "//foundation/filemanagement/backup/utils/:backup_utils",
   ]
 
   external_deps = [
@@ -26,6 +28,7 @@ ohos_shared_library("backup_sa") {
     "samgr_standard:samgr_proxy",
   ]
 
+  use_exceptions = true
   part_name = "backup"
   subsystem_name = "filemanagement"
 }

@@ -18,7 +18,7 @@ class Service : public SystemAbility, public ServiceStub, protected NoCopyable {
     DECLARE_SYSTEM_ABILITY(Service);
 
 public:
-    explicit Service(int32_t saID, bool runOnCreate = true) : SystemAbility(saID, runOnCreate){};
+    explicit Service(int32_t saID, bool runOnCreate = true) : SystemAbility(saID, runOnCreate) {};
     ~Service() = default;
 
     void OnStart() override;
@@ -26,7 +26,8 @@ public:
 
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
-    int32_t GetFd() override;
+    int32_t InitRestoreSession(std::vector<AppId> apps) override;
+    int32_t GetLocalCapabilities() override;
 
 private:
     Service();
