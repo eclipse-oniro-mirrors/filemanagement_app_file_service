@@ -24,7 +24,8 @@
         "build": {
             "sub_component": [
                 "//foundation/filemanagement/backup/services:sa_targets",
-                "//foundation/filemanagement/backup/tools:backup_tool"
+                "//foundation/filemanagement/backup/tools:backup_tool",
+                "//foundation/filemanagement/backup/utils:backup_utils"
             ],
             "inner_kits": [
                 {
