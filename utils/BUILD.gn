@@ -17,7 +17,10 @@ config("utils_public_config") {
 }
 
 ohos_shared_library("backup_utils") {
-  sources = [ "src/b_filesystem/b_file.cpp" ]
+  sources = [
+    "src/b_error/b_error.cpp",
+    "src/b_filesystem/b_file.cpp",
+  ]
 
   configs = [ ":utils_private_config" ]
   public_configs = [ ":utils_public_config" ]
@@ -25,6 +28,8 @@ ohos_shared_library("backup_utils") {
   deps = [
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
   ]
+
+  external_deps = [ "faultloggerd:lib_dfx_dump_catcher" ]
 
   public_deps = [
     "//third_party/jsoncpp:jsoncpp",
