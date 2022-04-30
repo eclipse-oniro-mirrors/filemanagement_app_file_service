@@ -7,13 +7,14 @@
 
 #include <functional>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <type_traits>
 
+#include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
-#include "errors.h"
 #include "filemgmt_libhilog.h"
 #include "unique_fd.h"
 #include "json/json.h"
@@ -48,8 +49,7 @@ public:
 
         int ret = write(srcFile_, jsonFileContent.c_str(), jsonFileContent.length());
         if (ret == -1) {
-            HILOGE("Failed to persist because of %{public}s", strerror(errno));
-            throw std::system_error(errno, std::generic_category());
+            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, std::generic_category().message(errno));
         }
     }
 
@@ -69,8 +69,7 @@ public:
 
         bool res = jsonReader->parse(sv.data(), sv.data() + sv.length(), &jValue, &errs);
         if (!res || !errs.empty()) {
-            HILOGE("Failed to parse the JsonFile at %{public}s", errs.c_str());
-            throw std::system_error(EINVAL, std::generic_category());
+            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, errs);
         }
 
         obj_ = std::move(jValue);
@@ -94,10 +93,15 @@ public:
      */
     BJsonCachedEntity(UniqueFd fd) : srcFile_(std::move(fd)), entity_(std::ref(obj_))
     {
-        try {
+        struct stat stat = {};
+        if (fstat(srcFile_, &stat) == -1) {
+            std::stringstream ss;
+            ss << std::generic_category().message(errno) << " with fd eq" << srcFile_.Get();
+            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, ss.str());
+        }
+
+        if (stat.st_size) {
             ReloadFromFile();
-        } catch (...) {
-            // 认为对应 JSon 文件不存在 / 无法解析是一种正常情况，此时采取默认配置即可
         }
     }
 

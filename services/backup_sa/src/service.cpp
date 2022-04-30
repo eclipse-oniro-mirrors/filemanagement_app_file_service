@@ -1,7 +1,10 @@
 /*
  * 版权所有 (c) 华为技术有限公司 2022
+ *
+ * 注意：
+ *     - 注意点1：本文件原则上只处理与IPC无关的业务逻辑
+ *     - 注意点2：本文件原则上要捕获所有异常，防止异常扩散到异常不安全的模块
  */
-
 #include "service.h"
 
 #include <cerrno>
@@ -11,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 
+#include "b_error/b_error.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json_entity_caps.h"
 #include "filemgmt_libhilog.h"
@@ -51,8 +55,7 @@ int32_t Service::GetLocalCapabilities()
     try {
         struct statfs fsInfo = {};
         if (statfs(SA_ROOT_DIR, &fsInfo) == -1) {
-            HILOGI("Failed to statfs because of %{public}s", strerror(errno));
-            throw system_error(errno, std::generic_category());
+            throw BError(errno);
         }
 
         BJsonCachedEntity<BJsonEntityCaps> cachedEntity(UniqueFd(open(SA_ROOT_DIR, O_TMPFILE | O_RDWR, 0600)));
@@ -61,20 +64,25 @@ int32_t Service::GetLocalCapabilities()
         cachedEntity.Persist();
 
         return cachedEntity.GetFd().Release();
-    } catch (const system_error &e) {
-        return -1 * e.code().value();
+    } catch (const BError &e) {
+        return e.GetCode();
     } catch (const exception &e) {
-        return -EPERM;;
+        HILOGE("Catched an unexpected low-level exception %s", e.what());
+        return -EPERM;
     }
 }
 
 int32_t Service::InitRestoreSession(std::vector<AppId> apps)
 {
-    if (apps.empty()) {
-        HILOGE("Invalid argument: No app was selected");
-        return -EINVAL;
+    try {
+        if (apps.empty()) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
+        }
+
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode();
     }
-    return ERR_NONE;
 }
 } // namespace Backup
 } // namespace FileManagement
