@@ -84,6 +84,27 @@ int32_t Service::InitRestoreSession(std::vector<AppId> apps)
         return e.GetCode();
     }
 }
+
+int32_t Service::InitBackupSession(UniqueFd fd, std::vector<AppId> apps)
+{
+    try {
+        if (apps.empty()) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
+        }
+
+        BJsonCachedEntity<BJsonEntityCaps> cachedEntity(move(fd));
+        auto cache = cachedEntity.Structuralize();
+        uint64_t size = cache.GetFreeDiskSpace();
+        if (size == 0) {
+            throw BError(BError::Codes::SA_INVAL_ARG,
+                         "Field FreeDiskSpace is invalid or there's no enough space left on disk");
+        }
+        HILOGI("Check field FreeDiskSpace size %{public}llu", size);
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode();
+    }
+}
 } // namespace Backup
 } // namespace FileManagement
 } // namespace OHOS

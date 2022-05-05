@@ -16,6 +16,8 @@ config("private_config") {
 
 ohos_shared_library("backup_api") {
   sources = [
+    "//foundation/filemanagement/backup/frameworks/native/src/b_session_backup.cpp",
+    "//foundation/filemanagement/backup/frameworks/native/src/b_session_restore.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/complex_object.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/service_proxy.cpp",
   ]
@@ -40,9 +42,11 @@ ohos_shared_library("backup_api") {
 
   public_deps = [
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core:ipc_core",
+    "//foundation/filemanagement/backup/utils:backup_utils",
     "//utils/native/base:utils",
   ]
 
+  use_exceptions = true
   part_name = "backup"
   subsystem_name = "filemanagement"
 }

@@ -16,6 +16,7 @@ public:
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
     int32_t InitRestoreSession(std::vector<AppId> apps) override;
+    int32_t InitBackupSession(UniqueFd fd, std::vector<AppId> appIds) override;
     int32_t GetLocalCapabilities() override;
 
 public:

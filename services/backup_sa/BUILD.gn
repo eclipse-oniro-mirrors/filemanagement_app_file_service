@@ -19,7 +19,7 @@ ohos_shared_library("backup_sa") {
   deps = [
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
     "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
-    "//foundation/filemanagement/backup/utils/:backup_utils",
+    "//foundation/filemanagement/backup/utils:backup_utils",
   ]
 
   external_deps = [
