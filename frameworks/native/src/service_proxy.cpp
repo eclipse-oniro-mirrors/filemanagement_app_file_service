@@ -49,7 +49,37 @@ int32_t ServiceProxy::InitRestoreSession(std::vector<AppId> apps)
         return -EPIPE;
     }
 
-    Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return ret;
+    }
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
+int32_t ServiceProxy::InitBackupSession(UniqueFd fd, std::vector<AppId> appIDs)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+    MessageParcel reply;
+    MessageOption option;
+
+    if (!data.WriteFileDescriptor(fd)) {
+        HILOGI("Failed to send the fd");
+        return -EPIPE;
+    }
+    if (!data.WriteStringVector(appIDs)) {
+        HILOGE("Failed to send appIDs");
+        return -EPIPE;
+    }
+
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return ret;
+    }
     HILOGI("Successful");
     return reply.ReadInt32();
 }
@@ -62,7 +92,7 @@ int32_t ServiceProxy::GetLocalCapabilities()
 
     MessageParcel reply;
     MessageOption option;
-    auto ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, data, reply, option);
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, data, reply, option);
     if (ret != NO_ERROR) {
         HILOGE("Received error %{public}d when doing IPC", ret);
         return ret;
