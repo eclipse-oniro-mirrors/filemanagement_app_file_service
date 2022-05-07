@@ -8,9 +8,7 @@
 #include <regex>
 #include <sstream>
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 const std::string ToolsOp::GetName() const
@@ -76,6 +74,4 @@ int ToolsOp::Execute(CRefVStrView args) const
     }
     return desc_.funcExec(args);
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

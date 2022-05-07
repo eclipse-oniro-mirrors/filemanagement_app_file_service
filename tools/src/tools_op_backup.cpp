@@ -13,9 +13,7 @@
 #include "service_proxy.h"
 #include "tools_op.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 static string GenHelpMsg()
@@ -66,6 +64,4 @@ static bool g_autoRegHack = ToolsOp::Register(ToolsOp::Descriptor {
     .funcGenHelpMsg = GenHelpMsg,
     .funcExec = Exec,
 });
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

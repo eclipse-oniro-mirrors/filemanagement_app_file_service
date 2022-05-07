@@ -19,7 +19,6 @@ ohos_shared_library("backup_api") {
     "//foundation/filemanagement/backup/frameworks/native/src/b_file_info.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/b_session_backup.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/b_session_restore.cpp",
-    "//foundation/filemanagement/backup/frameworks/native/src/complex_object.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/service_proxy.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/service_reverse.cpp",
     "//foundation/filemanagement/backup/frameworks/native/src/service_reverse_stub.cpp",

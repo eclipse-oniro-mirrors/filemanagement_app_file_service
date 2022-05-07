@@ -13,15 +13,11 @@
 #include "filemgmt_libhilog.h"
 #include "module_ipc/service_reverse_proxy.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 ServiceStub::ServiceStub()
 {
-    opToInterfaceMap_[SERVICE_CMD_ECHO] = &ServiceStub::CmdEchoServer;
-    opToInterfaceMap_[SERVICE_CMD_DUMPOBJ] = &ServiceStub::CmdDumpObj;
     opToInterfaceMap_[SERVICE_CMD_INIT_RESTORE_SESSION] = &ServiceStub::CmdInitRestoreSession;
     opToInterfaceMap_[SERVICE_CMD_INIT_BACKUP_SESSION] = &ServiceStub::CmdInitBackupSession;
     opToInterfaceMap_[SERVICE_CMD_GET_LOCAL_CAPABILITIES] = &ServiceStub::CmdGetLocalCapabilities;
@@ -46,25 +42,6 @@ int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Message
     }
 
     return (this->*(interfaceIndex->second))(data, reply);
-}
-
-int32_t ServiceStub::CmdEchoServer(MessageParcel &data, MessageParcel &reply)
-{
-    HILOGI("Begin to dispatch cmd EchoServer");
-    string echoStr = data.ReadString();
-    int32_t strLen = EchoServer(echoStr);
-    reply.WriteInt32(strLen);
-    HILOGI("EchoServer has recved str %{public}s with length %{public}d", echoStr.c_str(), strLen);
-
-    return BError(BError::Codes::OK);
-}
-
-int32_t ServiceStub::CmdDumpObj(MessageParcel &data, MessageParcel &reply)
-{
-    auto obj = ComplexObject::Unmarshalling(data);
-    DumpObj(*obj);
-
-    return BError(BError::Codes::OK);
 }
 
 int32_t ServiceStub::CmdInitRestoreSession(MessageParcel &data, MessageParcel &reply)
@@ -159,6 +136,4 @@ int32_t ServiceStub::CmdPublishFile(MessageParcel &data, MessageParcel &reply)
     }
     return BError(BError::Codes::OK);
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

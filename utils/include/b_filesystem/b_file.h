@@ -9,9 +9,7 @@
 
 #include "unique_fd.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class BFile {
 public:
     /**
@@ -25,8 +23,6 @@ public:
 
 private:
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_FILE_H

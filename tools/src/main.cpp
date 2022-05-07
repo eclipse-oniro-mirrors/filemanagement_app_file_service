@@ -5,9 +5,7 @@
 #include "errors.h"
 #include "tools_op.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 int ParseOpAndExecute(int argc, char const *argv[])
@@ -36,9 +34,7 @@ int ParseOpAndExecute(int argc, char const *argv[])
     fprintf(stderr, "Invalid operation\n");
     return -EPERM;
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 int main(int argc, char const *argv[])
 {

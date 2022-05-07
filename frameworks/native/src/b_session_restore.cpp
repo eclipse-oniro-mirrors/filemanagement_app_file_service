@@ -7,9 +7,7 @@
 #include "service_proxy.h"
 #include "service_reverse.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 unique_ptr<BSessionRestore> BSessionRestore::Init(std::vector<AppId> appsToRestore, Callbacks callbacks)
@@ -41,6 +39,4 @@ UniqueFd BSessionRestore::GetLocalCapabilities()
     }
     return UniqueFd(proxy->GetLocalCapabilities());
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

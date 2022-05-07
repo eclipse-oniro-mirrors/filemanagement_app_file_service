@@ -13,16 +13,12 @@
 #include "svc_session_manager.h"
 #include "system_ability.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class Service final : public SystemAbility, public ServiceStub, protected NoCopyable {
     DECLARE_SYSTEM_ABILITY(Service);
 
     // 以下都是IPC接口
 public:
-    int32_t EchoServer(const std::string &echoStr) override;
-    void DumpObj(const ComplexObject &obj) override;
     ErrCode InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
     ErrCode InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps) override;
     UniqueFd GetLocalCapabilities() override;
@@ -48,8 +44,6 @@ private:
 
     SvcSessionManager session_;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_SERVICE_H

@@ -13,9 +13,7 @@
 #include "errors.h"
 #include "unique_fd.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class BSessionRestore {
 public:
     struct Callbacks {
@@ -60,8 +58,6 @@ public:
      */
     ErrCode PublishFile(const BFileInfo &fileInfo, UniqueFd fileHandle);
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_SESSION_RESTORE_H
