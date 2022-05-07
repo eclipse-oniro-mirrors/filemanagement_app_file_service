@@ -20,9 +20,7 @@
 #include "unique_fd.h"
 #include "json/json.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 template <typename T>
 class BJsonCachedEntity {
 public:
@@ -111,8 +109,6 @@ private:
     Json::Value obj_;
     T entity_;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_JSON_CACHED_ENTITY_H

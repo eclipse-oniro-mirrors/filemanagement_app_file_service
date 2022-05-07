@@ -10,9 +10,7 @@
 
 #include "parcel.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using AppId = std::string;
 using TmpFileSN = uint32_t;
 
@@ -30,8 +28,6 @@ struct BFileInfo : public Parcelable {
     virtual bool Marshalling(Parcel &parcel) const override;
     static BFileInfo *Unmarshalling(Parcel &parcel);
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_FILE_INFO_H

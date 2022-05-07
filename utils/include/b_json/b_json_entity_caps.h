@@ -8,9 +8,7 @@
 #include "b_json/b_json_cached_entity.h"
 #include "filemgmt_libhilog.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class BJsonEntityCaps {
 public:
     BJsonEntityCaps(Json::Value &obj) : obj_(obj)
@@ -36,8 +34,6 @@ public:
 private:
     Json::Value &obj_;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_CAPS_H

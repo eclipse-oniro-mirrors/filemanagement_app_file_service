@@ -8,13 +8,9 @@
 #include "i_service.h"
 #include "iremote_proxy.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class ServiceProxy : public IRemoteProxy<IService> {
 public:
-    int32_t EchoServer(const std::string &echoStr) override;
-    void DumpObj(const ComplexObject &obj) override;
     ErrCode InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
     ErrCode InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> appIds) override;
     UniqueFd GetLocalCapabilities() override;
@@ -31,8 +27,6 @@ public:
 private:
     static inline BrokerDelegator<ServiceProxy> delegator_;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_SERVICE_PROXY_H

@@ -23,9 +23,7 @@
 #include "ipc_skeleton.h"
 #include "system_ability_definition.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 REGISTER_SYSTEM_ABILITY_BY_ID(Service, FILEMANAGEMENT_BACKUP_SERVICE_SA_ID, false);
@@ -47,17 +45,6 @@ void Service::OnStart()
 void Service::OnStop()
 {
     HILOGI("Called");
-}
-
-int32_t Service::EchoServer(const string &echoStr)
-{
-    HILOGI("Service::EchoServer %{public}s", echoStr.c_str());
-    return echoStr.length();
-}
-
-void Service::DumpObj(const ComplexObject &obj)
-{
-    HILOGI("field1 = %{public}d, field2 = %{public}d", obj.field1_, obj.field2_);
 }
 
 UniqueFd Service::GetLocalCapabilities()
@@ -183,6 +170,4 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 
     return BError(BError::Codes::OK);
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

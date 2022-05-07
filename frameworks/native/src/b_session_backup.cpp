@@ -7,9 +7,7 @@
 #include "service_proxy.h"
 #include "service_reverse.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, vector<AppId> appsToBackup, Callbacks callbacks)
@@ -32,6 +30,4 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, vector<AppId
     }
     return nullptr;
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

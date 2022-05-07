@@ -9,9 +9,7 @@
 #include <string_view>
 #include <vector>
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class ToolsOp {
 public:
     using CRefVStrView = const std::vector<std::string_view> &;
@@ -88,8 +86,6 @@ private:
     Descriptor desc_;
     static inline std::vector<ToolsOp> opsAvailable_;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_TOOLS_OP_H

@@ -29,9 +29,7 @@
 #define DEFINE_SOURCE_LOCATION int lineNo = -1, const char *fileName = "NA", const char *functionName = "NA"
 #endif
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 class BError : public std::exception {
 public:
     /**
@@ -200,8 +198,6 @@ private:
                                           Codes code,
                                           const std::vector<std::string_view> &msgs) const;
 };
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
 
 #endif // OHOS_FILEMGMT_BACKUP_B_ERROR_H

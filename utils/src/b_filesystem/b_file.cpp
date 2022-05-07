@@ -13,9 +13,7 @@
 #include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 unique_ptr<char[]> BFile::ReadFile(const UniqueFd &fd)
@@ -40,6 +38,4 @@ unique_ptr<char[]> BFile::ReadFile(const UniqueFd &fd)
     }
     return buf;
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

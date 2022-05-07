@@ -11,34 +11,8 @@
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 
-namespace OHOS {
-namespace FileManagement {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
-
-namespace Backup {
-int32_t ServiceProxy::EchoServer(const string &echoStr)
-{
-    HILOGI("Begin to echo %{public}s", echoStr.c_str());
-    MessageParcel data;
-    data.WriteInterfaceToken(GetDescriptor());
-    data.WriteString(echoStr);
-
-    MessageParcel reply;
-    MessageOption option;
-    Remote()->SendRequest(IService::SERVICE_CMD_ECHO, data, reply, option);
-
-    return reply.ReadInt32();
-}
-
-void ServiceProxy::DumpObj(const ComplexObject &obj)
-{
-    MessageParcel data;
-    data.WriteParcelable(&obj);
-
-    MessageParcel reply;
-    MessageOption option;
-    Remote()->SendRequest(IService::SERVICE_CMD_DUMPOBJ, data, reply, option);
-}
 
 int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
 {
@@ -184,6 +158,4 @@ sptr<IService> ServiceProxy::GetInstance()
     // 无需缓存 Proxy，因为 SAMgr 可能因为服务死亡等原因返回不同指针
     return proxy;
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup

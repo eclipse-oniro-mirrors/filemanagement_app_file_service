@@ -10,9 +10,7 @@
 #include "dfx_dump_catcher.h"
 #include "filemgmt_libhilog.h"
 
-namespace OHOS {
-namespace FileManagement {
-namespace Backup {
+namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 string BError::WrapMessageWithExtraInfos(const char *fileName,
@@ -40,6 +38,4 @@ string BError::WrapMessageWithExtraInfos(const char *fileName,
     HiviewDFX::HiLog::Error(FILEMGMT_LOG_LABEL, "%{public}s", res.c_str());
     return res;
 }
-} // namespace Backup
-} // namespace FileManagement
-} // namespace OHOS
+} // namespace OHOS::FileManagement::Backup
