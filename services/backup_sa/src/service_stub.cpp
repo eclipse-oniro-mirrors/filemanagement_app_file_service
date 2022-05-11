@@ -106,9 +106,7 @@ int32_t ServiceStub::CmdInitBackupSession(MessageParcel &data, MessageParcel &re
 int32_t ServiceStub::CmdGetLocalCapabilities(MessageParcel &data, MessageParcel &reply)
 {
     HILOGE("Begin");
-
     int fd = GetLocalCapabilities();
-
     if (!reply.WriteFileDescriptor(fd)) {
         return BError(BError::Codes::SA_BROKEN_IPC, "Failed to send out the file");
     }
