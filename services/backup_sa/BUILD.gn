@@ -4,8 +4,8 @@ import("//build/ohos.gni")
 
 ohos_shared_library("backup_sa") {
   sources = [
-    "src/service.cpp",
-    "src/service_stub.cpp",
+    "src/module_ipc/service.cpp",
+    "src/module_ipc/service_stub.cpp",
   ]
 
   defines = [

@@ -5,7 +5,7 @@
  *     - 注意点1：本文件原则上只处理与IPC无关的业务逻辑
  *     - 注意点2：本文件原则上要捕获所有异常，防止异常扩散到异常不安全的模块
  */
-#include "service.h"
+#include "module_ipc/service.h"
 
 #include <cerrno>
 #include <cstring>
@@ -16,7 +16,7 @@
 
 #include "b_error/b_error.h"
 #include "b_json/b_json_cached_entity.h"
-#include "b_json_entity_caps.h"
+#include "b_json/b_json_entity_caps.h"
 #include "filemgmt_libhilog.h"
 #include "system_ability_definition.h"
 

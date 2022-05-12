@@ -5,12 +5,12 @@
  *     - 注意点1：本文件原则上只处理与IPC模块的IO，具体业务逻辑实现在service.cpp中
  *     - 注意点2：所有调用开头处打印 Begin 字样，通过BError返回正常结果/错误码，这是出于防抵赖的目的
  */
+#include "module_ipc/service_stub.h"
 
 #include <sstream>
 
 #include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
-#include "service_stub.h"
 
 namespace OHOS {
 namespace FileManagement {
