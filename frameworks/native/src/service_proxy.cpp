@@ -3,6 +3,10 @@
  */
 
 #include "service_proxy.h"
+
+#include <sstream>
+
+#include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
@@ -36,7 +40,7 @@ void ServiceProxy::DumpObj(const ComplexObject &obj)
     Remote()->SendRequest(IService::SERVICE_CMD_DUMPOBJ, data, reply, option);
 }
 
-int32_t ServiceProxy::InitRestoreSession(std::vector<AppId> apps)
+int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -44,21 +48,28 @@ int32_t ServiceProxy::InitRestoreSession(std::vector<AppId> apps)
     MessageParcel reply;
     MessageOption option;
 
+    if (!remote) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Empty reverse stub").GetCode();
+    }
+    if (!data.WriteRemoteObject(remote->AsObject().GetRefPtr())) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the reverse stub").GetCode();
+    }
+
     if (!data.WriteStringVector(apps)) {
-        HILOGE("Failed to send appIds");
-        return -EPIPE;
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send appIds").GetCode();
     }
 
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
     if (ret != NO_ERROR) {
-        HILOGE("Received error %{public}d when doing IPC", ret);
-        return ret;
+        stringstream ss;
+        ss << "Failed to send out the quest for " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
     }
     HILOGI("Successful");
     return reply.ReadInt32();
 }
 
-int32_t ServiceProxy::InitBackupSession(UniqueFd fd, std::vector<AppId> appIDs)
+int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> appIDs)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -66,19 +77,25 @@ int32_t ServiceProxy::InitBackupSession(UniqueFd fd, std::vector<AppId> appIDs)
     MessageParcel reply;
     MessageOption option;
 
+    if (!remote) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Empty reverse stub").GetCode();
+    }
+    if (!data.WriteRemoteObject(remote->AsObject().GetRefPtr())) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the reverse stub").GetCode();
+    }
+
     if (!data.WriteFileDescriptor(fd)) {
-        HILOGI("Failed to send the fd");
-        return -EPIPE;
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fd").GetCode();
     }
     if (!data.WriteStringVector(appIDs)) {
-        HILOGE("Failed to send appIDs");
-        return -EPIPE;
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send appIds").GetCode();
     }
 
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, data, reply, option);
     if (ret != NO_ERROR) {
-        HILOGE("Received error %{public}d when doing IPC", ret);
-        return ret;
+        stringstream ss;
+        ss << "Failed to send out the quest because of " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
     }
     HILOGI("Successful");
     return reply.ReadInt32();

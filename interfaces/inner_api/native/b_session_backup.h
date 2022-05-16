@@ -18,14 +18,25 @@ namespace FileManagement {
 namespace Backup {
 class BSessionBackup {
 public:
+    struct Callbacks {
+        std::function<void(const BFileInfo &, UniqueFd)> onFileReady; // 当备份服务有文件待发送时执行的回调
+        std::function<void(ErrCode, const AppId)> onSubTaskStarted;   // 当启动某个应用的备份流程结束时执行的回调函数
+        std::function<void(ErrCode, const AppId)> onSubTaskFinished;  // 当某个应用的备份流程结束或意外中止时执行的回调函数
+        std::function<void(ErrCode)> onTaskFinished;                  // 当整个备份流程结束或意外中止时执行的回调函数
+        std::function<void()> onBackupServiceDied;                    // 当备份服务意外死亡时执行的回调函数
+    };
+
+public:
     /**
      * @brief 获取一个用于控制备份流程的会话
      *
-     * @param remoteCap 已打开的保存远端设备能力的Json文件。可使用BRestoreSession的GetLocalCaablities方法获取
+     * @param remoteCap 已打开的保存远端设备能力的Json文件。可使用BRestoreSession的GetLocalCapabilities方法获取
      * @param appsToBackup 待备份应用清单
      * @return std::unique_ptr<BSessionBackup> 指向会话的智能指针。失败时为空指针
      */
-    static std::unique_ptr<BSessionBackup> Init(UniqueFd remoteCap, std::vector<AppId> appsToBackup);
+    static std::unique_ptr<BSessionBackup> Init(UniqueFd remoteCap,
+                                                std::vector<AppId> appsToBackup,
+                                                Callbacks callbacks);
 };
 } // namespace Backup
 } // namespace FileManagement

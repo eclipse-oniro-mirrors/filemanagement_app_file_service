@@ -9,6 +9,7 @@
 
 #include "b_file_info.h"
 #include "complex_object.h"
+#include "i_service_reverse.h"
 #include "iremote_broker.h"
 #include "unique_fd.h"
 
@@ -27,8 +28,8 @@ public:
 
     virtual int32_t EchoServer(const std::string &echoStr) = 0;
     virtual void DumpObj(const ComplexObject &obj) = 0;
-    virtual int32_t InitRestoreSession(std::vector<AppId> apps) = 0;
-    virtual int32_t InitBackupSession(UniqueFd fd, std::vector<AppId> apps) = 0;
+    virtual int32_t InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) = 0;
+    virtual int32_t InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps) = 0;
     virtual int32_t GetLocalCapabilities() = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Filemanagement.Backup.IService")

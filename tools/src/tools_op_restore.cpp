@@ -32,7 +32,7 @@ static int32_t Init(string_view pathCapFile, ToolsOp::CRefVStrView args)
         appIds.push_back(id.data());
     }
 
-    auto restore = BSessionRestore::Init(appIds);
+    auto restore = BSessionRestore::Init(appIds, {});
     if (restore == nullptr) {
         printf("Failed to init restore");
         return -EPERM;

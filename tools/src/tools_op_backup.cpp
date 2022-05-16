@@ -37,7 +37,7 @@ static int32_t InitPathCapFile(string_view pathCapFile, ToolsOp::CRefVStrView ar
         return -errno;
     }
 
-    auto backup = BSessionBackup::Init(move(fd), appIds);
+    auto backup = BSessionBackup::Init(move(fd), appIds, {});
     if (backup == nullptr) {
         printf("Failed to init backup");
         return -EPERM;

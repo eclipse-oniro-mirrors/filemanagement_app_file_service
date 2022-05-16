@@ -15,9 +15,11 @@ namespace FileManagement {
 namespace Backup {
 class ServiceStub : public IRemoteStub<IService> {
 public:
-    ServiceStub();
-    ~ServiceStub() = default;
     int32_t OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+
+public:
+    ServiceStub();
+    ~ServiceStub() override = default;
 
 private:
     using ServiceInterface = int32_t (ServiceStub::*)(MessageParcel &data, MessageParcel &reply);

@@ -5,13 +5,14 @@
 #include "b_session_backup.h"
 #include "filemgmt_libhilog.h"
 #include "service_proxy.h"
+#include "service_reverse.h"
 
 namespace OHOS {
 namespace FileManagement {
 namespace Backup {
 using namespace std;
 
-unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, std::vector<AppId> appsToBackup)
+unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, vector<AppId> appsToBackup, Callbacks callbacks)
 {
     try {
         auto backup = make_unique<BSessionBackup>();
@@ -20,7 +21,7 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, std::vector<
             return nullptr;
         }
 
-        int32_t res = proxy->InitBackupSession(move(remoteCap), appsToBackup);
+        int32_t res = proxy->InitBackupSession(sptr(new ServiceReverse(callbacks)), move(remoteCap), appsToBackup);
         if (res != 0) {
             HILOGE("Failed to Backup because of %{public}d", res);
             return nullptr;
