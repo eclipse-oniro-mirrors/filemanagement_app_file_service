@@ -53,8 +53,12 @@ public:
         // 0x3000~0x3999 backup_sa错误
         SA_INVAL_ARG = 0x3000,
         SA_BROKEN_IPC = 0x3001,
+        SA_REFUSED_ACT = 0x3002,
 
         // 0x4000~0x4999 backup_SDK错误
+        SDK_INVAL_ARG = 0x4000,
+        SDK_BROKEN_IPC = 0x4001,
+        SDK_MIXED_SCENARIO = 0x4002,
     };
 
 public:
@@ -161,8 +165,12 @@ private:
         {Codes::OK, "No error"},
         {Codes::UTILS_INVAL_JSON_ENTITY, "Json utils operated on an invalid file"},
         {Codes::UTILS_INVAL_FILE_HANDLE, "File utils receieved an invalid file handle"},
-        {Codes::SA_INVAL_ARG, "SA reveieved invalid arguments"},
+        {Codes::SA_INVAL_ARG, "SA received invalid arguments"},
         {Codes::SA_BROKEN_IPC, "SA failed to issue a IPC"},
+        {Codes::SA_REFUSED_ACT, "SA refuse to act"},
+        {Codes::SDK_INVAL_ARG, "SDK received invalid arguments"},
+        {Codes::SDK_BROKEN_IPC, "SDK failed to do IPC"},
+        {Codes::SDK_MIXED_SCENARIO, "SDK involed backup/restore when doing the contrary"},
     };
 
 private:

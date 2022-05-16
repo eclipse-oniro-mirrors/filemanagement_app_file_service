@@ -11,6 +11,7 @@
 
 #include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
+#include "module_ipc/service_reverse_proxy.h"
 
 namespace OHOS {
 namespace FileManagement {
@@ -28,11 +29,11 @@ ServiceStub::ServiceStub()
 
 int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
 {
-    HILOGI("Begin to call procedure with code %{public}u", code);
+    HILOGI("Begin to call procedure indexed %{public}u", code);
     auto interfaceIndex = opToInterfaceMap_.find(code);
     if (interfaceIndex == opToInterfaceMap_.end() || !interfaceIndex->second) {
         stringstream ss;
-        ss << "Cannot response request " << code << ": unknown tranction";
+        ss << "Cannot response request " << code << ": unknown procedure";
         return BError(BError::Codes::SA_INVAL_ARG, ss.str());
     }
 
@@ -67,12 +68,21 @@ int32_t ServiceStub::CmdDumpObj(MessageParcel &data, MessageParcel &reply)
 int32_t ServiceStub::CmdInitRestoreSession(MessageParcel &data, MessageParcel &reply)
 {
     HILOGE("Begin");
+    auto remote = data.ReadRemoteObject();
+    if (!remote) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive the reverse stub");
+    }
+    auto iremote = iface_cast<IServiceReverse>(remote);
+    if (!iremote) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive the reverse stub");
+    }
+
     std::vector<string> appIds;
     if (!data.ReadStringVector(&appIds)) {
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive appIds");
     }
 
-    int32_t res = InitRestoreSession(appIds);
+    int32_t res = InitRestoreSession(iremote, appIds);
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;
@@ -84,6 +94,15 @@ int32_t ServiceStub::CmdInitRestoreSession(MessageParcel &data, MessageParcel &r
 int32_t ServiceStub::CmdInitBackupSession(MessageParcel &data, MessageParcel &reply)
 {
     HILOGE("Begin");
+    auto remote = data.ReadRemoteObject();
+    if (!remote) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive the reverse stub");
+    }
+    auto iremote = iface_cast<IServiceReverse>(remote);
+    if (!remote) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive the reverse stub");
+    }
+
     UniqueFd fd(data.ReadFileDescriptor());
     if (fd < 0) {
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive fd");
@@ -94,7 +113,7 @@ int32_t ServiceStub::CmdInitBackupSession(MessageParcel &data, MessageParcel &re
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive appIds");
     }
 
-    int res = InitBackupSession(move(fd), appIds);
+    int res = InitBackupSession(iremote, move(fd), appIds);
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;

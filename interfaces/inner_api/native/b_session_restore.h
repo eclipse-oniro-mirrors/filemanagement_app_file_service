@@ -18,6 +18,14 @@ namespace FileManagement {
 namespace Backup {
 class BSessionRestore {
 public:
+    struct Callbacks {
+        std::function<void(ErrCode, const AppId)> onSubTaskStarted;  // 当启动某个应用的恢复流程结束时执行的回调函数
+        std::function<void(ErrCode, const AppId)> onSubTaskFinished; // 当某个应用的恢复流程结束或意外中止时执行的回调函数
+        std::function<void(ErrCode)> onTaskFinished;                 // 当整个恢复流程结束或意外中止时执行的回调函数
+        std::function<void()> onBackupServiceDied;                   // 当备份服务意外死亡时执行的回调函数
+    };
+
+public:
     /**
      * @brief 获取一个用于控制恢复流程的会话
      *
@@ -25,7 +33,7 @@ public:
      * @param callbacks 注册的回调函数
      * @return std::unique_ptr<BRestoreSession> 指向BRestoreSession的智能指针。失败时为空指针
      */
-    static std::unique_ptr<BSessionRestore> Init(std::vector<AppId> appsToRestore);
+    static std::unique_ptr<BSessionRestore> Init(std::vector<AppId> appsToRestore, Callbacks callbacks);
 
     /**
      * @brief 获取用于描述本端能力的Json文件

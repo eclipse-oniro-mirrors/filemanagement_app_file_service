@@ -18,6 +18,7 @@
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
 #include "filemgmt_libhilog.h"
+#include "ipc_skeleton.h"
 #include "system_ability_definition.h"
 
 namespace OHOS {
@@ -25,18 +26,17 @@ namespace FileManagement {
 namespace Backup {
 using namespace std;
 
-REGISTER_SYSTEM_ABILITY_BY_ID(Service, FILEMANAGEMENT_BACKUP_SERVICE_SA_ID, true);
+REGISTER_SYSTEM_ABILITY_BY_ID(Service, FILEMANAGEMENT_BACKUP_SERVICE_SA_ID, false);
 
 void Service::OnStart()
 {
-    HILOGI("Begin Service");
-    bool res = SystemAbility::Publish(this);
-    HILOGI("End Service, res = %{public}d", res);
+    bool res = SystemAbility::Publish(sptr(this));
+    HILOGI("End, res = %{public}d", res);
 }
 
 void Service::OnStop()
 {
-    HILOGI("Done Service");
+    HILOGI("Called");
 }
 
 int32_t Service::EchoServer(const string &echoStr)
@@ -53,6 +53,8 @@ void Service::DumpObj(const ComplexObject &obj)
 int32_t Service::GetLocalCapabilities()
 {
     try {
+        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+
         struct statfs fsInfo = {};
         if (statfs(SA_ROOT_DIR, &fsInfo) == -1) {
             throw BError(errno);
@@ -72,36 +74,51 @@ int32_t Service::GetLocalCapabilities()
     }
 }
 
-int32_t Service::InitRestoreSession(std::vector<AppId> apps)
+void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
+{
+    session_.Deactive(obj, force);
+    // TODO: 资源清理
+    // TODO: 延迟关闭服务
+    // StopAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID);
+}
+
+int32_t Service::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
 {
     try {
-        if (apps.empty()) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
-        }
+        session_.Active({
+            .clientToken = IPCSkeleton::GetCallingTokenID(),
+            .scenario = IServiceReverse::Scenario::RESTORE,
+            .appsToOperate = std::move(apps),
+            .clientProxy = remote,
+        });
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
+        StopAll(nullptr, true);
         return e.GetCode();
     }
 }
 
-int32_t Service::InitBackupSession(UniqueFd fd, std::vector<AppId> apps)
+int32_t Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps)
 {
     try {
-        if (apps.empty()) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
-        }
+        session_.Active({
+            .clientToken = IPCSkeleton::GetCallingTokenID(),
+            .scenario = IServiceReverse::Scenario::BACKUP,
+            .appsToOperate = std::move(apps),
+            .clientProxy = remote,
+        });
 
         BJsonCachedEntity<BJsonEntityCaps> cachedEntity(move(fd));
         auto cache = cachedEntity.Structuralize();
         uint64_t size = cache.GetFreeDiskSpace();
         if (size == 0) {
-            throw BError(BError::Codes::SA_INVAL_ARG,
-                         "Field FreeDiskSpace is invalid or there's no enough space left on disk");
+            throw BError(BError::Codes::SA_INVAL_ARG, "Invalid field FreeDiskSpace or unsufficient space");
         }
-        HILOGI("Check field FreeDiskSpace size %{public}llu", size);
+
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
+        StopAll(nullptr, true);
         return e.GetCode();
     }
 }
