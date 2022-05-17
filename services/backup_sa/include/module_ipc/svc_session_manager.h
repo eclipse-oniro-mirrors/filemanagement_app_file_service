@@ -5,14 +5,15 @@
  * 且只响应备份或恢复接口中的一种。
  */
 
+#ifndef OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
+#define OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
+
 #include <shared_mutex>
 
 #include "b_file_info.h"
 #include "i_service_reverse.h"
 #include "module_ipc/svc_death_recipient.h"
 
-#ifndef OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
-#define OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
 
 namespace OHOS::FileManagement::Backup {
 class Service;

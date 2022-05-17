@@ -77,9 +77,6 @@ int32_t Service::GetLocalCapabilities()
 void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
 {
     session_.Deactive(obj, force);
-    // TODO: 资源清理
-    // TODO: 延迟关闭服务
-    // StopAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID);
 }
 
 int32_t Service::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
