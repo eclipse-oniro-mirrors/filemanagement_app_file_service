@@ -101,7 +101,7 @@ int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd f
     return reply.ReadInt32();
 }
 
-int32_t ServiceProxy::GetLocalCapabilities()
+UniqueFd ServiceProxy::GetLocalCapabilities()
 {
     HILOGI("Start");
     MessageParcel data;
@@ -112,12 +112,53 @@ int32_t ServiceProxy::GetLocalCapabilities()
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, data, reply, option);
     if (ret != NO_ERROR) {
         HILOGE("Received error %{public}d when doing IPC", ret);
+        return UniqueFd(-ret);
+    }
+
+    HILOGI("Successful");
+    UniqueFd fd(reply.ReadFileDescriptor());
+    return fd;
+}
+
+tuple<ErrCode, TmpFileSN, UniqueFd> ServiceProxy::GetFileOnServiceEnd()
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_FILE_ON_SERVICE_END, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return {ret, 0, UniqueFd(-1)};
+    }
+
+    HILOGI("Successful");
+    return {reply.ReadInt32(),reply.ReadUint32(),UniqueFd(reply.ReadFileDescriptor())};
+}
+
+ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteParcelable(&fileInfo)) {
+        HILOGI("Failed to send the fileInfo");
+        return -EPIPE;
+    }
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_PUBLISH_FILE, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
         return ret;
     }
 
     HILOGI("Successful");
-    int fd = reply.ReadFileDescriptor();
-    return fd;
+    return reply.ReadInt32();
 }
 
 sptr<IService> ServiceProxy::GetInstance()

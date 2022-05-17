@@ -41,6 +41,24 @@ public:
      * @return UniqueFd 文件描述符
      */
     UniqueFd GetLocalCapabilities();
+
+    /**
+     * @brief 获取在备份服务中打开的临时文件，用于接收对端设备发送的文件
+     *
+     * @return UniqueFd 文件描述符
+     * @see PublishFile
+     */
+    UniqueFd GetFileOnServiceEnd();
+
+    /**
+     * @brief 通知备份服务文件内容已就绪
+     *
+     * @param fileInfo 文件描述信息
+     * @param fileHandle 仅具有移动语义的文件描述符
+     * @return ErrCode 规范错误码
+     * @see GetFileOnServiceEnd
+     */
+    ErrCode PublishFile(const BFileInfo &fileInfo, UniqueFd fileHandle);
 };
 } // namespace Backup
 } // namespace FileManagement

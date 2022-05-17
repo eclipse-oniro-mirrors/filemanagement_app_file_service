@@ -16,12 +16,8 @@ void ServiceReverse::BackupOnFileReady(std::string appId, std::string fileName, 
     if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onFileReady) {
         return;
     }
-    callbacksBackup_.onFileReady(
-        BFileInfo {
-            .owner = appId,
-            .fileName = fileName,
-        },
-        UniqueFd(fd));
+    BFileInfo bFileInfo(appId, fileName, 0);
+    callbacksBackup_.onFileReady(bFileInfo, UniqueFd(fd));
 }
 
 void ServiceReverse::BackupOnSubTaskStarted(int32_t errCode, std::string appId)
