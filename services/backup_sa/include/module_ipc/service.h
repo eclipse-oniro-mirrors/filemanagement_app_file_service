@@ -23,9 +23,11 @@ class Service final : public SystemAbility, public ServiceStub, protected NoCopy
 public:
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
-    int32_t InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
-    int32_t InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps) override;
-    int32_t GetLocalCapabilities() override;
+    ErrCode InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
+    ErrCode InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps) override;
+    UniqueFd GetLocalCapabilities() override;
+    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
+    ErrCode PublishFile(const BFileInfo &fileInfo) override;
 
     // 以下都是非IPC接口
 public:
@@ -42,6 +44,7 @@ public:
 private:
     static sptr<Service> instance_;
     static std::mutex instanceLock_;
+    static inline std::atomic<uint32_t> seed {1};
 
     SvcSessionManager session_;
 };

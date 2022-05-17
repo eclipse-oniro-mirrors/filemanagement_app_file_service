@@ -15,9 +15,11 @@ class ServiceProxy : public IRemoteProxy<IService> {
 public:
     int32_t EchoServer(const std::string &echoStr) override;
     void DumpObj(const ComplexObject &obj) override;
-    int32_t InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
-    int32_t InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> appIds) override;
-    int32_t GetLocalCapabilities() override;
+    ErrCode InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
+    ErrCode InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> appIds) override;
+    UniqueFd GetLocalCapabilities() override;
+    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
+    ErrCode PublishFile(const BFileInfo &fileInfo) override;
 
 public:
     explicit ServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IService>(impl) {}

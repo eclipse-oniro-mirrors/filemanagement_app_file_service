@@ -25,6 +25,8 @@ ServiceStub::ServiceStub()
     opToInterfaceMap_[SERVICE_CMD_INIT_RESTORE_SESSION] = &ServiceStub::CmdInitRestoreSession;
     opToInterfaceMap_[SERVICE_CMD_INIT_BACKUP_SESSION] = &ServiceStub::CmdInitBackupSession;
     opToInterfaceMap_[SERVICE_CMD_GET_LOCAL_CAPABILITIES] = &ServiceStub::CmdGetLocalCapabilities;
+    opToInterfaceMap_[SERVICE_CMD_GET_FILE_ON_SERVICE_END] = &ServiceStub::CmdGetFileOnServiceEnd;
+    opToInterfaceMap_[SERVICE_CMD_PUBLISH_FILE] = &ServiceStub::CmdPublishFile;
 }
 
 int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
@@ -128,6 +130,32 @@ int32_t ServiceStub::CmdGetLocalCapabilities(MessageParcel &data, MessageParcel 
     int fd = GetLocalCapabilities();
     if (!reply.WriteFileDescriptor(fd)) {
         return BError(BError::Codes::SA_BROKEN_IPC, "Failed to send out the file");
+    }
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceStub::CmdGetFileOnServiceEnd(MessageParcel &data, MessageParcel &reply)
+{
+    HILOGE("Begin");
+    auto [errCode, tmpFileSN, fd] = GetFileOnServiceEnd();
+    if (!reply.WriteInt32(errCode) || !reply.WriteUint32(tmpFileSN) || !reply.WriteFileDescriptor(fd)) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to send the result");
+    }
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceStub::CmdPublishFile(MessageParcel &data, MessageParcel &reply)
+{
+    HILOGE("Begin");
+    unique_ptr<BFileInfo> fileInfo(data.ReadParcelable<BFileInfo>());
+    if (!fileInfo) {
+        return BError(BError::Codes::SA_BROKEN_IPC, "Failed to receive fileInfo");
+    }
+    int res = PublishFile(*fileInfo);
+    if (!reply.WriteInt32(res)) {
+        stringstream ss;
+        ss << "Failed to send the result " << res;
+        return BError(BError::Codes::SA_BROKEN_IPC, ss.str());
     }
     return BError(BError::Codes::OK);
 }

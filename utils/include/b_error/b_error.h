@@ -56,6 +56,7 @@ public:
         SA_INVAL_ARG = 0x3000,
         SA_BROKEN_IPC = 0x3001,
         SA_REFUSED_ACT = 0x3002,
+        SA_BROKEN_ROOT_DIR = 0x3002,
 
         // 0x4000~0x4999 backup_SDK错误
         SDK_INVAL_ARG = 0x4000,
@@ -172,6 +173,7 @@ private:
         {Codes::SA_INVAL_ARG, "SA received invalid arguments"},
         {Codes::SA_BROKEN_IPC, "SA failed to issue a IPC"},
         {Codes::SA_REFUSED_ACT, "SA refuse to act"},
+        {Codes::SA_BROKEN_ROOT_DIR, "SA failed to operate on the given root dir"},
         {Codes::SDK_INVAL_ARG, "SDK received invalid arguments"},
         {Codes::SDK_BROKEN_IPC, "SDK failed to do IPC"},
         {Codes::SDK_MIXED_SCENARIO, "SDK involed backup/restore when doing the contrary"},
