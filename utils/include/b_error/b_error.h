@@ -47,6 +47,8 @@ public:
         // 0x1000~0x1999 backup_utils错误
         UTILS_INVAL_JSON_ENTITY = 0x1000,
         UTILS_INVAL_FILE_HANDLE = 0x1001,
+        UTILS_INVAL_TARBALL_ARG = 0x1002,
+        UTILS_INVAL_PROCESS_ARG = 0x1003,
 
         // 0x2000~0x2999 backup_tool错误
 
@@ -164,7 +166,9 @@ private:
     static inline const std::map<Codes, std::string_view> mpErrToMsg_ = {
         {Codes::OK, "No error"},
         {Codes::UTILS_INVAL_JSON_ENTITY, "Json utils operated on an invalid file"},
-        {Codes::UTILS_INVAL_FILE_HANDLE, "File utils receieved an invalid file handle"},
+        {Codes::UTILS_INVAL_FILE_HANDLE, "File utils received an invalid file handle"},
+        {Codes::UTILS_INVAL_TARBALL_ARG, "Tarball utils received an invalid argument"},
+        {Codes::UTILS_INVAL_PROCESS_ARG, "Process utils received an invalid argument"},
         {Codes::SA_INVAL_ARG, "SA received invalid arguments"},
         {Codes::SA_BROKEN_IPC, "SA failed to issue a IPC"},
         {Codes::SA_REFUSED_ACT, "SA refuse to act"},
