@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "b_error/b_error.h"
+#include "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -22,6 +23,8 @@ BGuardSignal::BGuardSignal(int sig)
 
 BGuardSignal::~BGuardSignal()
 {
-    signal(sig_, prevHandler_);
+    if (signal(sig_, prevHandler_) == SIG_ERR) {
+        HILOGE("Failed to reset sig %{public}d", sig_);
+    }
 }
 } // namespace OHOS::FileManagement::Backup
