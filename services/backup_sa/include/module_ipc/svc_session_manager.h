@@ -59,6 +59,14 @@ public:
      */
     void VerifyBundleName(const std::string &bundleName);
 
+    /**
+     * @brief 获取IServiceReverse
+     *
+     * @return sptr<IServiceReverse> 返回clientProxy
+     * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
+     */
+    sptr<IServiceReverse> GetServiceReverseProxy();
+
 public:
     /**
      * @brief Construct a new Svc Session object

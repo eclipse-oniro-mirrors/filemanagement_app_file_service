@@ -16,6 +16,8 @@ ohos_shared_library("backup_sa") {
     "LOG_TAG=\"BackupSA\"",
     "SA_ROOT_DIR=\"/data/backup/\"",
     "SA_TMP_DIR=\"tmp/\"",
+    "SA_TEST_DIR=\"/data/test/backup/\"",
+    "SA_GID=1089",
   ]
 
   include_dirs = [ "include" ]
@@ -23,6 +25,7 @@ ohos_shared_library("backup_sa") {
   deps = [
     "${ability_runtime_path}/interfaces/inner_api/ability_manager:ability_manager",
     "${ability_runtime_path}/services/abilitymgr:abilityms",
+    "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
     "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
     "//foundation/filemanagement/backup/utils:backup_utils",

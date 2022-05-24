@@ -23,6 +23,8 @@ ServiceStub::ServiceStub()
     opToInterfaceMap_[SERVICE_CMD_GET_LOCAL_CAPABILITIES] = &ServiceStub::CmdGetLocalCapabilities;
     opToInterfaceMap_[SERVICE_CMD_GET_FILE_ON_SERVICE_END] = &ServiceStub::CmdGetFileOnServiceEnd;
     opToInterfaceMap_[SERVICE_CMD_PUBLISH_FILE] = &ServiceStub::CmdPublishFile;
+    opToInterfaceMap_[SERVICE_CMD_APP_FILE_READY] = &ServiceStub::CmdAppFileReady;
+    opToInterfaceMap_[SERVICE_CMD_APP_DONE] = &ServiceStub::CmdAppDone;
 }
 
 int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
@@ -129,6 +131,38 @@ int32_t ServiceStub::CmdPublishFile(MessageParcel &data, MessageParcel &reply)
         return BError(BError::Codes::SA_BROKEN_IPC, "Failed to receive fileInfo");
     }
     int res = PublishFile(*fileInfo);
+    if (!reply.WriteInt32(res)) {
+        stringstream ss;
+        ss << "Failed to send the result " << res;
+        return BError(BError::Codes::SA_BROKEN_IPC, ss.str());
+    }
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceStub::CmdAppFileReady(MessageParcel &data, MessageParcel &reply)
+{
+    HILOGE("Begin");
+    string fileName;
+    if (!data.ReadString(fileName)) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive fileName");
+    }
+    int res = AppFileReady(fileName);
+    if (!reply.WriteInt32(res)) {
+        stringstream ss;
+        ss << "Failed to send the result " << res;
+        return BError(BError::Codes::SA_BROKEN_IPC, ss.str());
+    }
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceStub::CmdAppDone(MessageParcel &data, MessageParcel &reply)
+{
+    HILOGE("Begin");
+    bool success;
+    if (!data.ReadBool(success)) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive bool flag");
+    }
+    int res = AppDone(success);
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;

@@ -18,6 +18,8 @@ public:
     UniqueFd GetLocalCapabilities() override;
     std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
+    ErrCode AppFileReady(const std::string &fileName) override;
+    ErrCode AppDone(ErrCode errCode) override;
 
 public:
     explicit ServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IService>(impl) {}

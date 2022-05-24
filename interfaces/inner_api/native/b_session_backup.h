@@ -35,6 +35,13 @@ public:
     static std::unique_ptr<BSessionBackup> Init(UniqueFd remoteCap,
                                                 std::vector<BundleName> bundlesToBackup,
                                                 Callbacks callbacks);
+
+    /**
+     * @brief 用于启动备份流程
+     *
+     * @return ErrCode 规范错误码
+     */
+    ErrCode Start();
 };
 } // namespace OHOS::FileManagement::Backup
 

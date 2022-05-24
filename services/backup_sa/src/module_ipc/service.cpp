@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 
+#include "accesstoken_kit.h"
 #include "b_error/b_error.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
@@ -76,6 +77,36 @@ void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
     session_.Deactive(obj, force);
 }
 
+string Service::VerifyCallerAndGetCallerName()
+{
+    uint32_t tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int tokenType = Security::AccessToken::AccessTokenKit::GetTokenType(tokenCaller);
+    if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_HAP) {
+        Security::AccessToken::HapTokenInfo hapTokenInfo;
+        if (Security::AccessToken::AccessTokenKit::GetHapTokenInfo(tokenCaller, hapTokenInfo) != 0) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Get hap token info failed");
+        }
+        session_.VerifyBundleName(hapTokenInfo.bundleName);
+        // REM: 校验ability type
+        return hapTokenInfo.bundleName;
+    } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
+        if (IPCSkeleton::GetCallingUid() != 1000) { // REM: uid整改后调整
+            throw BError(BError::Codes::SA_BROKEN_IPC, "Calling uid is invalid");
+        }
+
+        Security::AccessToken::NativeTokenInfo tokenInfo;
+        if (Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo) != 0) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Get native token info failed");
+        }
+        if (tokenInfo.processName != "backup_tool" && tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除
+            throw BError(BError::Codes::SA_INVAL_ARG, "Process name is invalid");
+        }
+        return "simulate";
+    } else {
+        throw BError(BError::Codes::SA_INVAL_ARG, string("Invalid token type ").append(to_string(tokenType)));
+    }
+}
+
 ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames)
 {
     try {
@@ -132,7 +163,7 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
     UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0600));
     if (fd < 0) {
         stringstream ss;
-        ss << "Failed to open " << errno;
+        ss << "Failed to open tmpPath " << errno;
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
     }
     return {ERR_OK, tmpFileSN, move(fd)};
@@ -143,7 +174,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
     session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
     session_.VerifyBundleName(fileInfo.owner);
 
-    if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z]+$"))) {
+    if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_]+$"))) {
         throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
     }
 
@@ -151,7 +182,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
     UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
     if (dfdTmp < 0) {
         stringstream ss;
-        ss << "Failed to open " << errno;
+        ss << "Failed to open tmpPath " << errno;
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
     }
 
@@ -163,16 +194,54 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
     UniqueFd dfdNew(open(path.data(), O_RDONLY));
     if (dfdNew < 0) {
         stringstream ss;
-        ss << "Failed to open " << errno;
+        ss << "Failed to open path " << errno;
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
     }
 
     string tmpFile = to_string(fileInfo.sn);
     if (renameat(dfdTmp, tmpFile.data(), dfdNew, fileInfo.fileName.data()) == -1) {
         stringstream ss;
-        ss << "Failed to rename " << errno;
+        ss << "Failed to rename file " << errno;
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
     }
+
+    return BError(BError::Codes::OK);
+}
+
+ErrCode Service::AppFileReady(const string &fileName)
+{
+    string callerName = VerifyCallerAndGetCallerName();
+    if (!regex_match(fileName, regex("^[0-9a-zA-Z_]+$"))) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
+    }
+
+    string path = string(SA_TEST_DIR) + fileName;
+    UniqueFd fd(open(path.data(), O_RDWR, 0600));
+    if (fd < 0) {
+        stringstream ss;
+        ss << "Failed to open path " << errno;
+        throw BError(BError::Codes::SA_INVAL_ARG, ss.str());
+    }
+
+    struct stat fileStat = {};
+    if (fstat(fd, &fileStat) != 0) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
+    }
+    if (fileStat.st_gid != SA_GID && fileStat.st_gid != 1000) { // REM: uid整改后删除
+        throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
+    }
+
+    auto proxy = session_.GetServiceReverseProxy();
+    proxy->BackupOnFileReady(callerName, fileName, move(fd));
+
+    return BError(BError::Codes::OK);
+}
+
+ErrCode Service::AppDone(ErrCode errCode)
+{
+    string callerName = VerifyCallerAndGetCallerName();
+    auto proxy = session_.GetServiceReverseProxy();
+    proxy->RestoreOnSubTaskFinished(errCode, callerName);
 
     return BError(BError::Codes::OK);
 }
