@@ -36,7 +36,7 @@ int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, const std
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
     if (ret != NO_ERROR) {
         stringstream ss;
-        ss << "Failed to send out the quest for " << ret;
+        ss << "Failed to send out the request for " << ret;
         return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
     }
     HILOGI("Successful");
@@ -70,7 +70,7 @@ int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote,
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, data, reply, option);
     if (ret != NO_ERROR) {
         stringstream ss;
-        ss << "Failed to send out the quest because of " << ret;
+        ss << "Failed to send out the request because of " << ret;
         return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
     }
     HILOGI("Successful");
@@ -121,7 +121,7 @@ ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
     data.WriteInterfaceToken(GetDescriptor());
 
     if (!data.WriteParcelable(&fileInfo)) {
-        HILOGI("Failed to send the fileInfo");
+        HILOGE("Failed to send the fileInfo");
         return -EPIPE;
     }
 
@@ -129,10 +129,55 @@ ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
     MessageOption option;
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_PUBLISH_FILE, data, reply, option);
     if (ret != NO_ERROR) {
-        HILOGE("Received error %{public}d when doing IPC", ret);
-        return ret;
+        stringstream ss;
+        ss << "Failed to send out the request because of " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
     }
 
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
+ErrCode ServiceProxy::AppFileReady(const string &fileName)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteString(fileName)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the filename").GetCode();
+    }
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_APP_FILE_READY, data, reply, option);
+    if (ret != NO_ERROR) {
+        stringstream ss;
+        ss << "Failed to send out the request because of " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
+    }
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
+ErrCode ServiceProxy::AppDone(ErrCode errCode)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteInt32(errCode)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the errCode").GetCode();
+    }
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_APP_DONE, data, reply, option);
+    if (ret != NO_ERROR) {
+        stringstream ss;
+        ss << "Failed to send out the request because of " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
+    }
     HILOGI("Successful");
     return reply.ReadInt32();
 }

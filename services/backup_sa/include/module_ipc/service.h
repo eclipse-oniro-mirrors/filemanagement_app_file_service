@@ -26,18 +26,22 @@ public:
     UniqueFd GetLocalCapabilities() override;
     std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
+    ErrCode AppFileReady(const std::string &fileName) override;
+    ErrCode AppDone(ErrCode errCode) override;
 
     // 以下都是非IPC接口
 public:
     void OnStart() override;
     void OnStop() override;
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
-    sptr<IServiceReverse> GetRemoteProxy();
 
 public:
     explicit Service(int32_t saID, bool runOnCreate = false)
         : SystemAbility(saID, runOnCreate), session_(wptr(this)) {};
     ~Service() override = default;
+
+private:
+    std::string VerifyCallerAndGetCallerName();
 
 private:
     static sptr<Service> instance_;

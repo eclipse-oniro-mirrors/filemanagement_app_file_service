@@ -22,6 +22,8 @@ public:
         SERVICE_CMD_GET_LOCAL_CAPABILITIES,
         SERVICE_CMD_GET_FILE_ON_SERVICE_END,
         SERVICE_CMD_PUBLISH_FILE,
+        SERVICE_CMD_APP_FILE_READY,
+        SERVICE_CMD_APP_DONE,
     };
 
     virtual ErrCode InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames) = 0;
@@ -31,6 +33,8 @@ public:
     virtual UniqueFd GetLocalCapabilities() = 0;
     virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() = 0;
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;
+    virtual ErrCode AppFileReady(const std::string &fileName) = 0;
+    virtual ErrCode AppDone(ErrCode errCode) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Filemanagement.Backup.IService")
 };

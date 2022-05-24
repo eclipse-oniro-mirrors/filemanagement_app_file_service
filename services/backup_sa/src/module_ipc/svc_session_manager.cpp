@@ -133,4 +133,13 @@ void SvcSessionManager::VerifyBundleName(const string &bundleName)
     }
     HILOGE("Succeed to verify the bundleName");
 }
+
+sptr<IServiceReverse> SvcSessionManager::GetServiceReverseProxy()
+{
+    unique_lock lock(lock_);
+    if (!impl_.clientProxy) {
+        throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
+    }
+    return impl_.clientProxy;
+}
 } // namespace OHOS::FileManagement::Backup
