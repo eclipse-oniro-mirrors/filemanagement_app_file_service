@@ -20,14 +20,13 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
         "-cvf",
         tarballPath_.data(),
     };
+
     for (auto &&include : includes) {
         argv.push_back(include.data());
     }
-    if (excludes.size()) {
+    for (auto &&exclude : excludes) {
         argv.push_back("--exclude");
-        for (auto &&exclude : excludes) {
-            argv.push_back(exclude.data());
-        }
+        argv.push_back(exclude.data());
     }
 
     BProcess::ExcuteCmd(argv);

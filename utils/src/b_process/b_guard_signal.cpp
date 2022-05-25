@@ -11,7 +11,7 @@
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
-BGuardSignal::BGuardSignal(int sig)
+BGuardSignal::BGuardSignal(int sig) : sig_(sig)
 {
     prevHandler_ = signal(sig, SIG_DFL);
     if (prevHandler_ == SIG_ERR) {

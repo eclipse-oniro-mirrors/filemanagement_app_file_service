@@ -11,6 +11,7 @@ ohos_executable("backup_tool") {
     "src/tools_op_help.cpp",
     "src/tools_op_mock.cpp",
     "src/tools_op_restore.cpp",
+    "src/tools_op_simulate_app.cpp",
   ]
 
   defines = [
