@@ -37,6 +37,10 @@
                         "header_base": "//foundation/filemanagement/backup/interfaces/inner_api/native"
                     }
                 }
+            ],
+            "test": [
+              "//foundation/filemanagement/backup/tools/test:tools_test",
+              "//foundation/filemanagement/backup/utils/test:backup_test"
             ]
         }
     }

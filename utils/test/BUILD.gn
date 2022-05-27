@@ -1,0 +1,74 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/test.gni")
+
+ohos_unittest("b_error_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+      "b_error/b_error_test.cpp",
+    ]
+
+  include_dirs = [
+    "//third_party/googletest/googlemock/include/gmock",
+  ]
+
+
+  deps = [
+    "//foundation/filemanagement/backup/utils/:backup_utils",
+    "//third_party/googletest:gmock_main",
+  ]
+
+  use_exceptions = true
+}
+
+ohos_unittest("b_file_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+      "b_filesystem/b_file_test.cpp",
+    ]
+
+  include_dirs = [
+    "//third_party/googletest/googlemock/include/gmock",
+  ]
+
+
+  deps = [
+    "//foundation/filemanagement/backup/utils/:backup_utils",
+    "//third_party/googletest:gmock_main",
+  ]
+
+  use_exceptions = true
+}
+
+ohos_unittest("b_json_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+      "b_json/b_json_cached_entity_test.cpp",
+    ]
+
+  include_dirs = [
+    "//third_party/googletest/googlemock/include/gmock",
+    "//utils/native/base/include",
+  ]
+
+  deps = [
+    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
+    "//foundation/filemanagement/backup/utils/:backup_utils",
+    "//third_party/googletest:gmock_main",
+  ]
+
+  use_exceptions = true
+}
+
+group("backup_test") {
+  testonly = true
+
+  deps = [
+    ":b_error_test",
+    ":b_file_test",
+    ":b_json_test",
+  ]
+}

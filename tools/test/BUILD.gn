@@ -1,0 +1,34 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/test.gni")
+
+ohos_unittest("tools_op_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+      "tools_test.cpp",
+    ]
+
+  include_dirs = [
+    "//third_party/googletest/googlemock/include/gmock",
+  ]
+
+  deps = [
+    "//third_party/googletest:gmock_main",
+    "//foundation/filemanagement/backup/utils/:backup_utils",
+  ]
+
+  external_deps = [
+    "faultloggerd:lib_dfx_dump_catcher",
+  ]
+
+  use_exceptions = true
+}
+
+group("tools_test") {
+  testonly = true
+
+  deps = [
+    ":tools_op_test",
+  ]
+}
