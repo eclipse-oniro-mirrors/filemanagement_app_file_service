@@ -114,7 +114,7 @@ bool ShareFilePathIoctlCidFuzzTest(const uint8_t* data, size_t size)
     if (srcFd < 0) {
         return false;
     }
-    sc.src_fd = size;
+    sc.src_fd = srcFd;
     const char* cid = reinterpret_cast<const char*>(data);
     if (memcpy_s(sc.cid, HMDFS_CID_SIZE, cid, size) != 0) {
         close(dirFd);
