@@ -20,7 +20,10 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
         "-cvf",
         tarballPath_.data(),
     };
-
+    // 未给定include的情况，打包全目录
+    if (includes.empty()) {
+        includes.push_back(".");
+    }
     for (auto &&include : includes) {
         argv.push_back(include.data());
     }

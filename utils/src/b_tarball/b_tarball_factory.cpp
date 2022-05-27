@@ -56,11 +56,6 @@ static void TarFort(string_view tarballDir,
         throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "The root's path can't be the ancestor of the tarball's");
     }
 
-    // 未给定include的情况，打包全目录
-    if (includes.empty()) {
-        includes.push_back(".");
-    }
-
     auto detectPathTraversal = [&resolvedPath](string_view root, string_view relativePath) {
         stringstream ss;
         ss << root << '/' << relativePath;
