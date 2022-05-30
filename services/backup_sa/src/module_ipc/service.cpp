@@ -122,7 +122,7 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
     TmpFileSN tmpFileSN = seed++;
     string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR) + to_string(tmpFileSN);
     if (access(tmpPath.data(), F_OK) == 0) {
-        //约束服务启动时清空临时目录，且生成的临时文件名必不重复
+        // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
     }
     UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0600));

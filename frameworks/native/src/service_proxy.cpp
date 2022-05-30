@@ -109,7 +109,7 @@ tuple<ErrCode, TmpFileSN, UniqueFd> ServiceProxy::GetFileOnServiceEnd()
     }
 
     HILOGI("Successful");
-    return {reply.ReadInt32(),reply.ReadUint32(),UniqueFd(reply.ReadFileDescriptor())};
+    return {reply.ReadInt32(), reply.ReadUint32(), UniqueFd(reply.ReadFileDescriptor())};
 }
 
 ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
