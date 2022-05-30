@@ -19,18 +19,24 @@ import("//build/test.gni")
 ohos_fuzztest("RemoteFileShareFuzzTest") {
   module_out_path = "filemanagement/app_file_service"
   fuzz_config_file = "//foundation/filemanagement/app_file_service/test/fuzztest/remotefileshare_fuzzer"
-  include_dirs = [
+  include_dirs = []
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
   ]
-  cflags = ["-g","-O0","-Wno-unused-variable","-fno-omit-frame-pointer"]
-  sources = [
-    "remotefileshare_fuzzer.cpp",
-  ]
+  sources = [ "remotefileshare_fuzzer.cpp" ]
   deps = [
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libn",
-    "//utils/native/base:utilsecurec"
+    "//utils/native/base:utilsecurec",
   ]
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  defines = [ "LOG_TAG=\"app_file_service\"", "LOG_DOMAIN=0xD200000" ]
+  defines = [
+    "LOG_TAG=\"app_file_service\"",
+    "LOG_DOMAIN=0xD200000",
+  ]
 }
+
 ###############################################################################
 
