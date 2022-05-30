@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,12 +15,12 @@
 
 #include "remotefileshare_fuzzer.h"
 
+#include <cstdint>
 #include <fcntl.h>
-#include <unistd.h>
-
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "securec.h"
 
@@ -114,7 +114,7 @@ bool ShareFilePathIoctlCidFuzzTest(const uint8_t* data, size_t size)
     if (srcFd < 0) {
         return false;
     }
-    sc.src_fd = srcFd;
+    sc.src_fd = size;
     const char* cid = reinterpret_cast<const char*>(data);
     if (memcpy_s(sc.cid, HMDFS_CID_SIZE, cid, size) != 0) {
         close(dirFd);
