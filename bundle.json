@@ -24,6 +24,9 @@
         "build": {
             "sub_component": [
                 "//foundation/filemanagement/app_file_service:libremotefileshare"
+            ],
+            "test": [
+                "//foundation/filemanagement/app_file_service/test/fuzztest:fuzztest"
             ]
         }
     }
