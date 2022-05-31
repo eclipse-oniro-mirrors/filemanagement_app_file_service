@@ -14,7 +14,6 @@
 #include "i_service_reverse.h"
 #include "module_ipc/svc_death_recipient.h"
 
-
 namespace OHOS::FileManagement::Backup {
 class Service;
 class SvcSessionManager final {
@@ -22,7 +21,7 @@ public:
     struct Impl {
         uint32_t clientToken {0};
         IServiceReverse::Scenario scenario {IServiceReverse::Scenario::UNDEFINED};
-        std::vector<AppId> appsToOperate;
+        std::vector<BundleName> bundlesToProcess;
         sptr<IServiceReverse> clientProxy;
     };
 
@@ -51,6 +50,14 @@ public:
      * @param force 强制关闭
      */
     void Deactive(const wptr<IRemoteObject> &remoteInAction, bool force = false);
+
+    /**
+     * @brief 检验调用者给定的bundleName是否是有效的
+     *
+     * @param bundleName 调用者名称
+     * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
+     */
+    void VerifyBundleName(const std::string &bundleName);
 
 public:
     /**

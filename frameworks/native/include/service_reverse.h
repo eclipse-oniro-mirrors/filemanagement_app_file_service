@@ -12,13 +12,13 @@
 namespace OHOS::FileManagement::Backup {
 class ServiceReverse final : public ServiceReverseStub {
 public:
-    void BackupOnFileReady(std::string appId, std::string fileName, int fd) override;
-    void BackupOnSubTaskStarted(int32_t errCode, std::string appId) override;
-    void BackupOnSubTaskFinished(int32_t errCode, std::string appId) override;
+    void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override;
+    void BackupOnSubTaskStarted(int32_t errCode, std::string bundleName) override;
+    void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName) override;
     void BackupOnTaskFinished(int32_t errCode) override;
 
-    void RestoreOnSubTaskStarted(int32_t errCode, std::string appId) override;
-    void RestoreOnSubTaskFinished(int32_t errCode, std::string appId) override;
+    void RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName) override;
+    void RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName) override;
     void RestoreOnTaskFinished(int32_t errCode) override;
 
 public:

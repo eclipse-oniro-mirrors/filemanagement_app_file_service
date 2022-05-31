@@ -10,7 +10,9 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, vector<AppId> appsToBackup, Callbacks callbacks)
+unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
+                                                vector<BundleName> bundlesToBackup,
+                                                Callbacks callbacks)
 {
     try {
         auto backup = make_unique<BSessionBackup>();
@@ -19,7 +21,7 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap, vector<AppId
             return nullptr;
         }
 
-        int32_t res = proxy->InitBackupSession(sptr(new ServiceReverse(callbacks)), move(remoteCap), appsToBackup);
+        int32_t res = proxy->InitBackupSession(sptr(new ServiceReverse(callbacks)), move(remoteCap), bundlesToBackup);
         if (res != 0) {
             HILOGE("Failed to Backup because of %{public}d", res);
             return nullptr;

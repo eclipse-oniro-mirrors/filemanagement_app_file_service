@@ -19,8 +19,10 @@ class Service final : public SystemAbility, public ServiceStub, protected NoCopy
 
     // 以下都是IPC接口
 public:
-    ErrCode InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps) override;
-    ErrCode InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps) override;
+    ErrCode InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames) override;
+    ErrCode InitBackupSession(sptr<IServiceReverse> remote,
+                              UniqueFd fd,
+                              const std::vector<BundleName> &bundleNames) override;
     UniqueFd GetLocalCapabilities() override;
     std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;

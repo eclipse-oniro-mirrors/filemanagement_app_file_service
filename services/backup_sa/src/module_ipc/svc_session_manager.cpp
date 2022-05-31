@@ -4,12 +4,42 @@
 
 #include "module_ipc/svc_session_manager.h"
 
+#include <sstream>
+
+#include "ability_util.h"
 #include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
 #include "module_ipc/service.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
+
+static void VerifyBunldeNamesWithBundleMgr(const vector<BundleName> &bundleNames)
+{
+    if (bundleNames.empty()) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
+    }
+    auto bms = AAFwk::AbilityUtil::GetBundleManager();
+    if (!bms) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Bms is invalid");
+    }
+
+    vector<AppExecFwk::BundleInfo> bundleInfos;
+    if (!bms->GetBundleInfos(AppExecFwk::GET_BUNDLE_DEFAULT, bundleInfos, AppExecFwk::Constants::START_USERID)) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle infos");
+    }
+
+    for (auto &&bundleToVerify : bundleNames) {
+        bool bVerify =
+            none_of(bundleInfos.begin(), bundleInfos.end(),
+                    [bundleToVerify](const AppExecFwk::BundleInfo &bInfo) { return bInfo.name == bundleToVerify; });
+        if (bVerify) {
+            stringstream ss;
+            ss << "Could not find the " << bundleToVerify << " from current session";
+            throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+        }
+    }
+}
 
 void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
@@ -20,7 +50,7 @@ void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scen
     if (impl_.clientToken != clientToken) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Caller mismatched");
     }
-    HILOGI("Succeed to verify the caller");
+    HILOGE("Succeed to verify the caller");
 }
 
 void SvcSessionManager::Active(const Impl &newImpl)
@@ -38,9 +68,9 @@ void SvcSessionManager::Active(const Impl &newImpl)
     if (newImpl.scenario == IServiceReverse::Scenario::UNDEFINED) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No scenario was specified");
     }
-    if (newImpl.appsToOperate.empty()) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
-    }
+
+    VerifyBunldeNamesWithBundleMgr(newImpl.bundlesToProcess);
+
     if (!newImpl.clientProxy) {
         throw BError(BError::Codes::SA_INVAL_ARG, "Invalid client");
     }
@@ -89,5 +119,18 @@ void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool
     HILOGI("Succeed to deactive a session. Client token = %{public}u, client proxy = 0x%{private}p", impl_.clientToken,
            impl_.clientProxy.GetRefPtr());
     impl_ = {};
+}
+
+void SvcSessionManager::VerifyBundleName(const string &bundleName)
+{
+    shared_lock lock(lock_);
+    bool bVerify = none_of(impl_.bundlesToProcess.begin(), impl_.bundlesToProcess.end(),
+                           [bundleName](const BundleName &name) { return bundleName == name; });
+    if (bVerify) {
+        stringstream ss;
+        ss << "Could not find the " << bundleName << " from current session";
+        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+    }
+    HILOGE("Succeed to verify the bundleName");
 }
 } // namespace OHOS::FileManagement::Backup
