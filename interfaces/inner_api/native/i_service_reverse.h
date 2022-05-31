@@ -28,13 +28,13 @@ public:
     };
 
 public:
-    virtual void BackupOnFileReady(std::string appId, std::string fileName, int fd) = 0;
-    virtual void BackupOnSubTaskStarted(int32_t errCode, std::string appId) = 0;
-    virtual void BackupOnSubTaskFinished(int32_t errCode, std::string appId) = 0;
+    virtual void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) = 0;
+    virtual void BackupOnSubTaskStarted(int32_t errCode, std::string bundleName) = 0;
+    virtual void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName) = 0;
     virtual void BackupOnTaskFinished(int32_t errCode) = 0;
 
-    virtual void RestoreOnSubTaskStarted(int32_t errCode, std::string appId) = 0;
-    virtual void RestoreOnSubTaskFinished(int32_t errCode, std::string appId) = 0;
+    virtual void RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName) = 0;
+    virtual void RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName) = 0;
     virtual void RestoreOnTaskFinished(int32_t errCode) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.FileManagement.Backup.IServiceReverse")

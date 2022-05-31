@@ -11,17 +11,17 @@
 #include "parcel.h"
 
 namespace OHOS::FileManagement::Backup {
-using AppId = std::string;
+using BundleName = std::string;
 using TmpFileSN = uint32_t;
 
 struct BFileInfo : public Parcelable {
-    AppId owner;
+    BundleName owner;
     std::string fileName;
     TmpFileSN sn; // 用于服务零拷贝接收文件场景
 
     BFileInfo() = default;
-    BFileInfo(std::string appId, std::string strFileNanme, TmpFileSN id)
-        : owner(appId), fileName(strFileNanme), sn(id) {}
+    BFileInfo(std::string bundleName, std::string strFileNanme, TmpFileSN id)
+        : owner(bundleName), fileName(strFileNanme), sn(id) {}
     ~BFileInfo() = default;
 
     bool ReadFromParcel(Parcel &parcel);

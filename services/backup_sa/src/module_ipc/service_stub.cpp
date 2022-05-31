@@ -56,12 +56,12 @@ int32_t ServiceStub::CmdInitRestoreSession(MessageParcel &data, MessageParcel &r
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive the reverse stub");
     }
 
-    std::vector<string> appIds;
-    if (!data.ReadStringVector(&appIds)) {
-        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive appIds");
+    std::vector<string> bundleNames;
+    if (!data.ReadStringVector(&bundleNames)) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive bundleNames");
     }
 
-    int32_t res = InitRestoreSession(iremote, appIds);
+    int32_t res = InitRestoreSession(iremote, bundleNames);
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;
@@ -87,12 +87,12 @@ int32_t ServiceStub::CmdInitBackupSession(MessageParcel &data, MessageParcel &re
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive fd");
     }
 
-    std::vector<string> appIds;
-    if (!data.ReadStringVector(&appIds)) {
-        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive appIds");
+    std::vector<string> bundleNames;
+    if (!data.ReadStringVector(&bundleNames)) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive bundleNames");
     }
 
-    int res = InitBackupSession(iremote, move(fd), appIds);
+    int res = InitBackupSession(iremote, move(fd), bundleNames);
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;

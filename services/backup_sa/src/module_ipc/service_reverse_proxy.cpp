@@ -10,11 +10,11 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void ServiceReverseProxy::BackupOnFileReady(std::string appId, std::string fileName, int fd)
+void ServiceReverseProxy::BackupOnFileReady(std::string bundleName, std::string fileName, int fd)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteString(appId) || !data.WriteString(fileName) ||
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteString(bundleName) || !data.WriteString(fileName) ||
         !data.WriteFileDescriptor(fd)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     }
@@ -27,11 +27,11 @@ void ServiceReverseProxy::BackupOnFileReady(std::string appId, std::string fileN
     }
 }
 
-void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string appId)
+void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(appId)) {
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     };
 
@@ -43,11 +43,11 @@ void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string ap
     }
 }
 
-void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string appId)
+void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(appId)) {
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     }
 
@@ -75,11 +75,11 @@ void ServiceReverseProxy::BackupOnTaskFinished(int32_t errCode)
     }
 }
 
-void ServiceReverseProxy::RestoreOnSubTaskStarted(int32_t errCode, std::string appId)
+void ServiceReverseProxy::RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(appId)) {
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     }
 
@@ -91,11 +91,11 @@ void ServiceReverseProxy::RestoreOnSubTaskStarted(int32_t errCode, std::string a
     }
 }
 
-void ServiceReverseProxy::RestoreOnSubTaskFinished(int32_t errCode, std::string appId)
+void ServiceReverseProxy::RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(appId)) {
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     }
 

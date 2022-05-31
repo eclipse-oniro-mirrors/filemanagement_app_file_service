@@ -20,17 +20,17 @@ using namespace std;
 static string GenHelpMsg()
 {
     return "the functionality of the restore api. Arg list:\n"
-           "path_cap_file app_id1 app_id2...";
+           "path_cap_file bundleName1 bundleName2...";
 }
 
 static int32_t Init(string_view pathCapFile, ToolsOp::CRefVStrView args)
 {
-    std::vector<AppId> appIds;
-    for (auto &&id : args) {
-        appIds.push_back(id.data());
+    std::vector<BundleName> bundleNames;
+    for (auto &&bundleName : args) {
+        bundleNames.emplace_back(bundleName.data());
     }
 
-    auto restore = BSessionRestore::Init(appIds, {});
+    auto restore = BSessionRestore::Init(bundleNames, {});
     if (restore == nullptr) {
         printf("Failed to init restore");
         return -EPERM;

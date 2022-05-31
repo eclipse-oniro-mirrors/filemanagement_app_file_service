@@ -76,13 +76,13 @@ void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
     session_.Deactive(obj, force);
 }
 
-ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
+ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames)
 {
     try {
         session_.Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::RESTORE,
-            .appsToOperate = std::move(apps),
+            .bundlesToProcess = bundleNames,
             .clientProxy = remote,
         });
 
@@ -93,13 +93,15 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<Ap
     }
 }
 
-ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> apps)
+ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
+                                   UniqueFd fd,
+                                   const std::vector<BundleName> &bundleNames)
 {
     try {
         session_.Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::BACKUP,
-            .appsToOperate = std::move(apps),
+            .bundlesToProcess = bundleNames,
             .clientProxy = remote,
         });
 
@@ -119,6 +121,8 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, st
 
 tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
 {
+    session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+
     TmpFileSN tmpFileSN = seed++;
     string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR) + to_string(tmpFileSN);
     if (access(tmpPath.data(), F_OK) == 0) {
@@ -131,12 +135,14 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
         ss << "Failed to open " << errno;
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
     }
-    return {SUBSYS_COMMON, tmpFileSN, move(fd)};
+    return {ERR_OK, tmpFileSN, move(fd)};
 }
 
 ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
-    HILOGE("Begin");
+    session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+    session_.VerifyBundleName(fileInfo.owner);
+
     if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z]+$"))) {
         throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
     }

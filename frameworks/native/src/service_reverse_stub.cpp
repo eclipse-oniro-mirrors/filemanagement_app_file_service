@@ -46,27 +46,27 @@ ServiceReverseStub::ServiceReverseStub()
 
 int32_t ServiceReverseStub::CmdBackupOnFileReady(MessageParcel &data, MessageParcel &reply)
 {
-    auto appId = data.ReadString();
+    auto bundleName = data.ReadString();
     auto fileName = data.ReadString();
     int fd = data.ReadFileDescriptor();
-    BackupOnFileReady(appId, fileName, fd);
+    BackupOnFileReady(bundleName, fileName, fd);
     return BError(BError::Codes::OK);
 }
 
 int32_t ServiceReverseStub::CmdBackupOnSubTaskStarted(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    auto appId = data.ReadString();
-    BackupOnSubTaskStarted(errCode, appId);
+    auto bundleName = data.ReadString();
+    BackupOnSubTaskStarted(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 
 int32_t ServiceReverseStub::CmdBackupOnSubTaskFinished(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    auto appId = data.ReadString();
+    auto bundleName = data.ReadString();
 
-    BackupOnSubTaskFinished(errCode, appId);
+    BackupOnSubTaskFinished(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 
@@ -80,16 +80,16 @@ int32_t ServiceReverseStub::CmdBackupOnTaskFinished(MessageParcel &data, Message
 int32_t ServiceReverseStub::CmdRestoreOnSubTaskStarted(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    auto appId = data.ReadString();
-    RestoreOnSubTaskStarted(errCode, appId);
+    auto bundleName = data.ReadString();
+    RestoreOnSubTaskStarted(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 
 int32_t ServiceReverseStub::CmdRestoreOnSubTaskFinished(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    auto appId = data.ReadString();
-    RestoreOnSubTaskFinished(errCode, appId);
+    auto bundleName = data.ReadString();
+    RestoreOnSubTaskFinished(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 

@@ -14,7 +14,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, std::vector<AppId> apps)
+int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -29,8 +29,8 @@ int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, std::vect
         return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the reverse stub").GetCode();
     }
 
-    if (!data.WriteStringVector(apps)) {
-        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send appIds").GetCode();
+    if (!data.WriteStringVector(bundleNames)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send bundleNames").GetCode();
     }
 
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_RESTORE_SESSION, data, reply, option);
@@ -43,7 +43,9 @@ int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, std::vect
     return reply.ReadInt32();
 }
 
-int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, std::vector<AppId> appIDs)
+int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote,
+                                        UniqueFd fd,
+                                        const std::vector<BundleName> &bundleNames)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -61,8 +63,8 @@ int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd f
     if (!data.WriteFileDescriptor(fd)) {
         return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fd").GetCode();
     }
-    if (!data.WriteStringVector(appIDs)) {
-        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send appIds").GetCode();
+    if (!data.WriteStringVector(bundleNames)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send bundleNames").GetCode();
     }
 
     int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, data, reply, option);
