@@ -18,7 +18,7 @@ void BProcess::ExcuteCmd(vector<const char *> argv)
     argv.push_back(nullptr);
 
     // 临时将SIGCHLD恢复成默认值，从而能够从作为僵尸进程的子进程中获得返回值
-    BGuardSignal(SIGCHLD);
+    BGuardSignal guard(SIGCHLD);
 
     pid_t pid = 0;
     if ((pid = fork()) == 0) {
