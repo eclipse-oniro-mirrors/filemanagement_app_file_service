@@ -20,8 +20,8 @@ ohos_shared_library("backup_sa") {
   include_dirs = [ "include" ]
 
   deps = [
-    "//foundation/aafwk/standard/interfaces/innerkits/ability_manager:ability_manager",
-    "//foundation/aafwk/standard/services/abilitymgr:abilityms",
+    "//foundation/ability/ability_runtime/interfaces/innerkits/ability_manager:ability_manager",
+    "//foundation/ability/ability_runtime/services/abilitymgr:abilityms",
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
     "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
     "//foundation/filemanagement/backup/utils:backup_utils",
