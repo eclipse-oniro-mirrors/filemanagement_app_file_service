@@ -29,7 +29,7 @@ ohos_fuzztest("RemoteFileShareFuzzTest") {
   sources = [ "remotefileshare_fuzzer.cpp" ]
   deps = [
     "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libn",
-    "//utils/native/base:utilsecurec",
+    "//third_party/bounds_checking_function:libsec_shared",
   ]
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
   defines = [
