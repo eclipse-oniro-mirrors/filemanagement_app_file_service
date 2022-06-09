@@ -22,6 +22,7 @@
 #include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "ipc_skeleton.h"
+#include "parameter.h"
 #include "system_ability_definition.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -61,6 +62,8 @@ UniqueFd Service::GetLocalCapabilities()
         BJsonCachedEntity<BJsonEntityCaps> cachedEntity(UniqueFd(open(SA_ROOT_DIR, O_TMPFILE | O_RDWR, 0600)));
         auto cache = cachedEntity.Structuralize();
         cache.SetFreeDiskSpace(fsInfo.f_bfree);
+        cache.SetOSFullName(GetOSFullName());
+        cache.SetDeviceType(GetDeviceType());
         cachedEntity.Persist();
 
         return move(cachedEntity.GetFd());
