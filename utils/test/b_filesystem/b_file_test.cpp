@@ -4,14 +4,15 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <gtest/gtest.h>
 #include <sys/stat.h>
 #include <tuple>
 
-#include "b_filesystem/b_file.h"
 #include "b_error/b_error.h"
+#include "b_filesystem/b_file.h"
 #include "directory_ex.h"
 #include "file_ex.h"
+#include "test_manager.h"
+#include "gtest/gtest.h"
 
 namespace OHOS::FileManagement::Backup {
 class BFileTest : public testing::Test {
@@ -19,10 +20,7 @@ public:
     static void SetUpTestCase(void) {};
     static void TearDownTestCase() {};
     void SetUp() {};
-    void TearDown()
-    {
-        ForceRemoveDirectory("/data/test/temp/");
-    };
+    void TearDown() {};
 };
 
 /**
@@ -30,14 +28,12 @@ public:
  *
  * @return std::tuple<bool, string, string> 创建结果、文件路径、文件内容
  */
-std::tuple<std::string, std::string> GetTestFile()
+std::tuple<std::string, std::string> GetTestFile(const TestManager &tm)
 {
-    std::string path = "/data/test/temp/";
-    std::string filePath = "/data/test/temp/temp.txt";
+    std::string path = tm.GetRootDirCurTest();
+    std::string filePath = path + "temp.txt";
     std::string content = "backup test";
-    bool pathCreate = ForceCreateDirectory(path);
-    bool fileCreate = SaveStringToFile(filePath, content, true);
-    if (!pathCreate || !fileCreate) {
+    if (bool contentCreate = SaveStringToFile(filePath, content, true); !contentCreate) {
         throw std::system_error(errno, std::system_category());
     }
     return {filePath, content};
@@ -56,9 +52,10 @@ HWTEST_F(BFileTest, b_file_ReadFile_0100, testing::ext::TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "BFileTest-begin b_file_ReadFile_0100";
     try {
-        const auto [filePath, content] = GetTestFile();
+        TestManager tm(__func__);
+        const auto [filePath, content] = GetTestFile(tm);
         BFile bf;
-        std::unique_ptr<char[]> result = bf.ReadFile(UniqueFd(open("/data/test/temp/temp.txt", O_RDWR)));
+        std::unique_ptr<char[]> result = bf.ReadFile(UniqueFd(open(filePath.data(), O_RDWR)));
         std::string readContent(result.get());
         EXPECT_EQ(readContent.compare(content), 0);
     } catch (const std::exception &e) {

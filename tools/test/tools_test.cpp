@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "b_process/b_process.h"
+#include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
 class ToolsTest : public testing::Test {
@@ -50,27 +51,30 @@ HWTEST_F(ToolsTest, tools_help_0100, testing::ext::TestSize.Level0)
  */
 HWTEST_F(ToolsTest, tools_backup_0100, testing::ext::TestSize.Level0)
 {
+    TestManager tm(__func__);
     GTEST_LOG_(INFO) << "ToolsTest-begin tools_backup_0100";
     try {
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + "tmp";
         BProcess::ExcuteCmd({
             "rm",
-            "/data/test/backup",
+            path.data(),
             "-rf",
         });
         BProcess::ExcuteCmd({
             "mkdir",
-            "/data/test/backup",
+            path.data(),
         });
         BProcess::ExcuteCmd({
             "backup_tool",
             "restore",
-            "/data/test/backup/tmp",
+            filePath.data(),
             "1",
         });
         BProcess::ExcuteCmd({
             "backup_tool",
             "backup",
-            "/data/test/backup/tmp",
+            filePath.data(),
             "1",
         });
     } catch (...) {

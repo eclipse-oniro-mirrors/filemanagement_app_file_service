@@ -1,0 +1,19 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/ohos.gni")
+
+config("test_util_public_config") {
+  include_dirs = [ "//foundation/filemanagement/backup/test/util/include" ]
+}
+
+ohos_static_library("backup_test_utils_static") {
+  sources = [ "util/src/test_manager.cpp" ]
+
+  public_configs = [ ":test_util_public_config" ]
+
+  deps = [ "//foundation/filemanagement/backup/utils/:backup_utils" ]
+
+  use_exceptions = true
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+}
