@@ -5,14 +5,9 @@ import("//build/test.gni")
 ohos_unittest("b_error_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [
-      "b_error/b_error_test.cpp",
-    ]
+  sources = [ "b_error/b_error_test.cpp" ]
 
-  include_dirs = [
-    "//third_party/googletest/googlemock/include/gmock",
-  ]
-
+  include_dirs = [ "//third_party/googletest/googlemock/include/gmock" ]
 
   deps = [
     "//foundation/filemanagement/backup/utils/:backup_utils",
@@ -25,16 +20,12 @@ ohos_unittest("b_error_test") {
 ohos_unittest("b_file_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [
-      "b_filesystem/b_file_test.cpp",
-    ]
+  sources = [ "b_filesystem/b_file_test.cpp" ]
 
-  include_dirs = [
-    "//third_party/googletest/googlemock/include/gmock",
-  ]
-
+  include_dirs = [ "//third_party/googletest/googlemock/include/gmock" ]
 
   deps = [
+    "//foundation/filemanagement/backup/test:backup_test_utils_static",
     "//foundation/filemanagement/backup/utils/:backup_utils",
     "//third_party/googletest:gmock_main",
   ]
@@ -45,9 +36,7 @@ ohos_unittest("b_file_test") {
 ohos_unittest("b_json_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [
-      "b_json/b_json_cached_entity_test.cpp",
-    ]
+  sources = [ "b_json/b_json_cached_entity_test.cpp" ]
 
   include_dirs = [
     "//third_party/googletest/googlemock/include/gmock",
