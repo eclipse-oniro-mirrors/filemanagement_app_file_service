@@ -29,7 +29,7 @@ HWTEST_F(ToolsTest, tools_help_0100, testing::ext::TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ToolsTest-begin tools_help_0100";
     try {
-        BProcess::ExcuteCmd({
+        BProcess::ExecuteCmd({
             "/system/bin/backup_tool",
             "help",
         });
@@ -56,22 +56,22 @@ HWTEST_F(ToolsTest, tools_backup_0100, testing::ext::TestSize.Level0)
     try {
         std::string path = tm.GetRootDirCurTest();
         std::string filePath = path + "tmp";
-        BProcess::ExcuteCmd({
+        BProcess::ExecuteCmd({
             "rm",
             path.data(),
             "-rf",
         });
-        BProcess::ExcuteCmd({
+        BProcess::ExecuteCmd({
             "mkdir",
             path.data(),
         });
-        BProcess::ExcuteCmd({
+        BProcess::ExecuteCmd({
             "backup_tool",
             "restore",
             filePath.data(),
             "1",
         });
-        BProcess::ExcuteCmd({
+        BProcess::ExecuteCmd({
             "backup_tool",
             "backup",
             filePath.data(),

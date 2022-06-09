@@ -17,7 +17,7 @@ using namespace std;
 
 static string GenHelpMsg()
 {
-    return "This operation helps to simulate the behaviour of a app.\n"
+    return "This operation helps to simulate the behaviour of an app.\n"
            "The command format is as follows :\n"
            "backup_tool simulate app tar user_config.json target.tar root_path\n"
            "backup_tool simulate app untar target.tar root_path";

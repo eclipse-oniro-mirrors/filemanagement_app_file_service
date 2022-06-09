@@ -13,7 +13,7 @@ using namespace std;
 
 static void StartSimulateApp()
 {
-    BProcess::ExcuteCmd({
+    BProcess::ExecuteCmd({
         "backup_tool",
         "simulate",
         "app",

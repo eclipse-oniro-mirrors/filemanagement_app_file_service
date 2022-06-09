@@ -19,8 +19,14 @@ public:
      * 向量第一项是绝对路径表示的命令名
      * 向量后续参数表示相应命令参数
      * 向量最后无需追加nullptr
+     *
+     * @return 命令执行结果
+     *
+     * @throw BError(UTILS_INVAL_PROCESS_ARG) 系统调用异常(子进程启动失败、waitpid调用失败)
+     *
+     * @throw BError(UTILS_INTERRUPTED_PROCESS) 系统调用异常(pipe调用失败、dup2调用失败、子进程被信号终止)
      */
-    static void ExcuteCmd(std::vector<const char *> argv);
+    static int ExecuteCmd(std::vector<const char *> argv);
 
 private:
     BProcess() = delete;
