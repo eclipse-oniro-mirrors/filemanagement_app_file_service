@@ -24,12 +24,42 @@ public:
         }
 
         return obj_["freeDiskSpace"].asUInt64();
-    };
+    }
 
     void SetFreeDiskSpace(uint64_t FreeDiskSpace)
     {
         obj_["freeDiskSpace"] = FreeDiskSpace;
-    };
+    }
+
+    void SetOSFullName(std::string osFullName)
+    {
+        obj_["OSFullName"] = osFullName;
+    }
+
+    void SetDeviceType(std::string deviceType)
+    {
+        obj_["deviceType"] = deviceType;
+    }
+
+    std::string GetOSFullName()
+    {
+        if (!obj_ || !obj_.isMember("OSFullName") || !obj_["OSFullName"].isString()) {
+            HILOGE("Failed to get field OSFullName");
+            return "";
+        }
+
+        return obj_["OSFullName"].asString();
+    }
+
+    std::string GetDeviceType()
+    {
+        if (!obj_ || !obj_.isMember("deviceType") || !obj_["deviceType"].isString()) {
+            HILOGE("Failed to get field deviceType");
+            return "";
+        }
+
+        return obj_["deviceType"].asString();
+    }
 
 private:
     Json::Value &obj_;
