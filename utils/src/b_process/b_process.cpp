@@ -4,34 +4,69 @@
 
 #include "b_process/b_process.h"
 
+#include <regex>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "b_error/b_error.h"
 #include "b_process/b_guard_signal.h"
+#include "filemgmt_libhilog.h"
+#include "securec.h"
+#include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void BProcess::ExcuteCmd(vector<const char *> argv)
+int BProcess::ExecuteCmd(vector<const char *> argv)
 {
     argv.push_back(nullptr);
 
     // 临时将SIGCHLD恢复成默认值，从而能够从作为僵尸进程的子进程中获得返回值
     BGuardSignal guard(SIGCHLD);
 
+    int pipe_fd[2];
+    if (pipe(pipe_fd) < 0) {
+        throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+    }
+
     pid_t pid = 0;
     if ((pid = fork()) == 0) {
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(pipe_fd[0]);
+        UniqueFd fd(pipe_fd[1]);
+        if (dup2(pipe_fd[1], STDERR_FILENO) == -1) {
+            throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+        }
         exit((execvp(argv[0], const_cast<char **>(argv.data())) == -1) ? errno : 0);
-    } else if (pid == -1) {
+    }
+
+    UniqueFd fd(pipe_fd[0]);
+    close(pipe_fd[1]);
+
+    if (pid == -1) {
         throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
     }
 
+    const int BUF_LEN = 1024;
+    unique_ptr<char[]> buf = make_unique<char[]>(BUF_LEN);
     int status = 0;
-    if (waitpid(pid, &status, 0) == -1) {
-        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
-    } else if (WIFEXITED(status) && WEXITSTATUS(status)) {
-        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, to_string(WEXITSTATUS(status)));
-    }
+    do {
+        while ((void)memset_s(buf.get(), BUF_LEN, 0, BUF_LEN), read(pipe_fd[0], buf.get(), BUF_LEN - 1) > 0) {
+            if (!regex_match(buf.get(), regex("^\\W*$"))) {
+                HILOGE("child process output error: %{public}s", buf.get());
+            }
+        }
+
+        if (waitpid(pid, &status, 0) == -1) {
+            throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
+        } else if (WIFEXITED(status)) {
+            return WEXITSTATUS(status);
+        } else if (WIFSIGNALED(status)) {
+            throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+        }
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
+    return 0;
 }
 } // namespace OHOS::FileManagement::Backup

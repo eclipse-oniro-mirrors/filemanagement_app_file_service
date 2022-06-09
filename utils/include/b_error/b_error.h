@@ -47,7 +47,7 @@ public:
         UTILS_INVAL_FILE_HANDLE = 0x1001,
         UTILS_INVAL_TARBALL_ARG = 0x1002,
         UTILS_INVAL_PROCESS_ARG = 0x1003,
-
+        UTILS_INTERRUPTED_PROCESS = 0x1004,
         // 0x2000~0x2999 backup_tool错误
 
         // 0x3000~0x3999 backup_sa错误
@@ -168,6 +168,7 @@ private:
         {Codes::UTILS_INVAL_FILE_HANDLE, "File utils received an invalid file handle"},
         {Codes::UTILS_INVAL_TARBALL_ARG, "Tarball utils received an invalid argument"},
         {Codes::UTILS_INVAL_PROCESS_ARG, "Process utils received an invalid argument"},
+        {Codes::UTILS_INTERRUPTED_PROCESS, "Can't launch a process or the process was corrupted"},
         {Codes::SA_INVAL_ARG, "SA received invalid arguments"},
         {Codes::SA_BROKEN_IPC, "SA failed to issue a IPC"},
         {Codes::SA_REFUSED_ACT, "SA refuse to act"},

@@ -4,6 +4,9 @@
 
 #include "b_tarball/b_tarball_cmdline.h"
 
+#include <unistd.h>
+
+#include "b_error/b_error.h"
 #include "b_process/b_guard_cwd.h"
 #include "b_process/b_process.h"
 
@@ -32,12 +35,15 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
         argv.push_back(exclude.data());
     }
 
-    BProcess::ExcuteCmd(argv);
+    // 如果打包后生成了打包文件，则默认打包器打包时生成的错误可以忽略(比如打包一个不存在的文件)
+    if (int err = BProcess::ExecuteCmd(argv); (err && access(tarballPath_.data(), F_OK) != 0)) {
+        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, to_string(err));
+    }
 }
 
 void BTarballCmdline::Untar(string_view root)
 {
-    BProcess::ExcuteCmd({
+    BProcess::ExecuteCmd({
         "tar",
         "-xvf",
         tarballPath_.data(),
