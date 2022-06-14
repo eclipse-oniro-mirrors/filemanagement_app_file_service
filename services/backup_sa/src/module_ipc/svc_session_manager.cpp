@@ -35,7 +35,7 @@ static void VerifyBunldeNamesWithBundleMgr(const vector<BundleName> &bundleNames
                     [bundleToVerify](const AppExecFwk::BundleInfo &bInfo) { return bInfo.name == bundleToVerify; });
         if (bVerify) {
             stringstream ss;
-            ss << "Could not find the " << bundleToVerify << " from current session";
+            ss << "Could not find the " << bundleToVerify << " from bundleMgr";
             throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
         }
     }

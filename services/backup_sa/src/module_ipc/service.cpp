@@ -68,9 +68,12 @@ UniqueFd Service::GetLocalCapabilities()
 
         return move(cachedEntity.GetFd());
     } catch (const BError &e) {
-        return UniqueFd(-1);
+        return UniqueFd(-e.GetCode());
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return UniqueFd(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
         return UniqueFd(-EPERM);
     }
 }
@@ -82,31 +85,41 @@ void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
 
 string Service::VerifyCallerAndGetCallerName()
 {
-    uint32_t tokenCaller = IPCSkeleton::GetCallingTokenID();
-    int tokenType = Security::AccessToken::AccessTokenKit::GetTokenType(tokenCaller);
-    if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_HAP) {
-        Security::AccessToken::HapTokenInfo hapTokenInfo;
-        if (Security::AccessToken::AccessTokenKit::GetHapTokenInfo(tokenCaller, hapTokenInfo) != 0) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Get hap token info failed");
-        }
-        session_.VerifyBundleName(hapTokenInfo.bundleName);
-        // REM: 校验ability type
-        return hapTokenInfo.bundleName;
-    } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
-        if (IPCSkeleton::GetCallingUid() != 1000) { // REM: uid整改后调整
-            throw BError(BError::Codes::SA_BROKEN_IPC, "Calling uid is invalid");
-        }
+    try {
+        uint32_t tokenCaller = IPCSkeleton::GetCallingTokenID();
+        int tokenType = Security::AccessToken::AccessTokenKit::GetTokenType(tokenCaller);
+        if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_HAP) {
+            Security::AccessToken::HapTokenInfo hapTokenInfo;
+            if (Security::AccessToken::AccessTokenKit::GetHapTokenInfo(tokenCaller, hapTokenInfo) != 0) {
+                throw BError(BError::Codes::SA_INVAL_ARG, "Get hap token info failed");
+            }
+            session_.VerifyBundleName(hapTokenInfo.bundleName);
+            // REM: 校验ability type
+            return hapTokenInfo.bundleName;
+        } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
+            if (IPCSkeleton::GetCallingUid() != 1000) { // REM: uid整改后调整
+                throw BError(BError::Codes::SA_BROKEN_IPC, "Calling uid is invalid");
+            }
 
-        Security::AccessToken::NativeTokenInfo tokenInfo;
-        if (Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo) != 0) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Get native token info failed");
+            Security::AccessToken::NativeTokenInfo tokenInfo;
+            if (Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo) != 0) {
+                throw BError(BError::Codes::SA_INVAL_ARG, "Get native token info failed");
+            }
+            if (tokenInfo.processName != "backup_tool" && tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除
+                throw BError(BError::Codes::SA_INVAL_ARG, "Process name is invalid");
+            }
+            return "simulate";
+        } else {
+            throw BError(BError::Codes::SA_INVAL_ARG, string("Invalid token type ").append(to_string(tokenType)));
         }
-        if (tokenInfo.processName != "backup_tool" && tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除
-            throw BError(BError::Codes::SA_INVAL_ARG, "Process name is invalid");
-        }
-        return "simulate";
-    } else {
-        throw BError(BError::Codes::SA_INVAL_ARG, string("Invalid token type ").append(to_string(tokenType)));
+    } catch (const BError &e) {
+        return "";
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return "";
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return "";
     }
 }
 
@@ -124,6 +137,12 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const std::vec
     } catch (const BError &e) {
         StopAll(nullptr, true);
         return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
     }
 }
 
@@ -150,102 +169,149 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
     } catch (const BError &e) {
         StopAll(nullptr, true);
         return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
     }
 }
 
 tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
 {
-    session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+    try {
+        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
-    TmpFileSN tmpFileSN = seed++;
-    string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR) + to_string(tmpFileSN);
-    if (access(tmpPath.data(), F_OK) == 0) {
-        // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
+        TmpFileSN tmpFileSN = seed++;
+        string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR) + to_string(tmpFileSN);
+        if (access(tmpPath.data(), F_OK) == 0) {
+            // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
+        }
+        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0600));
+        if (fd < 0) {
+            stringstream ss;
+            ss << "Failed to open tmpPath " << errno;
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
+        }
+
+        return {ERR_OK, tmpFileSN, move(fd)};
+    } catch (const BError &e) {
+        return {e.GetCode(), -1, UniqueFd(-1)};
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return {BError(-EPERM), -1, UniqueFd(-1)};
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return {BError(-EPERM), -1, UniqueFd(-1)};
     }
-    UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0600));
-    if (fd < 0) {
-        stringstream ss;
-        ss << "Failed to open tmpPath " << errno;
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-    }
-    return {ERR_OK, tmpFileSN, move(fd)};
 }
 
 ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
-    session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-    session_.VerifyBundleName(fileInfo.owner);
+    try {
+        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_.VerifyBundleName(fileInfo.owner);
 
-    if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_]+$"))) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
+        if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_]+$"))) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
+        }
+
+        string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR);
+        UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
+        if (dfdTmp < 0) {
+            stringstream ss;
+            ss << "Failed to open tmpPath " << errno;
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
+        }
+
+        string path = string(SA_ROOT_DIR) + fileInfo.owner + string("/");
+        if (access(path.data(), F_OK) != 0 && mkdir(path.data(), S_IRWXU) != 0) {
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
+        }
+
+        UniqueFd dfdNew(open(path.data(), O_RDONLY));
+        if (dfdNew < 0) {
+            stringstream ss;
+            ss << "Failed to open path " << errno;
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
+        }
+
+        string tmpFile = to_string(fileInfo.sn);
+        if (renameat(dfdTmp, tmpFile.data(), dfdNew, fileInfo.fileName.data()) == -1) {
+            stringstream ss;
+            ss << "Failed to rename file " << errno;
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
+        }
+
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
     }
-
-    string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR);
-    UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
-    if (dfdTmp < 0) {
-        stringstream ss;
-        ss << "Failed to open tmpPath " << errno;
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-    }
-
-    string path = string(SA_ROOT_DIR) + fileInfo.owner + string("/");
-    if (access(path.data(), F_OK) != 0 && mkdir(path.data(), S_IRWXU) != 0) {
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
-    }
-
-    UniqueFd dfdNew(open(path.data(), O_RDONLY));
-    if (dfdNew < 0) {
-        stringstream ss;
-        ss << "Failed to open path " << errno;
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-    }
-
-    string tmpFile = to_string(fileInfo.sn);
-    if (renameat(dfdTmp, tmpFile.data(), dfdNew, fileInfo.fileName.data()) == -1) {
-        stringstream ss;
-        ss << "Failed to rename file " << errno;
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-    }
-
-    return BError(BError::Codes::OK);
 }
 
 ErrCode Service::AppFileReady(const string &fileName)
 {
-    string callerName = VerifyCallerAndGetCallerName();
-    if (!regex_match(fileName, regex("^[0-9a-zA-Z_]+$"))) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
-    }
+    try {
+        string callerName = VerifyCallerAndGetCallerName();
+        if (!regex_match(fileName, regex("^[0-9a-zA-Z_]+$"))) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
+        }
 
-    string path = string(SA_TEST_DIR) + fileName;
-    UniqueFd fd(open(path.data(), O_RDWR, 0600));
-    if (fd < 0) {
-        stringstream ss;
-        ss << "Failed to open path " << errno;
-        throw BError(BError::Codes::SA_INVAL_ARG, ss.str());
-    }
+        string path = string(SA_TEST_DIR) + fileName;
+        UniqueFd fd(open(path.data(), O_RDWR, 0600));
+        if (fd < 0) {
+            stringstream ss;
+            ss << "Failed to open path " << errno;
+            throw BError(BError::Codes::SA_INVAL_ARG, ss.str());
+        }
 
-    struct stat fileStat = {};
-    if (fstat(fd, &fileStat) != 0) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
-    }
-    if (fileStat.st_gid != SA_GID && fileStat.st_gid != 1000) { // REM: uid整改后删除
-        throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
-    }
+        struct stat fileStat = {};
+        if (fstat(fd, &fileStat) != 0) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
+        }
+        if (fileStat.st_gid != SA_GID && fileStat.st_gid != 1000) { // REM: uid整改后删除
+            throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
+        }
 
-    auto proxy = session_.GetServiceReverseProxy();
-    proxy->BackupOnFileReady(callerName, fileName, move(fd));
+        auto proxy = session_.GetServiceReverseProxy();
+        proxy->BackupOnFileReady(callerName, fileName, move(fd));
 
-    return BError(BError::Codes::OK);
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
+    }
 }
 
 ErrCode Service::AppDone(ErrCode errCode)
 {
-    string callerName = VerifyCallerAndGetCallerName();
-    auto proxy = session_.GetServiceReverseProxy();
-    proxy->RestoreOnSubTaskFinished(errCode, callerName);
+    try {
+        string callerName = VerifyCallerAndGetCallerName();
+        auto proxy = session_.GetServiceReverseProxy();
+        proxy->BackupOnSubTaskFinished(errCode, callerName);
 
-    return BError(BError::Codes::OK);
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
+    }
 }
 } // namespace OHOS::FileManagement::Backup
