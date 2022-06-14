@@ -22,13 +22,18 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <climits>
+
 #include "securec.h"
 
 namespace OHOS {
 namespace AppFileService {
 namespace ModuleRemoteFileShare {
-static constexpr int HMDFS_CID_SIZE = 64;
-static constexpr unsigned HMDFS_IOC = 0xf2;
+namespace {
+    constexpr int HMDFS_CID_SIZE = 64;
+    constexpr unsigned HMDFS_IOC = 0xf2;
+    const char* SHARE_PATH = "/data/storage/el2/distributedfiles/.share";
+}
 
 #define HMDFS_IOC_SET_SHARE_PATH    _IOW(HMDFS_IOC, 1, struct hmdfs_share_control)
 
@@ -42,25 +47,23 @@ bool ShareFilePathIoctlFdAndCidFuzzTest(const uint8_t* data, size_t size)
     struct hmdfs_share_control sc;
     int32_t ret = 0;
     int32_t dirFd;
-    const char* sharePath = "/data/storage/el2/distributedfiles/.share";
 
     if (size <= 0) {
         return false;
     }
 
-    if (access(sharePath, F_OK) != 0) {
-        ret = mkdir(sharePath, S_IRWXU | S_IRWXG | S_IXOTH);
+    if (access(SHARE_PATH, F_OK) != 0) {
+        ret = mkdir(SHARE_PATH, S_IRWXU | S_IRWXG | S_IXOTH);
         if (ret < 0) {
             return false;
         }
     }
 
-    char *realPath = realpath(sharePath, nullptr);
-    if (realPath == nullptr) {
+    char realPath[PATH_MAX] = {0};
+    if (!realpath(SHARE_PATH, realPath)) {
         return false;
     }
     dirFd = open(realPath, O_RDONLY);
-    free(realPath);
     if (dirFd < 0) {
         return false;
     }
@@ -86,47 +89,50 @@ bool ShareFilePathIoctlCidFuzzTest(const uint8_t* data, size_t size)
     struct hmdfs_share_control sc;
     int32_t ret = 0;
     int32_t dirFd;
-    const char* sharePath = "/data/storage/el2/distributedfiles/.share";
+    int32_t srcFd;
 
     if (size <= 0) {
         return false;
     }
 
-    if (access(sharePath, F_OK) != 0) {
-        ret = mkdir(sharePath, S_IRWXU | S_IRWXG | S_IXOTH);
+    if (access(SHARE_PATH, F_OK) != 0) {
+        ret = mkdir(SHARE_PATH, S_IRWXU | S_IRWXG | S_IXOTH);
         if (ret < 0) {
             return false;
         }
     }
 
-    char *realPath = realpath(sharePath, nullptr);
-    if (realPath == nullptr) {
+    char realPath[PATH_MAX] = {0};
+    if (!realpath(SHARE_PATH, realPath)) {
         return false;
     }
     dirFd = open(realPath, O_RDONLY);
-    free(realPath);
     if (dirFd < 0) {
         return false;
     }
 
     const char* srcPath = "/data/service/el2/100/hmdfs/non_account/data/com.ohos.camera";
-    int32_t srcFd = open(srcPath, O_RDONLY);
+    srcFd = open(srcPath, O_RDONLY);
     if (srcFd < 0) {
+        close(dirFd);
         return false;
     }
     sc.src_fd = size;
     const char* cid = reinterpret_cast<const char*>(data);
     if (memcpy_s(sc.cid, HMDFS_CID_SIZE, cid, size) != 0) {
         close(dirFd);
+        close(srcFd);
         return false;
     }
 
     ret = ioctl(dirFd, HMDFS_IOC_SET_SHARE_PATH, &sc);
     if (ret < 0) {
         close(dirFd);
+        close(srcFd);
         return false;
     }
 
+    close(srcFd);
     return true;
 }
 
@@ -135,25 +141,24 @@ bool ShareFilePathIoctlFdFuzzTest(const uint8_t* data, size_t size)
     struct hmdfs_share_control sc;
     int32_t ret = 0;
     int32_t dirFd;
-    const char* sharePath = "/data/storage/el2/distributedfiles/.share";
 
     if (size <= 0) {
         return false;
     }
 
-    if (access(sharePath, F_OK) != 0) {
-        ret = mkdir(sharePath, S_IRWXU | S_IRWXG | S_IXOTH);
+    if (access(SHARE_PATH, F_OK) != 0) {
+        ret = mkdir(SHARE_PATH, S_IRWXU | S_IRWXG | S_IXOTH);
         if (ret < 0) {
             return false;
         }
     }
 
-    char *realPath = realpath(sharePath, nullptr);
-    if (realPath == nullptr) {
+    char realPath[PATH_MAX] = {0};
+    if (!realpath(SHARE_PATH, realPath)) {
         return false;
     }
+
     dirFd = open(realPath, O_RDONLY);
-    free(realPath);
     if (dirFd < 0) {
         return false;
     }
