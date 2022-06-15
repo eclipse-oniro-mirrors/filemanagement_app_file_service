@@ -126,7 +126,7 @@ napi_value CreateSharePath(napi_env env, napi_callback_info info)
         if (cb.TypeIs(napi_function)) {
             return NAsyncWorkCallback(env, thisVar, cb).Schedule(procedureName, cbExec, cbComplete).val_;
         } else {
-            NError(EINVAL).ThrowErr(env, "Callback funciton error");
+            NError(EINVAL).ThrowErr(env, "Callback function error");
             return nullptr;
         }
     }
