@@ -3,23 +3,13 @@
  */
 
 #include "b_session_backup.h"
-#include "b_process/b_process.h"
+#include "b_error/b_error.h"
 #include "filemgmt_libhilog.h"
 #include "service_proxy.h"
 #include "service_reverse.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
-
-static void StartSimulateApp()
-{
-    BProcess::ExecuteCmd({
-        "backup_tool",
-        "simulate",
-        "app",
-        "backup",
-    });
-}
 
 unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
                                                 vector<BundleName> bundlesToBackup,
@@ -46,12 +36,11 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
 
 ErrCode BSessionBackup::Start()
 {
-    try {
-        StartSimulateApp();
-    } catch (const exception e) {
-        HILOGE("Failed to start simulateApp because of %{public}s", e.what());
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        return ErrCode(BError::Codes::SDK_BROKEN_IPC);
     }
 
-    return ERR_OK;
+    return proxy->Start();
 }
 } // namespace OHOS::FileManagement::Backup

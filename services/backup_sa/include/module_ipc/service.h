@@ -23,6 +23,7 @@ public:
     ErrCode InitBackupSession(sptr<IServiceReverse> remote,
                               UniqueFd fd,
                               const std::vector<BundleName> &bundleNames) override;
+    ErrCode Start() override;
     UniqueFd GetLocalCapabilities() override;
     std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
@@ -42,6 +43,9 @@ public:
 
 private:
     std::string VerifyCallerAndGetCallerName();
+    ErrCode LaunchBackupExtension(IServiceReverse::Scenario scenario,
+                                  const BundleName &bundleName,
+                                  const std::string &backupExtName);
 
 private:
     static sptr<Service> instance_;

@@ -61,4 +61,14 @@ vector<string> BJsonEntityUsrConfig::GetExcludeDirs()
     }
     return dirs;
 }
+
+bool BJsonEntityUsrConfig::GetAllowToBackup()
+{
+    if (!obj_ || !obj_.isMember("allowToBackup") || !obj_["allowToBackup"].isBool()) {
+        HILOGE("Failed to init field allowToBackup");
+        return false;
+    }
+
+    return obj_["allowToBackup"].asBool();
+}
 } // namespace OHOS::FileManagement::Backup

@@ -77,6 +77,25 @@ int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote,
     return reply.ReadInt32();
 }
 
+ErrCode ServiceProxy::Start()
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_START, data, reply, option);
+    if (ret != NO_ERROR) {
+        stringstream ss;
+        ss << "Failed to send out the request because of " << ret;
+        return BError(BError::Codes::SDK_INVAL_ARG, ss.str()).GetCode();
+    }
+
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
 UniqueFd ServiceProxy::GetLocalCapabilities()
 {
     HILOGI("Start");

@@ -24,12 +24,14 @@ public:
         SERVICE_CMD_PUBLISH_FILE,
         SERVICE_CMD_APP_FILE_READY,
         SERVICE_CMD_APP_DONE,
+        SERVICE_CMD_START,
     };
 
     virtual ErrCode InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames) = 0;
     virtual ErrCode InitBackupSession(sptr<IServiceReverse> remote,
                                       UniqueFd fd,
                                       const std::vector<BundleName> &bundleNames) = 0;
+    virtual ErrCode Start() = 0;
     virtual UniqueFd GetLocalCapabilities() = 0;
     virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() = 0;
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;

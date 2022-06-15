@@ -35,6 +35,13 @@ public:
      */
     std::vector<std::string> GetExcludeDirs();
 
+    /**
+     * @brief 从JSon对象中获取备份权限
+     *
+     * @return 备份权限
+     */
+    bool GetAllowToBackup();
+
 private:
     Json::Value &obj_;
 };

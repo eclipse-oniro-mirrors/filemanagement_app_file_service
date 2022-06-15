@@ -76,6 +76,26 @@ public:
     }
 
     /**
+     * @brief 根据字符串重新加载JSon对象
+     *
+     * @throw std::system_error IO异常或解析异常
+     */
+    void ReloadFromString(std::string_view sv)
+    {
+        Json::CharReaderBuilder builder;
+        std::unique_ptr<Json::CharReader> const jsonReader(builder.newCharReader());
+        Json::Value jValue;
+        std::string errs;
+
+        bool res = jsonReader->parse(sv.data(), sv.data() + sv.length(), &jValue, &errs);
+        if (!res || !errs.empty()) {
+            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, errs);
+        }
+
+        obj_ = std::move(jValue);
+    }
+
+    /**
      * @brief 获取JSon文件的文件描述符
      *
      * @return UniqueFd&
@@ -102,6 +122,16 @@ public:
         }
 
         (void)ReloadFromFile();
+    }
+
+    /**
+     * @brief 构造方法，要求T必须具备T(Json::Value&)构造函数
+     *
+     * @param str 用于加载/持久化JSon对象的字符串
+     */
+    BJsonCachedEntity(std::string_view sv) : entity_(std::ref(obj_))
+    {
+        ReloadFromString(sv);
     }
 
 private:

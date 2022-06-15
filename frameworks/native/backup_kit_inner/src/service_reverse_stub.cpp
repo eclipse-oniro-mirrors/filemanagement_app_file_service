@@ -3,6 +3,7 @@
  */
 #include "service_reverse_stub.h"
 
+#include <cstdint>
 #include <sstream>
 
 #include "b_error/b_error.h"
@@ -39,7 +40,7 @@ ServiceReverseStub::ServiceReverseStub()
     opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdBackupOnSubTaskStarted;
     opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnSubTaskFinished;
     opToInterfaceMap_[SERVICER_BACKUP_ON_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnTaskFinished;
-    opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdBackupOnSubTaskStarted;
+    opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdRestoreOnSubTaskStarted;
     opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnSubTaskFinished;
     opToInterfaceMap_[SERVICER_RESTORE_ON_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnTaskFinished;
 }
@@ -65,8 +66,8 @@ int32_t ServiceReverseStub::CmdBackupOnSubTaskFinished(MessageParcel &data, Mess
 {
     int32_t errCode = data.ReadInt32();
     auto bundleName = data.ReadString();
-
-    BackupOnSubTaskFinished(errCode, bundleName);
+    uint32_t bundleTotalFiles = data.ReadInt32();
+    BackupOnSubTaskFinished(errCode, bundleName, bundleTotalFiles);
     return BError(BError::Codes::OK);
 }
 

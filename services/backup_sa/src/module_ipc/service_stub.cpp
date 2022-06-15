@@ -25,6 +25,7 @@ ServiceStub::ServiceStub()
     opToInterfaceMap_[SERVICE_CMD_PUBLISH_FILE] = &ServiceStub::CmdPublishFile;
     opToInterfaceMap_[SERVICE_CMD_APP_FILE_READY] = &ServiceStub::CmdAppFileReady;
     opToInterfaceMap_[SERVICE_CMD_APP_DONE] = &ServiceStub::CmdAppDone;
+    opToInterfaceMap_[SERVICE_CMD_START] = &ServiceStub::CmdStart;
 }
 
 int32_t ServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
@@ -95,6 +96,17 @@ int32_t ServiceStub::CmdInitBackupSession(MessageParcel &data, MessageParcel &re
     }
 
     int res = InitBackupSession(iremote, move(fd), bundleNames);
+    if (!reply.WriteInt32(res)) {
+        stringstream ss;
+        ss << "Failed to send the result " << res;
+        return BError(BError::Codes::SA_BROKEN_IPC, ss.str());
+    }
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceStub::CmdStart(MessageParcel &data, MessageParcel &reply)
+{
+    int res = Start();
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;

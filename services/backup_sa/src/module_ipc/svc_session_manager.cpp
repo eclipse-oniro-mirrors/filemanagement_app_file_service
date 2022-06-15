@@ -4,42 +4,18 @@
 
 #include "module_ipc/svc_session_manager.h"
 
+#include <cstdint>
 #include <sstream>
 
 #include "ability_util.h"
 #include "b_error/b_error.h"
+#include "b_json/b_json_entity_usr_config.h"
+#include "bundle_mgr_client.h"
 #include "filemgmt_libhilog.h"
 #include "module_ipc/service.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
-
-static void VerifyBunldeNamesWithBundleMgr(const vector<BundleName> &bundleNames)
-{
-    if (bundleNames.empty()) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
-    }
-
-    auto bms = AAFwk::AbilityUtil::GetBundleManager();
-    if (!bms) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Bms is invalid");
-    }
-    vector<AppExecFwk::BundleInfo> installedBundles;
-    if (!bms->GetBundleInfos(AppExecFwk::GET_BUNDLE_DEFAULT, installedBundles, AppExecFwk::Constants::START_USERID)) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle infos");
-    }
-
-    for (auto &&bundleToVerify : bundleNames) {
-        auto sameAsGivenBundle = [&bundleToVerify](const AppExecFwk::BundleInfo &bInfo) {
-            return bInfo.name == bundleToVerify;
-        };
-        if (none_of(installedBundles.begin(), installedBundles.end(), sameAsGivenBundle)) {
-            stringstream ss;
-            ss << "Could not find the " << bundleToVerify << " from bundleMgr";
-            throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
-        }
-    }
-}
 
 void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
@@ -53,7 +29,7 @@ void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scen
     HILOGE("Succeed to verify the caller");
 }
 
-void SvcSessionManager::Active(const Impl &newImpl)
+void SvcSessionManager::Active(Impl newImpl)
 {
     unique_lock lock(lock_);
 
@@ -69,7 +45,7 @@ void SvcSessionManager::Active(const Impl &newImpl)
         throw BError(BError::Codes::SA_INVAL_ARG, "No scenario was specified");
     }
 
-    VerifyBunldeNamesWithBundleMgr(newImpl.bundlesToProcess);
+    GetBundleExtNames(newImpl.backupExtNameMap);
 
     if (!newImpl.clientProxy) {
         throw BError(BError::Codes::SA_INVAL_ARG, "Invalid client");
@@ -80,7 +56,6 @@ void SvcSessionManager::Active(const Impl &newImpl)
     }
 
     impl_ = newImpl;
-
     auto callback = [revPtr {reversePtr_}](const wptr<IRemoteObject> &obj) {
         HILOGI("Client died. Died remote obj = %{private}p", obj.GetRefPtr());
 
@@ -103,7 +78,6 @@ void SvcSessionManager::Active(const Impl &newImpl)
 void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool force)
 {
     unique_lock lock(lock_);
-
     if (!force && (!impl_.clientToken || !impl_.clientProxy)) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
     }
@@ -121,12 +95,14 @@ void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool
     impl_ = {};
 }
 
-void SvcSessionManager::VerifyBundleName(const string &bundleName)
+void SvcSessionManager::VerifyBundleName(string bundleName)
 {
     shared_lock lock(lock_);
-    bool bVerify = none_of(impl_.bundlesToProcess.begin(), impl_.bundlesToProcess.end(),
-                           [bundleName](const BundleName &name) { return bundleName == name; });
-    if (bVerify) {
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    auto it = impl_.backupExtNameMap.find(bundleName);
+    if (it == impl_.backupExtNameMap.end()) {
         stringstream ss;
         ss << "Could not find the " << bundleName << " from current session";
         throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
@@ -141,5 +117,85 @@ sptr<IServiceReverse> SvcSessionManager::GetServiceReverseProxy()
         throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
     }
     return impl_.clientProxy;
+}
+
+IServiceReverse::Scenario SvcSessionManager::GetScenario()
+{
+    shared_lock lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    return impl_.scenario;
+}
+
+void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backupExtNameMap)
+{
+    if (backupExtNameMap.empty()) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
+    }
+
+    auto bms = AAFwk::AbilityUtil::GetBundleManager();
+    if (!bms) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Bms is invalid");
+    }
+
+    for (auto &&it : backupExtNameMap) {
+        AppExecFwk::BundleInfo installedBundle;
+        if (!bms->GetBundleInfo(it.first, AppExecFwk::GET_BUNDLE_WITH_EXTENSION_INFO, installedBundle,
+                                AppExecFwk::Constants::START_USERID)) {
+            string pendingMsg = string("Failed to get the info of bundle ").append(it.first);
+            throw BError(BError::Codes::SA_BROKEN_IPC, pendingMsg);
+        }
+        for (auto &&ext : installedBundle.extensionInfos) {
+            if (ext.type == AppExecFwk::ExtensionAbilityType::BACKUP) {
+                vector<string> out;
+                AppExecFwk::BundleMgrClient client;
+                if (!client.GetResConfigFile(ext, "ohos.extension.backup", out)) {
+                    string pendingMsg = string("Failed to get resconfigfile of bundle ").append(it.first);
+                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                }
+                if (!out.size()) {
+                    string pendingMsg = string("ResConfigFile size is empty of bundle ").append(it.first);
+                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                }
+                BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
+                auto cache = cachedEntity.Structuralize();
+                if (cache.GetAllowToBackup()) {
+                    it.second.backupExtName = ext.name;
+                } else {
+                    string pendingMsg = string("Permission denied to getallowtobackup of bundle ").append(it.first);
+                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                }
+            }
+        }
+    }
+}
+
+const map<BundleName, BackupExtInfo> SvcSessionManager::GetBackupExtNameMap()
+{
+    shared_lock lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+
+    return impl_.backupExtNameMap;
+}
+
+void SvcSessionManager::UpdateExtMapInfo(const string &bundleName, bool bundleDone, int32_t bundleTotalFiles)
+{
+    shared_lock lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    auto it = impl_.backupExtNameMap.find(bundleName);
+    if (it == impl_.backupExtNameMap.end()) {
+        stringstream ss;
+        ss << "Could not find the " << bundleName << " from current session";
+        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+    }
+    if (bundleDone) {
+        it->second.numFilesSent = bundleTotalFiles;
+    } else
+        it->second.numFilesTotal++;
 }
 } // namespace OHOS::FileManagement::Backup

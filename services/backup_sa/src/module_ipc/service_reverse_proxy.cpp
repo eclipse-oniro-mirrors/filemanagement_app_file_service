@@ -43,11 +43,12 @@ void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string bu
     }
 }
 
-void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName)
+void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles)
 {
     HILOGI("Begin");
     MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName)) {
+    if (!data.WriteInterfaceToken(GetDescriptor()) || !data.WriteInt32(errCode) || !data.WriteString(bundleName) ||
+        !data.WriteInt32(bundleTotalFiles)) {
         throw BError(BError::Codes::SA_BROKEN_IPC);
     }
 
