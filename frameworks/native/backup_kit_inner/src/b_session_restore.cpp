@@ -58,4 +58,14 @@ ErrCode BSessionRestore::PublishFile(BFileInfo fileInfo)
     }
     return proxy->PublishFile(fileInfo);
 }
+
+ErrCode BSessionRestore::Start()
+{
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        return ErrCode(BError::Codes::SDK_BROKEN_IPC);
+    }
+
+    return proxy->Start();
+}
 } // namespace OHOS::FileManagement::Backup

@@ -17,7 +17,7 @@ class ServiceReverseProxy final : public IRemoteProxy<IServiceReverse>, protecte
 public:
     void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override;
     void BackupOnSubTaskStarted(int32_t errCode, std::string bundleName) override;
-    void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName) override;
+    void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles) override;
     void BackupOnTaskFinished(int32_t errCode) override;
 
     void RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName) override;

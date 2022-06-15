@@ -5,6 +5,8 @@
 #ifndef OHOS_FILEMGMT_BACKUP_I_SERVICE_REVERSE_H
 #define OHOS_FILEMGMT_BACKUP_I_SERVICE_REVERSE_H
 
+#include <cstdint>
+
 #include "iremote_broker.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -30,7 +32,7 @@ public:
 public:
     virtual void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) = 0;
     virtual void BackupOnSubTaskStarted(int32_t errCode, std::string bundleName) = 0;
-    virtual void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName) = 0;
+    virtual void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles) = 0;
     virtual void BackupOnTaskFinished(int32_t errCode) = 0;
 
     virtual void RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName) = 0;

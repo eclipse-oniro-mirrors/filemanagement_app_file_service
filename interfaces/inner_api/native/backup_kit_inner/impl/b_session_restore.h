@@ -58,6 +58,13 @@ public:
      * @see GetFileOnServiceEnd
      */
     ErrCode PublishFile(BFileInfo fileInfo);
+
+    /**
+     * @brief 用于启动恢复流程
+     *
+     * @return ErrCode 规范错误码
+     */
+    ErrCode Start();
 };
 } // namespace OHOS::FileManagement::Backup
 

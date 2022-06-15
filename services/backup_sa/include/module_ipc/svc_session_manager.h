@@ -8,6 +8,7 @@
 #ifndef OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
 #define OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
 
+#include <map>
 #include <shared_mutex>
 
 #include "b_file_info.h"
@@ -15,13 +16,19 @@
 #include "module_ipc/svc_death_recipient.h"
 
 namespace OHOS::FileManagement::Backup {
+struct BackupExtInfo {
+    std::string backupExtName;
+    uint32_t numFilesSent {0};
+    int32_t numFilesTotal {-1};
+};
+
 class Service;
 class SvcSessionManager final {
 public:
     struct Impl {
         uint32_t clientToken {0};
         IServiceReverse::Scenario scenario {IServiceReverse::Scenario::UNDEFINED};
-        std::vector<BundleName> bundlesToProcess;
+        std::map<BundleName, BackupExtInfo> backupExtNameMap;
         sptr<IServiceReverse> clientProxy;
     };
 
@@ -41,7 +48,7 @@ public:
      *
      * @param impl 客户端信息
      */
-    void Active(const Impl &impl);
+    void Active(Impl newImpl);
 
     /**
      * @brief 关闭会话
@@ -57,7 +64,7 @@ public:
      * @param bundleName 调用者名称
      * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
      */
-    void VerifyBundleName(const std::string &bundleName);
+    void VerifyBundleName(std::string bundleName);
 
     /**
      * @brief 获取IServiceReverse
@@ -66,6 +73,42 @@ public:
      * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
      */
     sptr<IServiceReverse> GetServiceReverseProxy();
+
+    /**
+     * @brief 获取Scenario
+     *
+     * @return IServiceReverse::Scenario 返回scenario
+     * @throw BError::Codes::SA_INVAL_ARG 获取异常
+     */
+    IServiceReverse::Scenario GetScenario();
+
+    /**
+     * @brief 获取 bundleName 与 ExtName map表
+     *
+     * @return std::map 返回backupExtNameMap
+     * @throw BError::Codes::SA_INVAL_ARG 获取异常
+     */
+    const std::map<BundleName, BackupExtInfo> GetBackupExtNameMap();
+
+    /**
+     * @brief 设置bundleName发送文件计数加一
+     *
+     * @param bundleName 客户端信息
+     * @param bundleDone false累加sentFileCount, true保存existingFiles
+     * @param bundleTotalFiles 文件总个数
+     * @throw BError::Codes::SA_INVAL_ARG 获取异常
+     */
+    void UpdateExtMapInfo(const std::string &bundleName, bool bundleDone = false, int32_t bundleTotalFiles = -1);
+
+private:
+    /**
+     * @brief 校验BundleName和ability type 并补全Impl.backupExtNameMap信息
+     *
+     * @param backupExtNameMap 客户端信息
+     * @throw BError::Codes::SA_INVAL_ARG 客户端信息异常
+     * @throw BError::Codes::SA_BROKEN_IPC
+     */
+    void GetBundleExtNames(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
 
 public:
     /**

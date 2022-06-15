@@ -7,7 +7,9 @@
  */
 #include "module_ipc/service.h"
 
+#include <algorithm>
 #include <cerrno>
+#include <cstdint>
 #include <cstring>
 #include <fcntl.h>
 #include <regex>
@@ -22,7 +24,9 @@
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
 #include "b_process/b_multiuser.h"
+#include "b_process/b_process.h"
 #include "b_resources/b_constants.h"
+#include "bundle_mgr_client.h"
 #include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "ipc_skeleton.h"
@@ -98,7 +102,6 @@ string Service::VerifyCallerAndGetCallerName()
                 throw BError(BError::Codes::SA_INVAL_ARG, "Get hap token info failed");
             }
             session_.VerifyBundleName(hapTokenInfo.bundleName);
-            // REM: 校验ability type
             return hapTokenInfo.bundleName;
         } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
             if (IPCSkeleton::GetCallingUid() != BConstants::SYSTEM_UID) { // REM: uid整改后调整
@@ -109,7 +112,8 @@ string Service::VerifyCallerAndGetCallerName()
             if (Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo) != 0) {
                 throw BError(BError::Codes::SA_INVAL_ARG, "Get native token info failed");
             }
-            if (tokenInfo.processName != "backup_tool" && tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除
+            if (tokenInfo.processName != "backup_tool" &&
+                tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除 { // REM: backup_sa整改后删除
                 throw BError(BError::Codes::SA_INVAL_ARG, "Process name is invalid");
             }
             return "simulate";
@@ -127,44 +131,20 @@ string Service::VerifyCallerAndGetCallerName()
     }
 }
 
-[[maybe_unused]] static void LaunchBackupExtension(int userId, string bunldeName, BConstants::ExtensionAction action)
-{
-    string backupExtName = [bunldeName, userId]() {
-        AppExecFwk::BundleInfo bundleInfo;
-        auto bms = AAFwk::AbilityUtil::GetBundleManager();
-        if (!bms) {
-            throw BError(BError::Codes::SA_BROKEN_IPC, "Broken BMS");
-        }
-        if (!bms->GetBundleInfo(bunldeName, AppExecFwk::GET_BUNDLE_WITH_EXTENSION_INFO, bundleInfo, userId)) {
-            string pendingMsg = string("Failed to get the info of bundle ").append(bunldeName);
-            throw BError(BError::Codes::SA_BROKEN_IPC, pendingMsg);
-        }
-        for (auto &&ext : bundleInfo.extensionInfos) {
-            if (ext.type == AppExecFwk::ExtensionAbilityType::BACKUP) {
-                return ext.name;
-            }
-        }
-        string pendingMsg = string("Bundle ").append(bunldeName).append(" need to instantiate a backup ext");
-        throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
-    }();
-
-    AAFwk::Want want;
-    want.SetElementName(bunldeName, backupExtName);
-    want.SetParam(BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
-
-    const int default_request_code = -1;
-    AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, default_request_code, userId);
-    HILOGI("Started %{public}s[%{public}d]'s %{public}s with %{public}s set to %{public}d", bunldeName.c_str(), userId,
-           backupExtName.c_str(), BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
-}
-
-ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames)
+ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<BundleName> &bundleNames)
 {
     try {
+        map<BundleName, BackupExtInfo> backupExtNameMap;
+        auto SetbackupExtNameMap = [](const BundleName &bundleName) {
+            BackupExtInfo info {};
+            return make_pair(bundleName, info);
+        };
+        transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
+                  SetbackupExtNameMap);
         session_.Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::RESTORE,
-            .bundlesToProcess = bundleNames,
+            .backupExtNameMap = move(backupExtNameMap),
             .clientProxy = remote,
         });
 
@@ -186,10 +166,17 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
                                    const std::vector<BundleName> &bundleNames)
 {
     try {
+        map<BundleName, BackupExtInfo> backupExtNameMap;
+        auto SetbackupExtNameMap = [](const BundleName &bundleName) {
+            BackupExtInfo info {};
+            return make_pair(bundleName, info);
+        };
+        transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
+                  SetbackupExtNameMap);
         session_.Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::BACKUP,
-            .bundlesToProcess = bundleNames,
+            .backupExtNameMap = move(backupExtNameMap),
             .clientProxy = remote,
         });
 
@@ -203,6 +190,29 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         StopAll(nullptr, true);
+        return e.GetCode();
+    }
+}
+
+ErrCode Service::Start()
+{
+    try {
+        IServiceReverse::Scenario scenario = session_.GetScenario();
+        auto proxy = session_.GetServiceReverseProxy();
+        auto backupExtNameMap = session_.GetBackupExtNameMap();
+        for (auto it : backupExtNameMap) {
+            int ret = LaunchBackupExtension(scenario, it.first, it.second.backupExtName);
+            if (scenario == IServiceReverse::Scenario::BACKUP) {
+                proxy->BackupOnSubTaskStarted(ret, it.first);
+            } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+                proxy->RestoreOnSubTaskStarted(ret, it.first);
+            } else {
+                string pendingMsg = string("Invalid scenario ").append(to_string(static_cast<int32_t>(scenario)));
+                throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+            }
+        }
+        return BError(BError::Codes::OK);
+    } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
@@ -249,7 +259,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
         session_.VerifyBundleName(fileInfo.owner);
 
-        if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_]+$"))) {
+        if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
 
@@ -296,11 +306,15 @@ ErrCode Service::AppFileReady(const string &fileName)
 {
     try {
         string callerName = VerifyCallerAndGetCallerName();
-        if (!regex_match(fileName, regex("^[0-9a-zA-Z_]+$"))) {
+        if (!regex_match(fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
 
-        string path = string(SA_TEST_DIR) + fileName;
+        string path = string(BConstants::SA_BUNDLE_BACKUP_DIR)
+                          .append(callerName)
+                          .append(BConstants::SA_BUNDLE_BACKUP_BAKCUP)
+                          .append(fileName);
+        HILOGE("This path %{public}s", path.data());
         UniqueFd fd(open(path.data(), O_RDWR, 0600));
         if (fd < 0) {
             stringstream ss;
@@ -312,16 +326,18 @@ ErrCode Service::AppFileReady(const string &fileName)
         if (fstat(fd, &fileStat) != 0) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
         }
-        if (fileStat.st_gid != SA_GID && fileStat.st_gid != BConstants::SYSTEM_UID) { // REM: uid整改后删除
-            throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
-        }
+        // if (fileStat.st_gid != SA_GID && fileStat.st_gid != BConstants::SYSTEM_UID) { // REM: uid整改后删除
+        //     throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
+        // }
+
+        session_.UpdateExtMapInfo(callerName);
 
         auto proxy = session_.GetServiceReverseProxy();
         proxy->BackupOnFileReady(callerName, fileName, move(fd));
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
-        return e.GetCode();
+        return e.GetCode(); // 任意异常产生，终止监听该任务
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
         return BError(-EPERM);
@@ -335,10 +351,63 @@ ErrCode Service::AppDone(ErrCode errCode)
 {
     try {
         string callerName = VerifyCallerAndGetCallerName();
+        IServiceReverse::Scenario scenario = session_.GetScenario();
         auto proxy = session_.GetServiceReverseProxy();
-        proxy->BackupOnSubTaskFinished(errCode, callerName);
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            string path =
+                string(BConstants::SA_BUNDLE_BACKUP_DIR).append(callerName).append(BConstants::SA_BUNDLE_BACKUP_BAKCUP);
+
+            vector<string> files;
+            GetDirFiles(path, files);
+            if (files.size() == 0) {
+                HILOGE("This path %{public}s existing files is empty", path.data());
+            }
+            uint32_t bundleTotalFiles = files.size(); // REM:重新写一个 现阶段没有现成接口
+            session_.UpdateExtMapInfo(callerName, true, bundleTotalFiles);
+
+            proxy->BackupOnSubTaskFinished(errCode, callerName, bundleTotalFiles);
+        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            proxy->RestoreOnSubTaskFinished(errCode, callerName);
+        } else {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
+        }
 
         return BError(BError::Codes::OK);
+    } catch (const BError &e) {
+        return e.GetCode(); // 任意异常产生，终止监听该任务
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
+    }
+}
+
+ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
+                                       const BundleName &bundleName,
+                                       const string &backupExtName)
+{
+    try {
+        BConstants::ExtensionAction action;
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            action = BConstants::ExtensionAction::BACKUP;
+        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            action = BConstants::ExtensionAction::RESTORE;
+        } else {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
+        }
+
+        AAFwk::Want want;
+        want.SetElementName(bundleName, backupExtName);
+        want.SetParam(BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
+
+        const int default_request_code = -1;
+        int ret = AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, default_request_code,
+                                                                           AppExecFwk::Constants::START_USERID);
+        HILOGI("Started %{public}s[100]'s %{public}s with %{public}s set to %{public}d", bundleName.c_str(),
+               backupExtName.c_str(), BConstants::EXTENSION_ACTION_PARA, action);
+        return ret;
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {

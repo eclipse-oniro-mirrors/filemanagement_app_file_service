@@ -30,13 +30,14 @@ void ServiceReverse::BackupOnSubTaskStarted(int32_t errCode, std::string bundleN
     callbacksBackup_.onSubTaskStarted(errCode, bundleName);
 }
 
-void ServiceReverse::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName)
+void ServiceReverse::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles)
 {
-    HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
+    HILOGI("errCode = %{public}d, bundleName = %{public}s, files = %{public}d", errCode, bundleName.c_str(),
+           bundleTotalFiles);
     if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onSubTaskFinished) {
         return;
     }
-    callbacksBackup_.onSubTaskFinished(errCode, bundleName);
+    callbacksBackup_.onSubTaskFinished(errCode, bundleName, bundleTotalFiles);
 }
 
 void ServiceReverse::BackupOnTaskFinished(int32_t errCode)
