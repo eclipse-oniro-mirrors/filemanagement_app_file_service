@@ -14,9 +14,9 @@ public:
     ~TestManager();
 
     /**
-     * @brief 创建测试文件根目录
+     * @brief 获取当前测试用例指定根目录
      *
-     * @return std::string 返回文件路径名
+     * @return std::string 根目录
      */
     std::string GetRootDirCurTest() const;
 

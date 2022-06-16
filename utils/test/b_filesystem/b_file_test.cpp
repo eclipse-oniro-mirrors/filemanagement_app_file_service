@@ -4,15 +4,12 @@
 
 #include <cstdio>
 #include <fcntl.h>
-#include <sys/stat.h>
+#include <gtest/gtest.h>
 #include <tuple>
 
-#include "b_error/b_error.h"
-#include "b_filesystem/b_file.h"
-#include "directory_ex.h"
 #include "file_ex.h"
 #include "test_manager.h"
-#include "gtest/gtest.h"
+#include "b_filesystem/b_file.h"
 
 namespace OHOS::FileManagement::Backup {
 class BFileTest : public testing::Test {
