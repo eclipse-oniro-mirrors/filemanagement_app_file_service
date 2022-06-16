@@ -48,6 +48,7 @@ public:
         UTILS_INVAL_TARBALL_ARG = 0x1002,
         UTILS_INVAL_PROCESS_ARG = 0x1003,
         UTILS_INTERRUPTED_PROCESS = 0x1004,
+
         // 0x2000~0x2999 backup_tool错误
 
         // 0x3000~0x3999 backup_sa错误
@@ -60,6 +61,10 @@ public:
         SDK_INVAL_ARG = 0x4000,
         SDK_BROKEN_IPC = 0x4001,
         SDK_MIXED_SCENARIO = 0x4002,
+
+        // 0x5000~0x5999 backup_ext错误
+        EXT_INVAL_ARG = 0x5000,
+        EXT_BROKEN_FRAMEWORK = 0x5001,
     };
 
 public:
@@ -176,6 +181,8 @@ private:
         {Codes::SDK_INVAL_ARG, "SDK received invalid arguments"},
         {Codes::SDK_BROKEN_IPC, "SDK failed to do IPC"},
         {Codes::SDK_MIXED_SCENARIO, "SDK involed backup/restore when doing the contrary"},
+        {Codes::EXT_INVAL_ARG, "Extension received an invalid argument"},
+        {Codes::EXT_BROKEN_FRAMEWORK, "Extension found the appex framework is broken"},
     };
 
 private:

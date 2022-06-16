@@ -1,3 +1,12 @@
 # 版权所有 (c) 华为技术有限公司 2022
 
-ability_runtime_path = "//foundation/ability/ability_runtime"
+path_backup = "//foundation/filemanagement/backup"
+
+path_ability_runtime = "//foundation/ability/ability_runtime"
+path_access_token = "//base/security/access_token"
+path_base = "//utils/native/base"
+path_distributedfile = "//foundation/distributeddatamgr/distributedfile"
+path_googletest = "//third_party/googletest"
+path_ipc = "//foundation/communication/ipc"
+path_jsoncpp = "//third_party/jsoncpp"
+path_napi = "//foundation/arkui/napi"

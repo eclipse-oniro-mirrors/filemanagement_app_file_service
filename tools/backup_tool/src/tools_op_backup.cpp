@@ -9,7 +9,7 @@
 #include <sys/types.h>
 
 #include "b_filesystem/b_file.h"
-#include "backup_kit.h"
+#include "backup_kit_inner.h"
 #include "service_proxy.h"
 #include "tools_op.h"
 

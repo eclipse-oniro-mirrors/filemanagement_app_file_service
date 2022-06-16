@@ -19,21 +19,21 @@ static void VerifyBunldeNamesWithBundleMgr(const vector<BundleName> &bundleNames
     if (bundleNames.empty()) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No app was selected");
     }
+
     auto bms = AAFwk::AbilityUtil::GetBundleManager();
     if (!bms) {
         throw BError(BError::Codes::SA_BROKEN_IPC, "Bms is invalid");
     }
-
-    vector<AppExecFwk::BundleInfo> bundleInfos;
-    if (!bms->GetBundleInfos(AppExecFwk::GET_BUNDLE_DEFAULT, bundleInfos, AppExecFwk::Constants::START_USERID)) {
+    vector<AppExecFwk::BundleInfo> installedBundles;
+    if (!bms->GetBundleInfos(AppExecFwk::GET_BUNDLE_DEFAULT, installedBundles, AppExecFwk::Constants::START_USERID)) {
         throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle infos");
     }
 
     for (auto &&bundleToVerify : bundleNames) {
-        bool bVerify =
-            none_of(bundleInfos.begin(), bundleInfos.end(),
-                    [bundleToVerify](const AppExecFwk::BundleInfo &bInfo) { return bInfo.name == bundleToVerify; });
-        if (bVerify) {
+        auto sameAsGivenBundle = [&bundleToVerify](const AppExecFwk::BundleInfo &bInfo) {
+            return bInfo.name == bundleToVerify;
+        };
+        if (none_of(installedBundles.begin(), installedBundles.end(), sameAsGivenBundle)) {
             stringstream ss;
             ss << "Could not find the " << bundleToVerify << " from bundleMgr";
             throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());

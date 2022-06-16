@@ -1,0 +1,41 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
+import("//build/ohos.gni")
+import("//foundation/filemanagement/backup/backup.gni")
+
+ts2abc_gen_abc("gen_backup_extension_ability_abc") {
+  src_js = rebase_path("backup_extension_ability.js")
+  dst_file = rebase_path(target_out_dir + "/backup_extension_ability.abc")
+  in_puts = [ "backup_extension_ability.js" ]
+  out_puts = [ target_out_dir + "/backup_extension_ability.abc" ]
+  extra_args = [ "--module" ]
+}
+
+gen_js_obj("backup_extension_ability_js") {
+  input = "backup_extension_ability.js"
+  output = target_out_dir + "/backup_extension_ability.o"
+}
+
+gen_js_obj("backup_extension_ability_abc") {
+  input = get_label_info(":gen_backup_extension_ability_abc",
+                         "target_out_dir") + "/backup_extension_ability.abc"
+  output = target_out_dir + "/backup_extension_ability_abc.o"
+  dep = ":gen_backup_extension_ability_abc"
+}
+
+# 必须命名为backupextensionability或backupextensionability_napi
+# 在将@ohos.application.BackupExtensionAblity翻译为库名时，只是将.作为目录分割符，然后将库名转换为小写后拼接.z.so或_napi.z.so后进行查找
+# 即，尝试加载/system/lib64/application/backupextensionability.z.so或/system//lib64/application/backupextensionability_napi.z.so
+# 具体请参考//foundation/arkui/napi/module_manager/native_module_manager.cpp
+ohos_shared_library("backupextensionability_napi") {
+  deps = [
+    ":backup_extension_ability_abc",
+    ":backup_extension_ability_js",
+    "${path_backup}/frameworks/js/backup_ext:backupextensionability_napi_fwk",
+  ]
+
+  relative_install_dir = "module/application"
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+}

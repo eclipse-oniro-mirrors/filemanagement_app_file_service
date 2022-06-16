@@ -15,10 +15,14 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 
+#include "ability_manager_client.h"
+#include "ability_util.h"
 #include "accesstoken_kit.h"
 #include "b_error/b_error.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
+#include "b_process/b_multiuser.h"
+#include "b_resources/b_constants.h"
 #include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "ipc_skeleton.h"
@@ -121,6 +125,37 @@ string Service::VerifyCallerAndGetCallerName()
         HILOGE("Unexpected exception");
         return "";
     }
+}
+
+[[maybe_unused]] static void LaunchBackupExtension(int userId, string bunldeName, BConstants::ExtensionAction action)
+{
+    string backupExtName = [bunldeName, userId]() {
+        AppExecFwk::BundleInfo bundleInfo;
+        auto bms = AAFwk::AbilityUtil::GetBundleManager();
+        if (!bms) {
+            throw BError(BError::Codes::SA_BROKEN_IPC, "Broken BMS");
+        }
+        if (!bms->GetBundleInfo(bunldeName, AppExecFwk::GET_BUNDLE_WITH_EXTENSION_INFO, bundleInfo, userId)) {
+            string pendingMsg = string("Failed to get the info of bundle ").append(bunldeName);
+            throw BError(BError::Codes::SA_BROKEN_IPC, pendingMsg);
+        }
+        for (auto &&ext : bundleInfo.extensionInfos) {
+            if (ext.type == AppExecFwk::ExtensionAbilityType::BACKUP) {
+                return ext.name;
+            }
+        }
+        string pendingMsg = string("Bundle ").append(bunldeName).append(" need to instantiate a backup ext");
+        throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+    }();
+
+    AAFwk::Want want;
+    want.SetElementName(bunldeName, backupExtName);
+    want.SetParam(BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
+
+    const int default_request_code = -1;
+    AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, default_request_code, userId);
+    HILOGI("Started %{public}s[%{public}d]'s %{public}s with %{public}s set to %{public}d", bunldeName.c_str(), userId,
+           backupExtName.c_str(), BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
 }
 
 ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames)

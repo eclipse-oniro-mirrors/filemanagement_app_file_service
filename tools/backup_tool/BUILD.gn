@@ -1,6 +1,7 @@
 # 版权所有 (c) 华为技术有限公司 2022
 
 import("//build/ohos.gni")
+import("//foundation/filemanagement/backup/backup.gni")
 
 ohos_executable("backup_tool") {
   sources = [
@@ -14,18 +15,15 @@ ohos_executable("backup_tool") {
   ]
 
   defines = [
-    "LOG_DOMAIN=0xD001600",
+    "LOG_DOMAIN=0xD004304",
     "LOG_TAG=\"BackupTool\"",
   ]
 
   include_dirs = [ "include" ]
 
-  external_deps = [ "backup:backup_api" ]
+  external_deps = [ "backup:backup_kit_inner" ]
 
-  deps = [
-    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
-    "//foundation/filemanagement/backup/utils/:backup_utils",
-  ]
+  deps = [ "${path_backup}/utils/:backup_utils" ]
 
   use_exceptions = true
   install_enable = true
