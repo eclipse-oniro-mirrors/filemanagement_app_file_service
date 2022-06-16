@@ -14,11 +14,3 @@ ohos_prebuilt_etc("backup_sa_etc") {
   part_name = "backup"
   subsystem_name = "filemanagement"
 }
-
-group("sa_targets") {
-  deps = [
-    ":backup_sa_etc",
-    ":backup_sa_profile",
-    "backup_sa:backup_sa",
-  ]
-}

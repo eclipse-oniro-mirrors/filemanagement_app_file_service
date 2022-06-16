@@ -1,10 +1,11 @@
 # 版权所有 (c) 华为技术有限公司 2022
 
 import("//build/ohos.gni")
+import("//foundation/filemanagement/backup/backup.gni")
 
 config("utils_private_config") {
   defines = [
-    "LOG_DOMAIN=0xD001600",
+    "LOG_DOMAIN=0xD004305",
     "LOG_TAG=\"BackupUtils\"",
   ]
 }
@@ -12,7 +13,7 @@ config("utils_private_config") {
 config("utils_public_config") {
   include_dirs = [
     "include",
-    "//utils/native/base/include",
+    "${path_base}/include",
   ]
 }
 
@@ -31,15 +32,12 @@ ohos_shared_library("backup_utils") {
   configs = [ ":utils_private_config" ]
   public_configs = [ ":utils_public_config" ]
 
-  deps = [
-    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
-  ]
-
   external_deps = [ "faultloggerd:lib_dfx_dump_catcher" ]
 
   public_deps = [
-    "//third_party/jsoncpp:jsoncpp",
-    "//utils/native/base:utils",
+    "${path_base}:utils",
+    "${path_distributedfile}/utils/filemgmt_libhilog:filemgmt_libhilog",
+    "${path_jsoncpp}:jsoncpp",
   ]
 
   use_exceptions = true

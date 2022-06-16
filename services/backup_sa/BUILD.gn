@@ -12,7 +12,7 @@ ohos_shared_library("backup_sa") {
   ]
 
   defines = [
-    "LOG_DOMAIN=0xD001600",
+    "LOG_DOMAIN=0xD004303",
     "LOG_TAG=\"BackupSA\"",
     "SA_ROOT_DIR=\"/data/backup/\"",
     "SA_TMP_DIR=\"tmp/\"",
@@ -23,15 +23,16 @@ ohos_shared_library("backup_sa") {
   include_dirs = [ "include" ]
 
   deps = [
-    "${ability_runtime_path}/interfaces/inner_api/ability_manager:ability_manager",
-    "${ability_runtime_path}/services/abilitymgr:abilityms",
-    "//base/security/access_token/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
-    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
-    "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
-    "//foundation/filemanagement/backup/utils:backup_utils",
+    "${path_ability_runtime}/interfaces/inner_api/ability_manager:ability_manager",
+    "${path_ability_runtime}/services/abilitymgr:abilityms",
+    "${path_access_token}/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
+    "${path_backup}/utils:backup_utils",
   ]
 
   external_deps = [
+    "ability_base:want",
+    "backup:backup_kit_inner",
+    "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "ipc:ipc_core",
     "safwk:system_ability_fwk",

@@ -23,24 +23,31 @@
         "ram": "",
         "build": {
             "sub_component": [
-                "//foundation/filemanagement/backup/services:sa_targets",
-                "//foundation/filemanagement/backup/tools:backup_tool",
-                "//foundation/filemanagement/backup/utils:backup_utils"
+                "//foundation/filemanagement/backup:tgt_backup_extension",
+                "//foundation/filemanagement/backup:tgt_backup_kit_inner",
+                "//foundation/filemanagement/backup:tgt_backup_sa",
+                "//foundation/filemanagement/backup:tgt_backup_tool"
             ],
             "inner_kits": [
                 {
-                    "name": "//foundation/filemanagement/backup/interfaces/inner_api/native:backup_api",
+                    "name": "//foundation/filemanagement/backup/interfaces/inner_api/native/backup_kit_inner:backup_kit_inner",
                     "header": {
+                        "header_base": "//foundation/filemanagement/backup/interfaces/inner_api/native/backup_kit_inner",
                         "header_files": [
-                            "i_service.h"
-                        ],
-                        "header_base": "//foundation/filemanagement/backup/interfaces/inner_api/native"
+                            "backup_kit_inner.h",
+                            "impl/b_session_restore.h",
+                            "impl/b_file_info.h",
+                            "impl/service_proxy.h",
+                            "impl/b_session_backup.h",
+                            "impl/i_service.h",
+                            "impl/i_service_reverse.h"
+                        ]
                     }
                 }
             ],
             "test": [
-              "//foundation/filemanagement/backup/tools/test:tools_test",
-              "//foundation/filemanagement/backup/utils/test:backup_test"
+                "//foundation/filemanagement/backup/tools/backup_tool/test:tools_test",
+                "//foundation/filemanagement/backup/utils/test:backup_test"
             ]
         }
     }

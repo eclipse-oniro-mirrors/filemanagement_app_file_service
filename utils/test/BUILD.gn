@@ -1,17 +1,18 @@
 # 版权所有 (c) 华为技术有限公司 2022
 
 import("//build/test.gni")
+import("//foundation/filemanagement/backup/backup.gni")
 
 ohos_unittest("b_error_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [ "b_error/b_error_test.cpp" ]
 
-  include_dirs = [ "//third_party/googletest/googlemock/include/gmock" ]
+  include_dirs = [ "${path_googletest}/googlemock/include/gmock" ]
 
   deps = [
-    "//foundation/filemanagement/backup/utils/:backup_utils",
-    "//third_party/googletest:gmock_main",
+    "${path_backup}/utils/:backup_utils",
+    "${path_googletest}:gmock_main",
   ]
 
   use_exceptions = true
@@ -22,12 +23,12 @@ ohos_unittest("b_file_test") {
 
   sources = [ "b_filesystem/b_file_test.cpp" ]
 
-  include_dirs = [ "//third_party/googletest/googlemock/include/gmock" ]
+  include_dirs = [ "${path_googletest}/googlemock/include/gmock" ]
 
   deps = [
-    "//foundation/filemanagement/backup/test:backup_test_utils_static",
-    "//foundation/filemanagement/backup/utils/:backup_utils",
-    "//third_party/googletest:gmock_main",
+    "${path_backup}/test/util:backup_test_utils_static",
+    "${path_backup}/utils/:backup_utils",
+    "${path_googletest}:gmock_main",
   ]
 
   use_exceptions = true
@@ -39,14 +40,13 @@ ohos_unittest("b_json_test") {
   sources = [ "b_json/b_json_cached_entity_test.cpp" ]
 
   include_dirs = [
-    "//third_party/googletest/googlemock/include/gmock",
-    "//utils/native/base/include",
+    "${path_googletest}/googlemock/include/gmock",
+    "${path_base}/include",
   ]
 
   deps = [
-    "//foundation/distributeddatamgr/distributedfile/utils/filemgmt_libhilog",
-    "//foundation/filemanagement/backup/utils/:backup_utils",
-    "//third_party/googletest:gmock_main",
+    "${path_backup}/utils/:backup_utils",
+    "${path_googletest}:gmock_main",
   ]
 
   use_exceptions = true
