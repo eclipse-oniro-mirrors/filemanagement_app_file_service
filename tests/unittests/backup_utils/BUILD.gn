@@ -8,11 +8,9 @@ ohos_unittest("b_error_test") {
 
   sources = [ "b_error/b_error_test.cpp" ]
 
-  include_dirs = [ "${path_googletest}/googlemock/include/gmock" ]
-
   deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
     "${path_backup}/utils/:backup_utils",
-    "${path_googletest}:gmock_main",
   ]
 
   use_exceptions = true
@@ -23,12 +21,9 @@ ohos_unittest("b_file_test") {
 
   sources = [ "b_filesystem/b_file_test.cpp" ]
 
-  include_dirs = [ "${path_googletest}/googlemock/include/gmock" ]
-
   deps = [
-    "${path_backup}/test/util:backup_test_utils_static",
+    "${path_backup}/tests/utils:backup_test_utils",
     "${path_backup}/utils/:backup_utils",
-    "${path_googletest}:gmock_main",
   ]
 
   use_exceptions = true
@@ -39,10 +34,7 @@ ohos_unittest("b_json_test") {
 
   sources = [ "b_json/b_json_cached_entity_test.cpp" ]
 
-  include_dirs = [
-    "${path_googletest}/googlemock/include/gmock",
-    "${path_base}/include",
-  ]
+  include_dirs = [ "${path_base}/include" ]
 
   deps = [
     "${path_backup}/utils/:backup_utils",

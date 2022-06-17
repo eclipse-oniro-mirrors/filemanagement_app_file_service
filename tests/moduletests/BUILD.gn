@@ -1,0 +1,8 @@
+import("//build/ohos.gni")
+import("//foundation/filemanagement/backup/backup.gni")
+
+group("moduletests") {
+  testonly = true
+
+  deps = [ "backup_tool:tools_test" ]
+}

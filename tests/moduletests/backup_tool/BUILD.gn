@@ -6,17 +6,16 @@ import("//foundation/filemanagement/backup/backup.gni")
 ohos_unittest("tools_op_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [ "tools_test.cpp" ]
-
-  include_dirs = [ "${path_googletest}/googlemock/include/gmock" ]
-
-  deps = [
-    "${path_backup}/test/util:backup_test_utils_static",
-    "${path_backup}/utils/:backup_utils",
-    "${path_googletest}:gmock_main",
+  sources = [
+    "tool_backup_restore_test.cpp",
+    "tool_help_test.cpp",
+    "tool_simulate_app_test.cpp",
   ]
 
-  external_deps = [ "faultloggerd:lib_dfx_dump_catcher" ]
+  deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils/:backup_utils",
+  ]
 
   use_exceptions = true
 }

@@ -46,8 +46,7 @@
                 }
             ],
             "test": [
-                "//foundation/filemanagement/backup/tools/backup_tool/test:tools_test",
-                "//foundation/filemanagement/backup/utils/test:backup_test"
+                "//foundation/filemanagement/backup:tgt_backup_tests"
             ]
         }
     }

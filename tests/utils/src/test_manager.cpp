@@ -13,6 +13,7 @@ using namespace std;
 TestManager::TestManager(std::string functionName)
 {
     rootDirCurTest_ = "/data/test/backup/" + functionName + "/";
+    //  REM：先删后创建
     if (bool created = ForceCreateDirectory(rootDirCurTest_); !created) {
         throw std::system_error(errno, std::system_category());
     }

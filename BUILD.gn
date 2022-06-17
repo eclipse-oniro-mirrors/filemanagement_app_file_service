@@ -1,27 +1,35 @@
 # 版权所有 (c) 华为技术有限公司 2022
 
 import("//build/ohos.gni")
-import("//foundation/filemanagement/backup/backup.gni")
 
 group("tgt_backup_extension") {
   deps = [
-    "${path_backup}/frameworks/native/backup_ext:backup_extension_ability_native",
-    "${path_backup}/interfaces/api/js/napi/backup_ext:backupextensionability_napi",
+    "frameworks/native/backup_ext:backup_extension_ability_native",
+    "interfaces/api/js/napi/backup_ext:backupextensionability_napi",
   ]
 }
 
 group("tgt_backup_kit_inner") {
-  deps = [ "${path_backup}/interfaces/inner_api/native/backup_kit_inner" ]
+  deps = [ "interfaces/inner_api/native/backup_kit_inner" ]
 }
 
 group("tgt_backup_sa") {
   deps = [
-    "${path_backup}/services:backup_sa_etc",
-    "${path_backup}/services:backup_sa_profile",
-    "${path_backup}/services/backup_sa",
+    "services:backup_sa_etc",
+    "services:backup_sa_profile",
+    "services/backup_sa",
   ]
 }
 
 group("tgt_backup_tool") {
-  deps = [ "${path_backup}/tools/backup_tool" ]
+  deps = [ "tools/backup_tool" ]
+}
+
+group("tgt_backup_tests") {
+  testonly = true
+
+  deps = [
+    "tests/moduletests",
+    "tests/unittests",
+  ]
 }

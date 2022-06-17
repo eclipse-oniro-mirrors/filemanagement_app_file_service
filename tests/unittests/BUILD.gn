@@ -1,0 +1,10 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/ohos.gni")
+import("//foundation/filemanagement/backup/backup.gni")
+
+group("unittests") {
+  testonly = true
+
+  deps = [ "backup_utils:backup_test" ]
+}
