@@ -4,6 +4,7 @@
 
 #include "b_process/b_process.h"
 
+#include <algorithm>
 #include <regex>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -17,8 +18,11 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-int BProcess::ExecuteCmd(vector<const char *> argv)
+int BProcess::ExecuteCmd(vector<string_view> argvSv)
 {
+    vector<const char *> argv;
+    auto getStringViewData = [](const auto &arg) { return arg.data(); };
+    transform(argvSv.begin(), argvSv.end(), back_inserter(argv), getStringViewData);
     argv.push_back(nullptr);
 
     // 临时将SIGCHLD恢复成默认值，从而能够从作为僵尸进程的子进程中获得返回值
@@ -49,7 +53,7 @@ int BProcess::ExecuteCmd(vector<const char *> argv)
     }
 
     const int BUF_LEN = 1024;
-    unique_ptr<char[]> buf = make_unique<char[]>(BUF_LEN);
+    auto buf = make_unique<char[]>(BUF_LEN);
     int status = 0;
     do {
         while ((void)memset_s(buf.get(), BUF_LEN, 0, BUF_LEN), read(pipe_fd[0], buf.get(), BUF_LEN - 1) > 0) {

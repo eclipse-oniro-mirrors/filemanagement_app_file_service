@@ -5,6 +5,7 @@
 #ifndef OHOS_FILEMGMT_BACKUP_B_PROCESS_H
 #define OHOS_FILEMGMT_BACKUP_B_PROCESS_H
 
+#include <string_view>
 #include <vector>
 
 #include "nocopyable.h"
@@ -26,7 +27,7 @@ public:
      *
      * @throw BError(UTILS_INTERRUPTED_PROCESS) 系统调用异常(pipe调用失败、dup2调用失败、子进程被信号终止)
      */
-    static int ExecuteCmd(std::vector<const char *> argv);
+    static int ExecuteCmd(std::vector<std::string_view> argv);
 
 private:
     BProcess() = delete;
