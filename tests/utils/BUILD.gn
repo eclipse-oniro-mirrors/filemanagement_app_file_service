@@ -7,12 +7,15 @@ config("test_util_public_config") {
   include_dirs = [ "include" ]
 }
 
-ohos_static_library("backup_test_utils_static") {
+ohos_static_library("backup_test_utils") {
+  testonly = true
+
   sources = [ "src/test_manager.cpp" ]
 
   public_configs = [ ":test_util_public_config" ]
 
   deps = [ "${path_backup}/utils:backup_utils" ]
+  public_deps = [ "${path_googletest}:gmock_main" ]
 
   use_exceptions = true
   part_name = "backup"
