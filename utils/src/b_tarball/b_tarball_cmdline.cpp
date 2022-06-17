@@ -5,6 +5,7 @@
 #include "b_tarball/b_tarball_cmdline.h"
 
 #include <unistd.h>
+#include <string_view>
 
 #include "b_error/b_error.h"
 #include "b_process/b_guard_cwd.h"
@@ -18,21 +19,21 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
     // 切换到根路径，从而在打包时使用文件或目录的相对路径
     BGuardCwd guard(root);
 
-    vector<const char *> argv = {
+    vector<string_view> argv = {
         "/system/bin/tar",
         "-cvf",
-        tarballPath_.data(),
+        tarballPath_,
     };
     // 未给定include的情况，打包全目录
     if (includes.empty()) {
         includes.push_back(".");
     }
     for (auto &&include : includes) {
-        argv.push_back(include.data());
+        argv.push_back(include);
     }
     for (auto &&exclude : excludes) {
         argv.push_back("--exclude");
-        argv.push_back(exclude.data());
+        argv.push_back(exclude);
     }
 
     // 如果打包后生成了打包文件，则默认打包器打包时生成的错误可以忽略(比如打包一个不存在的文件)
@@ -46,9 +47,9 @@ void BTarballCmdline::Untar(string_view root)
     BProcess::ExecuteCmd({
         "tar",
         "-xvf",
-        tarballPath_.data(),
+        tarballPath_,
         "-C",
-        root.data(),
+        root,
     });
 }
 
