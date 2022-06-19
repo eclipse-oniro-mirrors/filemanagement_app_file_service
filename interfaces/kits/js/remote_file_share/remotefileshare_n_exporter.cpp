@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#include <tuple>
-#include <fcntl.h>
-#include <unistd.h>
+#include "remotefileshare_n_exporter.h"
+
 #include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <string>
-
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/ioctl.h>
+#include <tuple>
+#include <unistd.h>
 
 #include "securec.h"
-#include "remotefileshare_n_exporter.h"
 
 namespace OHOS {
 namespace AppFileService {
