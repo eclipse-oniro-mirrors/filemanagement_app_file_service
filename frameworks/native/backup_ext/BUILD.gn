@@ -24,6 +24,7 @@ ohos_shared_library("backup_extension_ability_native") {
   ]
 
   deps = [
+    "//foundation/ability/ability_runtime/frameworks/kits/appkit:app_context",
     "${path_ability_runtime}/frameworks/kits/appkit:appkit_native",
     "${path_backup}/utils:backup_utils",
   ]
