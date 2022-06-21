@@ -16,6 +16,7 @@ enum class ExtensionAction {
 };
 
 constexpr int SPAN_USERID_UID = 20000000;
+constexpr int SYSTEM_UID = 1000;
 } // namespace OHOS::FileManagement::Backup::BConstants
 
 #endif // OHOS_FILEMGMT_BACKUP_B_CONSTANTS_H
