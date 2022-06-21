@@ -101,7 +101,7 @@ string Service::VerifyCallerAndGetCallerName()
             // REM: 校验ability type
             return hapTokenInfo.bundleName;
         } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
-            if (IPCSkeleton::GetCallingUid() != 1000) { // REM: uid整改后调整
+            if (IPCSkeleton::GetCallingUid() != BConstants::SYSTEM_UID) { // REM: uid整改后调整
                 throw BError(BError::Codes::SA_BROKEN_IPC, "Calling uid is invalid");
             }
 
@@ -312,7 +312,7 @@ ErrCode Service::AppFileReady(const string &fileName)
         if (fstat(fd, &fileStat) != 0) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
         }
-        if (fileStat.st_gid != SA_GID && fileStat.st_gid != 1000) { // REM: uid整改后删除
+        if (fileStat.st_gid != SA_GID && fileStat.st_gid != BConstants::SYSTEM_UID) { // REM: uid整改后删除
             throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
         }
 
