@@ -67,7 +67,8 @@ int BProcess::ExecuteCmd(vector<string_view> argvSv)
         } else if (WIFEXITED(status)) {
             return WEXITSTATUS(status);
         } else if (WIFSIGNALED(status)) {
-            throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+            // bionic libc++的异常机制存在问题，导致应用在正常的错误下Crash。为确保测试顺利展开，此处暂时屏蔽崩溃错误。
+            return EPERM;
         }
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
