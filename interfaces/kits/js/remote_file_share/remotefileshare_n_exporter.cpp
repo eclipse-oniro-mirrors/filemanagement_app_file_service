@@ -32,8 +32,11 @@ namespace AppFileService {
 namespace ModuleRemoteFileShare {
 using namespace FileManagement::LibN;
 using namespace std;
-static constexpr int HMDFS_CID_SIZE = 64;
-static constexpr unsigned HMDFS_IOC = 0xf2;
+namespace {
+    constexpr int HMDFS_CID_SIZE = 64;
+    constexpr unsigned HMDFS_IOC = 0xf2;
+    const std::string SHARE_PATH = "/data/storage/el2/distributedfiles/.share";
+}
 
 #define HMDFS_IOC_SET_SHARE_PATH    _IOW(HMDFS_IOC, 1, struct hmdfs_share_control)
 
@@ -47,21 +50,19 @@ static NError CreateSharePath(const int src_fd, const std::string &cid)
     struct hmdfs_share_control sc;
     int32_t ret = 0;
     int32_t dirFd;
-    std::string sharePath = "/data/storage/el2/distributedfiles/.share";
 
-    if (access(sharePath.c_str(), F_OK) != 0) {
-        ret = mkdir(sharePath.c_str(), S_IRWXU | S_IRWXG | S_IXOTH);
+    if (access(SHARE_PATH.c_str(), F_OK) != 0) {
+        ret = mkdir(SHARE_PATH.c_str(), S_IRWXU | S_IRWXG | S_IXOTH);
         if (ret < 0) {
             return NError(errno);
         }
     }
 
-    char *realPath = realpath(sharePath.c_str(), nullptr);
-    if (realPath == nullptr) {
+    char realPath[PATH_MAX] = {0};
+    if (!realpath(SHARE_PATH.c_str(), realPath)) {
         return NError(errno);
     }
     dirFd = open(realPath, O_RDONLY);
-    free(realPath);
     if (dirFd < 0) {
         return NError(errno);
     }
@@ -113,8 +114,7 @@ napi_value CreateSharePath(napi_env env, napi_callback_info info)
         if (err) {
             return { env, err.GetNapiErr(env) };
         } else {
-            std::string sharePath = "/data/storage/el2/distributedfiles/.share";
-            return NVal::CreateUTF8String(env, sharePath);
+            return NVal::CreateUTF8String(env, SHARE_PATH);
         }
     };
     std::string procedureName = "CreateSharePath";
