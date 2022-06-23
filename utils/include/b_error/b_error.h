@@ -66,6 +66,7 @@ public:
         // 0x5000~0x5999 backup_ext错误
         EXT_INVAL_ARG = 0x5000,
         EXT_BROKEN_FRAMEWORK = 0x5001,
+        EXT_BROKEN_BACKUP_SA = 0x5002,
     };
 
 public:
@@ -185,6 +186,7 @@ private:
         {Codes::SDK_MIXED_SCENARIO, "SDK involed backup/restore when doing the contrary"},
         {Codes::EXT_INVAL_ARG, "Extension received an invalid argument"},
         {Codes::EXT_BROKEN_FRAMEWORK, "Extension found the appex framework is broken"},
+        {Codes::EXT_BROKEN_BACKUP_SA, "Extension found the backup SA died"},
     };
 
 private:

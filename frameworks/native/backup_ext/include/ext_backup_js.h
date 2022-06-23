@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "b_json/b_json_entity_usr_config.h"
 #include "ext_backup.h"
 #include "js_runtime.h"
 #include "native_reference.h"
@@ -69,7 +70,7 @@ public:
 
 private:
     NativeValue *CallObjectMethod(std::string_view name, const std::vector<NativeValue *> &argv = {});
-    int HandleBackup();
+    int HandleBackup(BJsonEntityUsrConfig &cache);
     int HandleRestore();
 
     AbilityRuntime::JsRuntime &jsRuntime_;
