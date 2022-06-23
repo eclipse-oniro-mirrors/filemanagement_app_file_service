@@ -7,9 +7,14 @@
 #include <sstream>
 
 #include "b_error/b_error.h"
+#include "b_json/b_json_cached_entity.h"
+#include "b_json/b_json_entity_usr_config.h"
 #include "b_resources/b_constants.h"
+#include "b_tarball/b_tarball_factory.h"
+#include "bundle_mgr_client.h"
 #include "filemgmt_libhilog.h"
 #include "js_runtime_utils.h"
+#include "service_proxy.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -100,14 +105,46 @@ NativeValue *ExtBackupJs::CallObjectMethod(string_view name, const vector<Native
     return ret;
 }
 
-int ExtBackupJs::HandleBackup()
+int ExtBackupJs::HandleBackup(BJsonEntityUsrConfig &cache)
 {
     HILOGI("Do backup");
 
     try {
-        (void)CallObjectMethod("onBackup");
+        string backupPath = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup");
+        if (access(backupPath.data(), F_OK) != 0 && mkdir(backupPath.data(), S_IRWXU) != 0) {
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder backup");
+        }
         // REM: 打包（处理includeDir, excludeDir），反馈，退出进程
-        return 0;
+        string pkgName = "1.tar";
+        string tarName = backupPath.append("/").append(pkgName);
+        string root = "/";
+
+        vector<string> incDirs = cache.GetIncludeDirs();
+        vector<string> excDirs = cache.GetExcludeDirs();
+        if (incDirs.size() == 0) {
+            incDirs.insert(incDirs.end(), BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end());
+        }
+
+        auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
+        (tarballFunc->tar)(root, {incDirs.begin(), incDirs.end()}, {excDirs.begin(), excDirs.end()});
+
+        (void)CallObjectMethod("onBackup");
+
+        auto proxy = ServiceProxy::GetInstance();
+        if (proxy == nullptr) {
+            throw BError(BError::Codes::EXT_BROKEN_BACKUP_SA, std::generic_category().message(errno));
+        }
+
+        ErrCode ret = proxy->AppFileReady(pkgName);
+        if (SUCCEEDED(ret)) {
+            HILOGI("The application is packaged successfully, package name is %{public}s", pkgName.c_str());
+        } else {
+            HILOGI(
+                "The application is packaged successfully but the AppFileReady interface fails to be invoked: "
+                "%{public}d",
+                ret);
+        }
+        return ret;
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
@@ -124,10 +161,19 @@ int ExtBackupJs::HandleRestore()
     HILOGI("Do restore");
 
     try {
+        // REM: 有extension就先解压到backup/restore目录，后续进行reName，否则直接在根目录解压
+        //(void)CallObjectMethod("onRestore");
         // REM: 给定version
         // REM: 解压启动Extension时即挂载好的备份目录中的数据
-        (void)CallObjectMethod("onRestore");
-        return 0;
+        string pkgName = "1.tar";
+        string tarName = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup/").append(pkgName);
+        string root = string(BConstants::PATH_BUNDLE_BACKUP_HOME);
+
+        auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
+        (tarballFunc->untar)(root);
+        HILOGI("Application recovered successfully, package path is %{public}s", tarName.c_str());
+
+        return ERR_OK;
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
@@ -172,10 +218,23 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
             string pendingMsg = string("Want must specify a valid action instead of ").append(to_string(extActionInt));
             throw BError(BError::Codes::EXT_INVAL_ARG, pendingMsg);
         }
-        if (extAction == ExtensionAction::BACKUP) {
-            ret = HandleBackup();
-        } else if (extAction == ExtensionAction::RESTORE) {
-            ret = HandleRestore();
+
+        vector<string> out;
+        AppExecFwk::BundleMgrClient client;
+        AppExecFwk::AbilityInfo &info = *abilityInfo_;
+        if (!client.GetResConfigFile(info, "ohos.extension.backup", out)) {
+            throw BError(BError::Codes::EXT_INVAL_ARG, "Failed to invoke the GetResConfigFile method.");
+        }
+        if (out.size()) {
+            BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
+            auto cache = cachedEntity.Structuralize();
+            if (cache.GetAllowToBackup()) {
+                if (extAction == ExtensionAction::BACKUP) {
+                    ret = HandleBackup(cache);
+                } else if (extAction == ExtensionAction::RESTORE) {
+                    ret = HandleRestore();
+                }
+            }
         }
     } catch (const BError &e) {
         ret = e.GetCode();
@@ -185,6 +244,11 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
         HILOGE("");
     }
     // REM: 处理返回结果 ret
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        throw BError(BError::Codes::EXT_BROKEN_BACKUP_SA, std::generic_category().message(errno));
+    }
+    proxy->AppDone(ret);
     // REM: 通过杀死进程实现 Stop
 }
 

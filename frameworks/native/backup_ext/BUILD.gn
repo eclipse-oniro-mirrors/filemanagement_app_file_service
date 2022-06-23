@@ -34,6 +34,8 @@ ohos_shared_library("backup_extension_ability_native") {
     "ability_runtime:ability_context_native",
     "ability_runtime:abilitykit_native",
     "ability_runtime:runtime",
+    "backup:backup_kit_inner",
+    "bundle_framework:appexecfwk_core",
   ]
 
   use_exceptions = true
