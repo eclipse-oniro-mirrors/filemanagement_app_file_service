@@ -57,7 +57,7 @@ public:
      *
      * @throw std::system_error IO异常或解析异常
      */
-    void ReloadFromFile()
+    int ReloadFromFile()
     {
         Json::CharReaderBuilder builder;
         std::unique_ptr<Json::CharReader> const jsonReader(builder.newCharReader());
@@ -68,10 +68,11 @@ public:
 
         bool res = jsonReader->parse(sv.data(), sv.data() + sv.length(), &jValue, &errs);
         if (!res || !errs.empty()) {
-            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, errs);
+            return BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, errs).GetCode();
         }
 
         obj_ = std::move(jValue);
+        return 0;
     }
 
     /**
@@ -96,12 +97,11 @@ public:
         if (fstat(srcFile_, &stat) == -1) {
             std::stringstream ss;
             ss << std::generic_category().message(errno) << " with fd eq" << srcFile_.Get();
-            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, ss.str());
+            BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, ss.str());
+            return;
         }
 
-        if (stat.st_size) {
-            ReloadFromFile();
-        }
+        (void)ReloadFromFile();
     }
 
 private:
