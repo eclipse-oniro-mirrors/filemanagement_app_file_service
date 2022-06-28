@@ -114,8 +114,10 @@ HWTEST_F(BJsonCachedEntityTest, b_json_ReloadFromFile_0100, testing::ext::TestSi
         uint64_t space = 100;
         cache.SetFreeDiskSpace(space);
         jce.Persist();
-        jce.ReloadFromFile();
-        ForceRemoveDirectory(filePath);
+        bool ret = jce.ReloadFromFile();
+        EXPECT_TRUE(ret);
+        ret = ForceRemoveDirectory(filePath);
+        EXPECT_TRUE(ret);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonCachedEntityTest-an exception occurred.";

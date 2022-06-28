@@ -14,22 +14,22 @@ vector<string> BJsonEntityUsrConfig::GetIncludeDirs()
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
-        return {};
+        return {""};
     }
     if (!obj_.isMember("includeDirs")) {
         HILOGE("'includeDirs' field not found");
-        return {};
+        return {""};
     }
     if (!obj_["includeDirs"].isArray()) {
         HILOGE("'includeDirs' field must be an array");
-        return {};
+        return {""};
     }
 
     vector<string> dirs;
     for (auto &&item : obj_["includeDirs"]) {
         if (!item.isString()) {
             HILOGE("Each item of array 'includeDirs' must be of the type string");
-            return {};
+            return {""};
         }
         dirs.push_back(item.asString());
     }
