@@ -4,12 +4,16 @@
 
 #include "b_tarball/b_tarball_factory.h"
 
+#include <algorithm>
 #include <climits>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <libgen.h>
 #include <map>
 #include <sstream>
+#include <string>
+#include <tuple>
 #include <unistd.h>
 
 #include "b_error/b_error.h"
@@ -33,45 +37,42 @@ static void UntarFort(string_view root)
 }
 
 /**
- * @brief 校验Tar输入参数
+ * @brief 过滤Tar输入参数
  *
  * @param tarballDir 打包文件所在目录
  * @param root 文件待打包的根目录
  * 要求输入绝对路径
  * @param includes root中需要打包的路径
- * 要求输入相对路径，除禁止路径穿越外无其余要求，不填默认全部打包
+ * 要求输入相对路径，不填默认全部打包
  * @param excludes 待打包路径中无需打包的部分
- * 要求输入相对路径，路径穿越场景无实际意义因此予以禁止。可用于排除部分子目录
+ * 要求输入相对路径。可用于排除部分子目录
+ * @return std::tuple<vector<string>, vector<string>> 去掉开头的斜线的includeDirs, excludeDirs
  */
-static void TarFort(string_view tarballDir,
-                    string_view root,
-                    vector<string_view> includes,
-                    vector<string_view> excludes)
+static std::tuple<vector<string>, vector<string>> TarFilter(string_view tarballDir,
+                                                            string_view root,
+                                                            vector<string_view> includes,
+                                                            vector<string_view> excludes)
 {
     auto resolvedPath = make_unique<char[]>(PATH_MAX);
     if (!realpath(root.data(), resolvedPath.get()) || (string_view(resolvedPath.get()) != root)) {
         throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "The root must be an existing canonicalized path");
     }
-    if (tarballDir.find_first_of(root) == string::npos) {
-        throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "The root's path can't be the ancestor of the tarball's");
-    }
 
-    auto detectPathTraversal = [&resolvedPath](string_view root, string_view relativePath) {
-        stringstream ss;
-        ss << root << '/' << relativePath;
-        string absPath = ss.str();
-        if (char *canoPath = realpath(absPath.c_str(), resolvedPath.get());
-            (!canoPath && (errno != ENOENT)) ||
-            (canoPath && (string_view(canoPath).find_first_of(root) == string::npos))) {
-            throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "Dected a path traversal attack");
+    auto removeFrontSlash = [](const string_view &arg) -> string {
+        size_t i = 0;
+        for (; i < arg.size(); ++i) {
+            if (arg[i] != '/') {
+                break;
+            }
         }
+        return arg.data() + i;
     };
-    for (auto &&include : includes) {
-        detectPathTraversal(root, include);
-    }
-    for (auto &&exclude : excludes) {
-        detectPathTraversal(root, exclude);
-    }
+    vector<string> newIncludeDirs;
+    transform(includes.begin(), includes.end(), back_inserter(newIncludeDirs), removeFrontSlash);
+    vector<string> newExcludeDirs;
+    transform(excludes.begin(), excludes.end(), back_inserter(newExcludeDirs), removeFrontSlash);
+
+    return {newIncludeDirs, newExcludeDirs};
 }
 
 /**
@@ -141,7 +142,7 @@ unique_ptr<BTarballFactory::Impl> BTarballFactory::Create(string_view implType, 
         if (tarballImpl->tar) {
             tarballImpl->tar = [tarballDir {string(tarballDir)}, tar {tarballImpl->tar}](
                                    string_view root, vector<string_view> includes, vector<string_view> excludes) {
-                TarFort(tarballDir, root, includes, excludes);
+                TarFilter(tarballDir, root, includes, excludes);
                 tar(root, includes, excludes);
             };
         }
