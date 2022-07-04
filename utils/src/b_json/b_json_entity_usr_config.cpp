@@ -3,6 +3,7 @@
  */
 
 #include "b_json/b_json_entity_usr_config.h"
+#include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -10,33 +11,37 @@ using namespace std;
 
 BJsonEntityUsrConfig::BJsonEntityUsrConfig(Json::Value &obj) : obj_(obj) {}
 
-vector<string> BJsonEntityUsrConfig::GetIncludeDirs()
+vector<string> BJsonEntityUsrConfig::GetIncludeDirs() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
-        return {""};
+        return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
     if (!obj_.isMember("includeDirs")) {
         HILOGE("'includeDirs' field not found");
-        return {""};
+        return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
     if (!obj_["includeDirs"].isArray()) {
         HILOGE("'includeDirs' field must be an array");
-        return {""};
+        return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
 
     vector<string> dirs;
     for (auto &&item : obj_["includeDirs"]) {
         if (!item.isString()) {
             HILOGE("Each item of array 'includeDirs' must be of the type string");
-            return {""};
+            continue;
         }
         dirs.push_back(item.asString());
+    }
+
+    if (dirs.empty()) {
+        dirs.emplace_back("");
     }
     return dirs;
 }
 
-vector<string> BJsonEntityUsrConfig::GetExcludeDirs()
+vector<string> BJsonEntityUsrConfig::GetExcludeDirs() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
@@ -62,7 +67,7 @@ vector<string> BJsonEntityUsrConfig::GetExcludeDirs()
     return dirs;
 }
 
-bool BJsonEntityUsrConfig::GetAllowToBackup()
+bool BJsonEntityUsrConfig::GetAllowToBackup() const
 {
     if (!obj_ || !obj_.isMember("allowToBackup") || !obj_["allowToBackup"].isBool()) {
         HILOGE("Failed to init field allowToBackup");

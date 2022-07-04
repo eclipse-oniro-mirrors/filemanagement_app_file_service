@@ -20,6 +20,7 @@ config("utils_public_config") {
 ohos_shared_library("backup_utils") {
   sources = [
     "src/b_error/b_error.cpp",
+    "src/b_filesystem/b_dir.cpp",
     "src/b_filesystem/b_file.cpp",
     "src/b_json/b_json_entity_usr_config.cpp",
     "src/b_process/b_guard_cwd.cpp",

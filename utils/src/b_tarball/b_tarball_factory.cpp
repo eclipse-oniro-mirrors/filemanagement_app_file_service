@@ -46,33 +46,19 @@ static void UntarFort(string_view root)
  * 要求输入相对路径，不填默认全部打包
  * @param excludes 待打包路径中无需打包的部分
  * 要求输入相对路径。可用于排除部分子目录
- * @return std::tuple<vector<string>, vector<string>> 去掉开头的斜线的includeDirs, excludeDirs
+ * @return std::tuple<vector<string>, vector<string>> 返回合法的includeDirs, excludeDirs
  */
-static std::tuple<vector<string>, vector<string>> TarFilter(string_view tarballDir,
-                                                            string_view root,
-                                                            vector<string_view> includes,
-                                                            vector<string_view> excludes)
+static tuple<vector<string_view>, vector<string_view>> TarFilter(string_view tarballDir,
+                                                                 string_view root,
+                                                                 vector<string_view> includes,
+                                                                 vector<string_view> excludes)
 {
     auto resolvedPath = make_unique<char[]>(PATH_MAX);
     if (!realpath(root.data(), resolvedPath.get()) || (string_view(resolvedPath.get()) != root)) {
         throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "The root must be an existing canonicalized path");
     }
 
-    auto removeFrontSlash = [](const string_view &arg) -> string {
-        size_t i = 0;
-        for (; i < arg.size(); ++i) {
-            if (arg[i] != '/') {
-                break;
-            }
-        }
-        return arg.data() + i;
-    };
-    vector<string> newIncludeDirs;
-    transform(includes.begin(), includes.end(), back_inserter(newIncludeDirs), removeFrontSlash);
-    vector<string> newExcludeDirs;
-    transform(excludes.begin(), excludes.end(), back_inserter(newExcludeDirs), removeFrontSlash);
-
-    return {newIncludeDirs, newExcludeDirs};
+    return {includes, excludes};
 }
 
 /**
