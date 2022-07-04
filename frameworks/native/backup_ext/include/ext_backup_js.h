@@ -6,6 +6,7 @@
 #define OHOS_FILEMGMT_BACKUP_EXT_BACKUP_JS_H
 
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include "b_json/b_json_entity_usr_config.h"
@@ -69,8 +70,9 @@ public:
     ~ExtBackupJs() override = default;
 
 private:
-    NativeValue *CallObjectMethod(std::string_view name, const std::vector<NativeValue *> &argv = {});
-    int HandleBackup(BJsonEntityUsrConfig &cache);
+    std::tuple<ErrCode, NativeValue *> CallObjectMethod(std::string_view name,
+                                                        const std::vector<NativeValue *> &argv = {});
+    int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
     int HandleRestore();
 
     AbilityRuntime::JsRuntime &jsRuntime_;

@@ -56,7 +56,7 @@ public:
         SA_INVAL_ARG = 0x3000,
         SA_BROKEN_IPC = 0x3001,
         SA_REFUSED_ACT = 0x3002,
-        SA_BROKEN_ROOT_DIR = 0x3002,
+        SA_BROKEN_ROOT_DIR = 0x3003,
 
         // 0x4000~0x4999 backup_SDK错误
         SDK_INVAL_ARG = 0x4000,

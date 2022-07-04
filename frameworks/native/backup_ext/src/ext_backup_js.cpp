@@ -5,13 +5,16 @@
 #include "ext_backup_js.h"
 
 #include <sstream>
+#include <sys/types.h>
 
 #include "b_error/b_error.h"
+#include "b_filesystem/b_dir.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_usr_config.h"
 #include "b_resources/b_constants.h"
 #include "b_tarball/b_tarball_factory.h"
 #include "bundle_mgr_client.h"
+#include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "js_runtime_utils.h"
 #include "service_proxy.h"
@@ -77,12 +80,12 @@ void ExtBackupJs::Init(const shared_ptr<AppExecFwk::AbilityLocalRecord> &record,
     }
 }
 
-NativeValue *ExtBackupJs::CallObjectMethod(string_view name, const vector<NativeValue *> &argv)
+tuple<ErrCode, NativeValue *> ExtBackupJs::CallObjectMethod(string_view name, const vector<NativeValue *> &argv)
 {
     HILOGI("Call %{public}s", name.data());
 
     if (!jsObj_) {
-        throw BError(BError::Codes::EXT_BROKEN_FRAMEWORK, "Invalid jsObj_");
+        return {BError(BError::Codes::EXT_BROKEN_FRAMEWORK, "Invalid jsObj_").GetCode(), nullptr};
     }
 
     AbilityRuntime::HandleScope handleScope(jsRuntime_);
@@ -90,45 +93,48 @@ NativeValue *ExtBackupJs::CallObjectMethod(string_view name, const vector<Native
     NativeValue *value = jsObj_->Get();
     NativeObject *obj = AbilityRuntime::ConvertNativeValueTo<NativeObject>(value);
     if (!obj) {
-        throw BError(BError::Codes::EXT_INVAL_ARG, "The custom BackupAbilityExtension is required to be an object");
+        return {BError(BError::Codes::EXT_INVAL_ARG, "The custom BackupAbilityExtension is required to be an object")
+                    .GetCode(),
+                nullptr};
     }
 
     NativeValue *method = obj->GetProperty(name.data());
     if (!method || method->TypeOf() != NATIVE_FUNCTION) {
-        throw BError(BError::Codes::EXT_INVAL_ARG, string(name).append(" is required to be a function"));
+        return {BError(BError::Codes::EXT_INVAL_ARG, string(name).append(" is required to be a function")).GetCode(),
+                nullptr};
     }
 
     auto ret = jsRuntime_.GetNativeEngine().CallFunction(value, method, argv.data(), argv.size());
     if (!ret) {
-        throw BError(BError::Codes::EXT_INVAL_ARG, string(name).append(" raised an exception"));
+        return {BError(BError::Codes::EXT_INVAL_ARG, string(name).append(" raised an exception")).GetCode(), nullptr};
     }
-    return ret;
+    return {BError(BError::Codes::OK).GetCode(), ret};
 }
 
-int ExtBackupJs::HandleBackup(BJsonEntityUsrConfig &cache)
+int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
 {
     HILOGI("Do backup");
 
     try {
+        (void)CallObjectMethod("onBackup");
+
         string backupPath = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup");
         if (access(backupPath.data(), F_OK) != 0 && mkdir(backupPath.data(), S_IRWXU) != 0) {
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder backup");
+            stringstream ss;
+            ss << "Failed to create folder backup. ";
+            ss << std::generic_category().message(errno);
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
         }
         // REM: 打包（处理includeDir, excludeDir），反馈，退出进程
         string pkgName = "1.tar";
         string tarName = backupPath.append("/").append(pkgName);
         string root = "/";
 
-        vector<string> incDirs = cache.GetIncludeDirs();
-        vector<string> excDirs = cache.GetExcludeDirs();
-        if (incDirs.size() == 0) {
-            incDirs.insert(incDirs.end(), BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end());
-        }
+        vector<string> incDirs = usrConfig.GetIncludeDirs();
+        vector<string> excDirs = usrConfig.GetExcludeDirs();
 
         auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
         (tarballFunc->tar)(root, {incDirs.begin(), incDirs.end()}, {excDirs.begin(), excDirs.end()});
-
-        (void)CallObjectMethod("onBackup");
 
         auto proxy = ServiceProxy::GetInstance();
         if (proxy == nullptr) {
@@ -161,17 +167,24 @@ int ExtBackupJs::HandleRestore()
     HILOGI("Do restore");
 
     try {
-        // REM: 有extension就先解压到backup/restore目录，后续进行reName，否则直接在根目录解压
-        //(void)CallObjectMethod("onRestore");
         // REM: 给定version
         // REM: 解压启动Extension时即挂载好的备份目录中的数据
-        string pkgName = "1.tar";
-        string tarName = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup/").append(pkgName);
+        string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup/");
         string root = string(BConstants::PATH_BUNDLE_BACKUP_HOME);
 
-        auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
-        (tarballFunc->untar)(root);
-        HILOGI("Application recovered successfully, package path is %{public}s", tarName.c_str());
+        auto [errCode, files] = BDir::GetDirFiles(path);
+        if (errCode) {
+            throw BError(errCode);
+        }
+
+        for (auto &tarName : files) {
+            if (ExtractFileExt(tarName) != "tar")
+                continue;
+
+            auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
+            (tarballFunc->untar)(root);
+            HILOGI("Application recovered successfully, package path is %{public}s", tarName.c_str());
+        }
 
         return ERR_OK;
     } catch (const BError &e) {

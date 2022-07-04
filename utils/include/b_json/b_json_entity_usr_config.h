@@ -22,25 +22,27 @@ public:
     BJsonEntityUsrConfig(Json::Value &obj);
 
     /**
-     * @brief 从JSon对象中获取包含目录列表
+     * @brief 从JSon对象中通过includeDirs字段获取待备份目录模式串清单
      *
-     * @return 包含目录
+     * @return 待备份目录模式串清单
+     * @note 如果用户没有配置该字段，则返回默认打包目录{@link BConstants::PATHES_TO_BACKUP}
+     * @note 如果用户配置了空数组，则返回""表示生成空打包文件
      */
-    std::vector<std::string> GetIncludeDirs();
+    std::vector<std::string> GetIncludeDirs() const;
 
     /**
      * @brief 从JSon对象中获取排除目录列表
      *
      * @return 排除目录
      */
-    std::vector<std::string> GetExcludeDirs();
+    std::vector<std::string> GetExcludeDirs() const;
 
     /**
      * @brief 从JSon对象中获取备份权限
      *
      * @return 备份权限
      */
-    bool GetAllowToBackup();
+    bool GetAllowToBackup() const;
 
 private:
     Json::Value &obj_;
