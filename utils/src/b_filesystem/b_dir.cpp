@@ -24,7 +24,7 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
     }
 
     struct dirent *ptr = nullptr;
-    while (!(ptr = readdir(dir.get()))) {
+    while (!!(ptr = readdir(dir.get()))) {
         // current dir OR parent dir
         if ((strcmp(ptr->d_name, ".") == 0) || (strcmp(ptr->d_name, "..") == 0)) {
             continue;
