@@ -5,6 +5,7 @@
 #include "ext_backup_js.h"
 
 #include <sstream>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include "b_error/b_error.h"
@@ -135,6 +136,9 @@ int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
 
         auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
         (tarballFunc->tar)(root, {incDirs.begin(), incDirs.end()}, {excDirs.begin(), excDirs.end()});
+        if (chmod(tarName.data(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) < 0) {
+            throw BError(errno);
+        }
 
         auto proxy = ServiceProxy::GetInstance();
         if (proxy == nullptr) {
