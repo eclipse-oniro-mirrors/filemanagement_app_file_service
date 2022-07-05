@@ -174,7 +174,6 @@ int ExtBackupJs::HandleRestore()
         // REM: 给定version
         // REM: 解压启动Extension时即挂载好的备份目录中的数据
         string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup/");
-        string root = string(BConstants::PATH_BUNDLE_BACKUP_HOME);
 
         auto [errCode, files] = BDir::GetDirFiles(path);
         if (errCode) {
@@ -186,7 +185,7 @@ int ExtBackupJs::HandleRestore()
                 continue;
 
             auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
-            (tarballFunc->untar)(root);
+            (tarballFunc->untar)("/");
             HILOGI("Application recovered successfully, package path is %{public}s", tarName.c_str());
         }
 
