@@ -32,11 +32,15 @@ ohos_unittest("b_file_test") {
 ohos_unittest("b_json_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [ "b_json/b_json_cached_entity_test.cpp" ]
+  sources = [
+    "b_json/b_json_cached_entity_test.cpp",
+    "b_json/b_json_entity_usr_config_test.cpp",
+  ]
 
   include_dirs = [ "${path_base}/include" ]
 
   deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
     "${path_backup}/utils/:backup_utils",
     "${path_googletest}:gmock_main",
   ]

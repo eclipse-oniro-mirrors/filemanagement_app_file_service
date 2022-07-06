@@ -32,18 +32,19 @@ HWTEST_F(ToolsTest, tool_backup_restore_0100, testing::ext::TestSize.Level0)
         std::string path = tm.GetRootDirCurTest();
         std::string filePath = path + "tmp";
 
+        // 可以通过 `bm dump -a -u <user-id>` 获取应用清单
         int ret = BProcess::ExecuteCmd({
             "backup_tool",
             "restore",
-            filePath.data(),
-            "com.ohos.settings",
+            filePath,
+            "com.ohos.settingsdata",
         });
         EXPECT_EQ(ret, 0);
         ret = BProcess::ExecuteCmd({
             "backup_tool",
             "backup",
-            filePath.data(),
-            "com.ohos.settings",
+            filePath,
+            "com.ohos.settingsdata",
         });
         EXPECT_EQ(ret, 0);
     } catch (...) {
