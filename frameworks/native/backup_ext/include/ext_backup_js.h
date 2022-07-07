@@ -74,6 +74,7 @@ private:
                                                         const std::vector<NativeValue *> &argv = {});
     int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
     int HandleRestore();
+    int HandleClear();
 
     AbilityRuntime::JsRuntime &jsRuntime_;
     std::unique_ptr<NativeReference> jsObj_;

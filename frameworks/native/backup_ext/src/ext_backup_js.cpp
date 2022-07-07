@@ -4,6 +4,7 @@
 
 #include "ext_backup_js.h"
 
+#include <cstdio>
 #include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -252,6 +253,10 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
                     ret = HandleBackup(cache);
                 } else if (extAction == ExtensionAction::RESTORE) {
                     ret = HandleRestore();
+                } else if (extAction == ExtensionAction::CLEAR) {
+                    HandleClear();
+                    // 清理任务无需反馈结果，因此直接退出
+                    return;
                 }
             }
         }
@@ -265,9 +270,10 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
     // REM: 处理返回结果 ret
     auto proxy = ServiceProxy::GetInstance();
     if (proxy == nullptr) {
-        throw BError(BError::Codes::EXT_BROKEN_BACKUP_SA, std::generic_category().message(errno));
+        HILOGE("Failed to obtain the ServiceProxy handle");
+    } else {
+        proxy->AppDone(ret);
     }
-    proxy->AppDone(ret);
     // REM: 通过杀死进程实现 Stop
 }
 
@@ -275,5 +281,33 @@ ExtBackupJs *ExtBackupJs::Create(const unique_ptr<AbilityRuntime::Runtime> &runt
 {
     HILOGI("Boot 5# Create as an BackupExtensionAbility(JS)");
     return new ExtBackupJs(static_cast<AbilityRuntime::JsRuntime &>(*runtime));
+}
+
+int ExtBackupJs::HandleClear()
+{
+    HILOGI("Do clear");
+
+    try {
+        string backupCache = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_BAKCUP);
+        string restoreCache = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
+
+        if (!ForceRemoveDirectory(backupCache)) {
+            HILOGI("Failed to delete the backup cache %{public}s", backupCache.c_str());
+        }
+
+        if (!ForceRemoveDirectory(restoreCache)) {
+            HILOGI("Failed to delete the restore cache %{public}s", restoreCache.c_str());
+        }
+
+        return ERR_OK;
+    } catch (const BError &e) {
+        return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("%{public}s", e.what());
+        return EPERM;
+    } catch (...) {
+        HILOGE("");
+        return EPERM;
+    }
 }
 } // namespace OHOS::FileManagement::Backup
