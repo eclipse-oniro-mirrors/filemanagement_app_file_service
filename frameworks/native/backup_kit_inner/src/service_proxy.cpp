@@ -115,11 +115,15 @@ UniqueFd ServiceProxy::GetLocalCapabilities()
     return fd;
 }
 
-tuple<ErrCode, TmpFileSN, UniqueFd> ServiceProxy::GetFileOnServiceEnd()
+tuple<ErrCode, TmpFileSN, UniqueFd> ServiceProxy::GetFileOnServiceEnd(string &bundleName)
 {
     HILOGI("Start");
     MessageParcel data;
     data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteString(bundleName)) {
+        return {BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the bundleName").GetCode(), 0, UniqueFd(-1)};
+    }
 
     MessageParcel reply;
     MessageOption option;
