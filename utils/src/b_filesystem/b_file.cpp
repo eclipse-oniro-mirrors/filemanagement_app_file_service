@@ -5,6 +5,7 @@
 #include "b_filesystem/b_file.h"
 
 #include <cstring>
+#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <system_error>
@@ -37,5 +38,36 @@ unique_ptr<char[]> BFile::ReadFile(const UniqueFd &fd)
         throw BError(errno);
     }
     return buf;
+}
+
+void BFile::SendFile(int out_fd, int in_fd)
+{
+    long offset = 0;
+    long ret = 0;
+    if (lseek(out_fd, 0, SEEK_SET) == -1) {
+        throw BError(errno);
+    }
+    if (lseek(in_fd, 0, SEEK_SET) == -1) {
+        throw BError(errno);
+    }
+    struct stat stat = {};
+    if (fstat(in_fd, &stat) == -1) {
+        throw BError(errno);
+    }
+    while ((ret = sendfile(out_fd, in_fd, &offset, stat.st_size)) > 0);
+    if (ret == -1) {
+        throw BError(errno);
+    }
+}
+
+void BFile::Write(const UniqueFd &fd, const string &str)
+{
+    int ret = pwrite(fd, str.c_str(), str.length(), 0);
+    if (ret == -1) {
+        throw BError(errno);
+    }
+    if (ftruncate(fd, ret) == -1) {
+        throw BError(errno);
+    }
 }
 } // namespace OHOS::FileManagement::Backup

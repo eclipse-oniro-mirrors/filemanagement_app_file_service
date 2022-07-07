@@ -10,10 +10,11 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <regex>
 #include <string>
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
@@ -88,23 +89,20 @@ static string GenHelpMsg()
 
 static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, UniqueFd fd)
 {
-    printf("FileReady owner = %s, fileName = %s, sn = %d, fd = %d\n", fileInfo.owner.c_str(), fileInfo.fileName.c_str(),
+    printf("FileReady owner = %s, fileName = %s, sn = %u, fd = %d\n", fileInfo.owner.c_str(), fileInfo.fileName.c_str(),
            fileInfo.sn, fd.Get());
     string tmpPath = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + fileInfo.owner;
     if (access(tmpPath.data(), F_OK) != 0 && mkdir(tmpPath.data(), S_IRWXU) != 0) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
     }
-    struct stat stat = {};
-    if (fstat(fd, &stat) == -1) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+    if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, "Filename is not alphanumeric");
     }
     UniqueFd fdLocal(open((tmpPath + "/" + fileInfo.fileName).data(), O_WRONLY | O_CREAT, S_IRWXU));
     if (fdLocal < 0) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
     }
-    if (sendfile(fdLocal, fd, nullptr, stat.st_size) == -1) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
-    }
+    BFile::SendFile(fdLocal, fd);
     ctx->UpdateBundleReceivedFiles(fileInfo.owner);
     ctx->TryNotify();
 }
@@ -116,7 +114,7 @@ static void OnBundleStarted(ErrCode err, const BundleName name)
 
 static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name, uint32_t existingFiles)
 {
-    printf("BundleFinished errCode = %d, BundleName = %s, existingFiles = %d\n", err, name.c_str(), existingFiles);
+    printf("BundleFinished errCode = %d, BundleName = %s, existingFiles = %u\n", err, name.c_str(), existingFiles);
     ctx->SetBundleTotalFiles(name, existingFiles);
     ctx->TryNotify();
 }
