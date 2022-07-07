@@ -164,7 +164,7 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<B
 
 ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
                                    UniqueFd fd,
-                                   const std::vector<BundleName> &bundleNames)
+                                   const vector<BundleName> &bundleNames)
 {
     try {
         map<BundleName, BackupExtInfo> backupExtNameMap;
@@ -204,9 +204,9 @@ ErrCode Service::Start()
         for (auto it : backupExtNameMap) {
             int ret = LaunchBackupExtension(scenario, it.first, it.second.backupExtName);
             if (scenario == IServiceReverse::Scenario::BACKUP) {
-                proxy->BackupOnSubTaskStarted(ret, it.first);
+                proxy->BackupOnBundleStarted(ret, it.first);
             } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-                proxy->RestoreOnSubTaskStarted(ret, it.first);
+                proxy->RestoreOnBundleStarted(ret, it.first);
             } else {
                 string pendingMsg = string("Invalid scenario ").append(to_string(static_cast<int32_t>(scenario)));
                 throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
@@ -367,9 +367,9 @@ ErrCode Service::AppDone(ErrCode errCode)
             uint32_t bundleTotalFiles = files.size(); // REM:重新写一个 现阶段没有现成接口
             session_.UpdateExtMapInfo(callerName, true, bundleTotalFiles);
 
-            proxy->BackupOnSubTaskFinished(errCode, callerName, bundleTotalFiles);
+            proxy->BackupOnBundleFinished(errCode, callerName, bundleTotalFiles);
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-            proxy->RestoreOnSubTaskFinished(errCode, callerName);
+            proxy->RestoreOnBundleFinished(errCode, callerName);
         } else {
             throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
         }

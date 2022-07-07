@@ -24,13 +24,13 @@ private:
     std::map<uint32_t, ServiceInterface> opToInterfaceMap_;
 
     int32_t CmdBackupOnFileReady(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdBackupOnSubTaskStarted(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdBackupOnSubTaskFinished(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdBackupOnTaskFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdBackupOnBundleStarted(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdBackupOnBundleFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdBackupOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply);
 
-    int32_t CmdRestoreOnSubTaskStarted(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdRestoreOnSubTaskFinished(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdRestoreOnTaskFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdRestoreOnBundleStarted(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdRestoreOnBundleFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdRestoreOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply);
 };
 } // namespace OHOS::FileManagement::Backup
 

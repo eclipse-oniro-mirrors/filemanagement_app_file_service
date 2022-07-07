@@ -61,18 +61,18 @@ static string GenHelpMsg()
            "path_cap_file bundleName1 bundleName2...";
 }
 
-static void OnSubTaskStarted(ErrCode err, const BundleName name)
+static void OnBundleStarted(ErrCode err, const BundleName name)
 {
-    printf("SubTaskStarted errCode = %d, BundleName = %s\n", err, name.c_str());
+    printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
 }
 
-static void OnSubTaskFinished(shared_ptr<RstoreSession> ctx, ErrCode err, const BundleName name)
+static void OnBundleFinished(shared_ptr<RstoreSession> ctx, ErrCode err, const BundleName name)
 {
-    printf("SubTaskFinished errCode = %d, BundleName = %s\n", err, name.c_str());
+    printf("BundleFinished errCode = %d, BundleName = %s\n", err, name.c_str());
     ctx->UpdateBundleCountAndTryNotifty();
 }
 
-static void OnTaskFinished(ErrCode err)
+static void OnAllBundlesFinished(ErrCode err)
 {
     if (err == 0) {
         printf("Restore successful\n");
@@ -136,9 +136,9 @@ static int32_t Init(string_view pathCapFile, ToolsOp::CRefVStrView args)
     auto ctx = make_shared<RstoreSession>();
     ctx->session_ = BSessionRestore::Init(
         bundleNames, BSessionRestore::Callbacks {
-                        .onSubTaskStarted = OnSubTaskStarted,
-                        .onSubTaskFinished = bind(OnSubTaskFinished, ctx, placeholders::_1, placeholders::_2),
-                        .onTaskFinished = OnTaskFinished,
+                        .onBundleStarted = OnBundleStarted,
+                        .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
+                        .onAllBundlesFinished = OnAllBundlesFinished,
                         .onBackupServiceDied = OnBackupServiceDied,
                      });
     if (ctx->session_ == nullptr) {

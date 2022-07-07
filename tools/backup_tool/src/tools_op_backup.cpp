@@ -109,19 +109,19 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
     ctx->TryNotify();
 }
 
-static void OnSubTaskStarted(ErrCode err, const BundleName name)
+static void OnBundleStarted(ErrCode err, const BundleName name)
 {
-    printf("SubTaskStarted errCode = %d, BundleName = %s\n", err, name.c_str());
+    printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
 }
 
-static void OnSubTaskFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name, uint32_t existingFiles)
+static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name, uint32_t existingFiles)
 {
-    printf("SubTaskFinished errCode = %d, BundleName = %s, existingFiles = %d\n", err, name.c_str(), existingFiles);
+    printf("BundleFinished errCode = %d, BundleName = %s, existingFiles = %d\n", err, name.c_str(), existingFiles);
     ctx->SetBundleTotalFiles(name, existingFiles);
     ctx->TryNotify();
 }
 
-static void OnTaskFinished(shared_ptr<Session> ctx, ErrCode err)
+static void OnAllBundlesFinished(shared_ptr<Session> ctx, ErrCode err)
 {
     if (err == 0) {
         printf("backup successful\n");
@@ -160,9 +160,9 @@ static int32_t InitPathCapFile(string_view pathCapFile, ToolsOp::CRefVStrView ar
         move(fd), bundleNames,
         BSessionBackup::Callbacks {
             .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
-            .onSubTaskStarted = OnSubTaskStarted,
-            .onSubTaskFinished = bind(OnSubTaskFinished, ctx, placeholders::_1, placeholders::_2, placeholders::_3),
-            .onTaskFinished = bind(OnTaskFinished, ctx, placeholders::_1),
+            .onBundleStarted = OnBundleStarted,
+            .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2, placeholders::_3),
+            .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
             .onBackupServiceDied = OnBackupServiceDied,
         });
     if (ctx->session_ == nullptr) {

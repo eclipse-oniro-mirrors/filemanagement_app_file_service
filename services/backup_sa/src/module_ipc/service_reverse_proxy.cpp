@@ -10,7 +10,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void ServiceReverseProxy::BackupOnFileReady(std::string bundleName, std::string fileName, int fd)
+void ServiceReverseProxy::BackupOnFileReady(string bundleName, string fileName, int fd)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -23,11 +23,11 @@ void ServiceReverseProxy::BackupOnFileReady(std::string bundleName, std::string 
     MessageOption option;
     if (int err = Remote()->SendRequest(IServiceReverse::SERVICER_BACKUP_ON_FILE_READY, data, reply, option);
         err != ERR_OK) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, std::to_string(err));
+        throw BError(BError::Codes::SA_BROKEN_IPC, to_string(err));
     }
 }
 
-void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string bundleName)
+void ServiceReverseProxy::BackupOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -39,11 +39,11 @@ void ServiceReverseProxy::BackupOnSubTaskStarted(int32_t errCode, std::string bu
     MessageOption option;
     if (int err = Remote()->SendRequest(IServiceReverse::SERVICER_BACKUP_ON_SUB_TASK_STARTED, data, reply, option);
         err != ERR_OK) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, std::to_string(err));
+        throw BError(BError::Codes::SA_BROKEN_IPC, to_string(err));
     }
 }
 
-void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles)
+void ServiceReverseProxy::BackupOnBundleFinished(int32_t errCode, string bundleName, uint32_t bundleTotalFiles)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -60,7 +60,7 @@ void ServiceReverseProxy::BackupOnSubTaskFinished(int32_t errCode, std::string b
     }
 }
 
-void ServiceReverseProxy::BackupOnTaskFinished(int32_t errCode)
+void ServiceReverseProxy::BackupOnAllBundlesFinished(int32_t errCode)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -76,7 +76,7 @@ void ServiceReverseProxy::BackupOnTaskFinished(int32_t errCode)
     }
 }
 
-void ServiceReverseProxy::RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName)
+void ServiceReverseProxy::RestoreOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -92,7 +92,7 @@ void ServiceReverseProxy::RestoreOnSubTaskStarted(int32_t errCode, std::string b
     }
 }
 
-void ServiceReverseProxy::RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName)
+void ServiceReverseProxy::RestoreOnBundleFinished(int32_t errCode, string bundleName)
 {
     HILOGI("Begin");
     MessageParcel data;
@@ -108,7 +108,7 @@ void ServiceReverseProxy::RestoreOnSubTaskFinished(int32_t errCode, std::string 
     }
 }
 
-void ServiceReverseProxy::RestoreOnTaskFinished(int32_t errCode)
+void ServiceReverseProxy::RestoreOnAllBundlesFinished(int32_t errCode)
 {
     HILOGI("Begin");
     MessageParcel data;

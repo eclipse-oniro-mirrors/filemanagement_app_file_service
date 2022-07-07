@@ -10,7 +10,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void ServiceReverse::BackupOnFileReady(std::string bundleName, std::string fileName, int fd)
+void ServiceReverse::BackupOnFileReady(string bundleName, string fileName, int fd)
 {
     HILOGI("bundlename = %{public}s, filename = %{private}s, fd = %{private}d", bundleName.c_str(), fileName.c_str(),
            fd);
@@ -21,59 +21,59 @@ void ServiceReverse::BackupOnFileReady(std::string bundleName, std::string fileN
     callbacksBackup_.onFileReady(bFileInfo, UniqueFd(fd));
 }
 
-void ServiceReverse::BackupOnSubTaskStarted(int32_t errCode, std::string bundleName)
+void ServiceReverse::BackupOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
-    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onSubTaskStarted) {
+    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onBundleStarted) {
         return;
     }
-    callbacksBackup_.onSubTaskStarted(errCode, bundleName);
+    callbacksBackup_.onBundleStarted(errCode, bundleName);
 }
 
-void ServiceReverse::BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles)
+void ServiceReverse::BackupOnBundleFinished(int32_t errCode, string bundleName, uint32_t bundleTotalFiles)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s, files = %{public}d", errCode, bundleName.c_str(),
            bundleTotalFiles);
-    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onSubTaskFinished) {
+    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onBundleFinished) {
         return;
     }
-    callbacksBackup_.onSubTaskFinished(errCode, bundleName, bundleTotalFiles);
+    callbacksBackup_.onBundleFinished(errCode, bundleName, bundleTotalFiles);
 }
 
-void ServiceReverse::BackupOnTaskFinished(int32_t errCode)
+void ServiceReverse::BackupOnAllBundlesFinished(int32_t errCode)
 {
     HILOGI("errCode = %{public}d", errCode);
-    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onTaskFinished) {
+    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onAllBundlesFinished) {
         return;
     }
-    callbacksBackup_.onTaskFinished(errCode);
+    callbacksBackup_.onAllBundlesFinished(errCode);
 }
 
-void ServiceReverse::RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName)
+void ServiceReverse::RestoreOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
-    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onSubTaskStarted) {
+    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onBundleStarted) {
         return;
     }
-    callbacksRestore_.onSubTaskStarted(errCode, bundleName);
+    callbacksRestore_.onBundleStarted(errCode, bundleName);
 }
 
-void ServiceReverse::RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName)
+void ServiceReverse::RestoreOnBundleFinished(int32_t errCode, string bundleName)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
-    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onSubTaskFinished) {
+    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onBundleFinished) {
         return;
     }
-    callbacksRestore_.onSubTaskFinished(errCode, bundleName);
+    callbacksRestore_.onBundleFinished(errCode, bundleName);
 }
 
-void ServiceReverse::RestoreOnTaskFinished(int32_t errCode)
+void ServiceReverse::RestoreOnAllBundlesFinished(int32_t errCode)
 {
     HILOGI("errCode = %{public}d", errCode);
-    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onTaskFinished) {
+    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onAllBundlesFinished) {
         return;
     }
-    callbacksRestore_.onTaskFinished(errCode);
+    callbacksRestore_.onAllBundlesFinished(errCode);
 }
 
 ServiceReverse::ServiceReverse(BSessionBackup::Callbacks callbacks)
