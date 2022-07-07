@@ -15,6 +15,7 @@ enum class ExtensionAction {
     INVALID = 0,
     BACKUP = 1,
     RESTORE = 2,
+    CLEAR = 3,
 };
 
 constexpr int SPAN_USERID_UID = 20000000;
