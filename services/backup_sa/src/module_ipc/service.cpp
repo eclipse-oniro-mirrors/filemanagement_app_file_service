@@ -42,14 +42,6 @@ void Service::OnStart()
 {
     bool res = SystemAbility::Publish(sptr(this));
     HILOGI("End, res = %{public}d", res);
-
-    string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
-    if (access(tmpPath.data(), F_OK) == 0 && !ForceRemoveDirectory(tmpPath.data())) {
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to clear folder tmp");
-    }
-    if (access(tmpPath.data(), F_OK) != 0 && mkdir(tmpPath.data(), S_IRWXU) != 0) {
-        throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder tmp");
-    }
 }
 
 void Service::OnStop()
@@ -224,19 +216,26 @@ ErrCode Service::Start()
     }
 }
 
-tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
+tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd(string &bundleName)
 {
     try {
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         TmpFileSN tmpFileSN = seed++;
-        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR) +
-                         to_string(tmpFileSN);
+        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
+                             .append(bundleName)
+                             .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
+        if (!ForceCreateDirectory(tmpPath)) { // 强制创建文件夹
+            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
+        }
+
+        tmpPath.append(to_string(tmpFileSN));
         if (access(tmpPath.data(), F_OK) == 0) {
             // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
         }
-        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0600));
+
+        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0660));
         if (fd < 0) {
             stringstream ss;
             ss << "Failed to open tmpPath " << errno;
@@ -265,7 +264,9 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
 
-        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
+        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
+                             .append(fileInfo.owner)
+                             .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
         UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
         if (dfdTmp < 0) {
             stringstream ss;
@@ -273,12 +274,14 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
         }
 
-        string path = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + fileInfo.owner + string("/");
-        if (access(path.data(), F_OK) != 0 && mkdir(path.data(), S_IRWXU) != 0) {
+        string pathRx = string(BConstants::SA_BUNDLE_BACKUP_DIR)
+                            .append(fileInfo.owner)
+                            .append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
+        if (!ForceCreateDirectory(pathRx)) { // 强制创建文件夹
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
         }
 
-        UniqueFd dfdNew(open(path.data(), O_RDONLY));
+        UniqueFd dfdNew(open(pathRx.data(), O_RDONLY));
         if (dfdNew < 0) {
             stringstream ss;
             ss << "Failed to open path " << errno;
@@ -316,8 +319,7 @@ ErrCode Service::AppFileReady(const string &fileName)
                           .append(callerName)
                           .append(BConstants::SA_BUNDLE_BACKUP_BAKCUP)
                           .append(fileName);
-        HILOGE("This path %{public}s", path.data());
-        UniqueFd fd(open(path.data(), O_RDWR, 0600));
+        UniqueFd fd(open(path.data(), O_RDONLY));
         if (fd < 0) {
             stringstream ss;
             ss << "Failed to open path " << errno;

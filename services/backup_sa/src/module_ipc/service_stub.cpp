@@ -128,7 +128,12 @@ int32_t ServiceStub::CmdGetLocalCapabilities(MessageParcel &data, MessageParcel 
 int32_t ServiceStub::CmdGetFileOnServiceEnd(MessageParcel &data, MessageParcel &reply)
 {
     HILOGE("Begin");
-    auto [errCode, tmpFileSN, fd] = GetFileOnServiceEnd();
+    string bundleName;
+    if (!data.ReadString(bundleName)) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive bundleName");
+    }
+
+    auto [errCode, tmpFileSN, fd] = GetFileOnServiceEnd(bundleName);
     if (!reply.WriteInt32(errCode) || !reply.WriteUint32(tmpFileSN) || !reply.WriteFileDescriptor(fd)) {
         throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to send the result");
     }

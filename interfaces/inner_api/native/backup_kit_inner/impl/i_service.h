@@ -33,7 +33,7 @@ public:
                                       const std::vector<BundleName> &bundleNames) = 0;
     virtual ErrCode Start() = 0;
     virtual UniqueFd GetLocalCapabilities() = 0;
-    virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd() = 0;
+    virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) = 0;
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;
     virtual ErrCode AppFileReady(const std::string &fileName) = 0;
     virtual ErrCode AppDone(ErrCode errCode) = 0;

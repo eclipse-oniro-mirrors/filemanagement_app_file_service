@@ -41,13 +41,13 @@ UniqueFd BSessionRestore::GetLocalCapabilities()
     return UniqueFd(proxy->GetLocalCapabilities());
 }
 
-tuple<ErrCode, TmpFileSN, UniqueFd> BSessionRestore::GetFileOnServiceEnd()
+tuple<ErrCode, TmpFileSN, UniqueFd> BSessionRestore::GetFileOnServiceEnd(string &bundleName)
 {
     auto proxy = ServiceProxy::GetInstance();
     if (proxy == nullptr) {
         return {ErrCode(BError::Codes::SDK_BROKEN_IPC), 0, UniqueFd(-1)};
     }
-    return proxy->GetFileOnServiceEnd();
+    return proxy->GetFileOnServiceEnd(bundleName);
 }
 
 ErrCode BSessionRestore::PublishFile(BFileInfo fileInfo)

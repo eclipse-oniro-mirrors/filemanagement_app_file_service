@@ -102,7 +102,7 @@ static void RestoreApp(shared_ptr<RstoreSession> restore, vector<BundleName> &bu
             throw BError(BError::Codes::TOOL_INVAL_ARG, "error path or empty dir");
         }
         for (auto &filePath : filePaths) {
-            const auto [errCode, tmpFileSN, RemoteFd] = restore->session_->GetFileOnServiceEnd();
+            const auto [errCode, tmpFileSN, RemoteFd] = restore->session_->GetFileOnServiceEnd(bundleName);
             if (errCode != 0 || RemoteFd < 0) {
                 throw BError(BError::Codes::TOOL_INVAL_ARG, "GetFileOnServiceEnd error");
             }

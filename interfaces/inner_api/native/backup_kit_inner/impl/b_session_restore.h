@@ -43,12 +43,13 @@ public:
     /**
      * @brief 获取在备份服务中打开的临时文件，用于接收对端设备发送的文件
      *
+     * @param bundleName 应用名称
      * @return ErrCode 规范错误码
      * @return TmpFileSN 临时文件名
      * @return UniqueFd 文件描述符
      * @see PublishFile
      */
-    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd();
+    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName);
 
     /**
      * @brief 通知备份服务文件内容已就绪
