@@ -14,9 +14,6 @@ ohos_shared_library("backup_sa") {
   defines = [
     "LOG_DOMAIN=0xD004303",
     "LOG_TAG=\"BackupSA\"",
-    "SA_ROOT_DIR=\"/data/service/el2/100/backup/backup_sa/\"",
-    "SA_TMP_DIR=\"tmp/\"",
-    "SA_GID=1089",
   ]
 
   include_dirs = [ "include" ]
