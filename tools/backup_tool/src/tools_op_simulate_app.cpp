@@ -31,11 +31,11 @@ void Tar(ToolsOp::CRefVStrView args)
 
     BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(fileName.data(), O_RDONLY, 0)));
     auto cache = cachedEntity.Structuralize();
-    vector<string> incDirs = cache.GetIncludeDirs();
-    vector<string> excDirs = cache.GetExcludeDirs();
+    vector<string> includes = cache.GetIncludes();
+    vector<string> excludes = cache.GetExcludes();
 
     auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
-    (tarballFunc->tar)(root, {incDirs.begin(), incDirs.end()}, {excDirs.begin(), excDirs.end()});
+    (tarballFunc->tar)(root, {includes.begin(), includes.end()}, {excludes.begin(), excludes.end()});
 }
 
 void Untar(ToolsOp::CRefVStrView args)

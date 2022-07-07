@@ -39,7 +39,7 @@ static vector<string> DEFAULT_EXCLUDE_DIR = {};
 /**
  * @tc.number: SUB_backup_b_json_entity_usr_config_0100
  * @tc.name: b_json_entity_usr_config_0100
- * @tc.desc: 不包含includeDirs和excludeDirs
+ * @tc.desc: 不包含includes和excludes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -57,10 +57,10 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0100, testing::ext::
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        EXPECT_EQ(incDirs, DEFAULT_INCLUDE_DIR);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        EXPECT_EQ(excDirs, DEFAULT_EXCLUDE_DIR);
+        vector<string> includes = cache.GetIncludes();
+        EXPECT_EQ(includes, DEFAULT_INCLUDE_DIR);
+        vector<string> excludes = cache.GetExcludes();
+        EXPECT_EQ(excludes, DEFAULT_EXCLUDE_DIR);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -71,7 +71,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0100, testing::ext::
 /**
  * @tc.number: SUB_backup_b_json_entity_usr_config_0200
  * @tc.name: b_json_entity_usr_config_0200
- * @tc.desc: json文件中只包含includeDirs
+ * @tc.desc: json文件中只包含includes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -85,13 +85,13 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0200, testing::ext::
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["", "", ""]})");
+        SaveStringToFile(pathConfigFile, R"({"includes":["", "", ""]})");
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        vector<string> incDirsExpect = {"", "", ""};
-        EXPECT_EQ(incDirs, incDirsExpect);
+        vector<string> includes = cache.GetIncludes();
+        vector<string> includesExpect = {"", "", ""};
+        EXPECT_EQ(includes, includesExpect);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -102,7 +102,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0200, testing::ext::
 /**
  * @tc.number: SUB_backup_b_json_entity_usr_config_0300
  * @tc.name: b_json_entity_usr_config_0300
- * @tc.desc: json文件中只包含excludeDirs
+ * @tc.desc: json文件中只包含excludes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -116,13 +116,13 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0300, testing::ext::
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":["", "", ""]})");
+        SaveStringToFile(pathConfigFile, R"({"excludes":["", "", ""]})");
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> excDirs = cache.GetExcludeDirs();
-        vector<string> excDirsExpect = {"", "", ""};
-        EXPECT_EQ(excDirs, excDirsExpect);
+        vector<string> excludes = cache.GetExcludes();
+        vector<string> excludesExpect = {"", "", ""};
+        EXPECT_EQ(excludes, excludesExpect);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -133,7 +133,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0300, testing::ext::
 /**
  * @tc.number: SUB_backup_b_json_entity_usr_config_0400
  * @tc.name: b_json_entity_usr_config_0400
- * @tc.desc: 同时包含includeDirs和excludeDirs
+ * @tc.desc: 同时包含includes和excludes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -147,16 +147,16 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0400, testing::ext::
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["", "", ""], "excludeDirs":["", "", ""]})");
+        SaveStringToFile(pathConfigFile, R"({"includes":["", "", ""], "excludes":["", "", ""]})");
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        vector<string> incDirsExpect = {"", "", ""};
-        EXPECT_EQ(incDirs, incDirsExpect);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        vector<string> excDirsExpect = {"", "", ""};
-        EXPECT_EQ(excDirs, excDirsExpect);
+        vector<string> includes = cache.GetIncludes();
+        vector<string> includesExpect = {"", "", ""};
+        EXPECT_EQ(includes, includesExpect);
+        vector<string> excludes = cache.GetExcludes();
+        vector<string> excludesExpect = {"", "", ""};
+        EXPECT_EQ(excludes, excludesExpect);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -185,12 +185,12 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0500, testing::ext::
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        vector<string> incDirsExpect = {DEFAULT_INCLUDE_DIR};
-        EXPECT_EQ(incDirs, incDirsExpect);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        vector<string> excDirsExpect = {DEFAULT_EXCLUDE_DIR};
-        EXPECT_EQ(excDirs, excDirsExpect);
+        vector<string> includes = cache.GetIncludes();
+        vector<string> includesExpect = {DEFAULT_INCLUDE_DIR};
+        EXPECT_EQ(includes, includesExpect);
+        vector<string> excludes = cache.GetExcludes();
+        vector<string> excludesExpect = {DEFAULT_EXCLUDE_DIR};
+        EXPECT_EQ(excludes, excludesExpect);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -219,10 +219,10 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0600, testing::ext::
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        EXPECT_EQ(incDirs, DEFAULT_INCLUDE_DIR);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        EXPECT_EQ(excDirs, DEFAULT_EXCLUDE_DIR);
+        vector<string> includes = cache.GetIncludes();
+        EXPECT_EQ(includes, DEFAULT_INCLUDE_DIR);
+        vector<string> excludes = cache.GetExcludes();
+        EXPECT_EQ(excludes, DEFAULT_EXCLUDE_DIR);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -251,10 +251,10 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0700, testing::ext::
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        EXPECT_EQ(incDirs, DEFAULT_INCLUDE_DIR);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        EXPECT_EQ(excDirs, DEFAULT_EXCLUDE_DIR);
+        vector<string> includes = cache.GetIncludes();
+        EXPECT_EQ(includes, DEFAULT_INCLUDE_DIR);
+        vector<string> excludes = cache.GetExcludes();
+        EXPECT_EQ(excludes, DEFAULT_EXCLUDE_DIR);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";
@@ -281,14 +281,14 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0800, testing::ext::
         string pathConfigFile = root + "config.json";
         SaveStringToFile(
             pathConfigFile,
-            R"({"includeDirs":["", "", ""], "excludeDirs":["", "", ""], """""""""""""""""""""""""""""""""""""""""""""""""":[]})");
+            R"({"includes":["", "", ""], "excludes":["", "", ""], """""""""""""""""""""""""""""""""""""""""""""""""":[]})");
 
         BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(UniqueFd(open(pathConfigFile.data(), O_RDONLY, 0)));
         auto cache = cachedEntity.Structuralize();
-        vector<string> incDirs = cache.GetIncludeDirs();
-        EXPECT_EQ(incDirs, DEFAULT_INCLUDE_DIR);
-        vector<string> excDirs = cache.GetExcludeDirs();
-        EXPECT_EQ(excDirs, DEFAULT_EXCLUDE_DIR);
+        vector<string> includes = cache.GetIncludes();
+        EXPECT_EQ(includes, DEFAULT_INCLUDE_DIR);
+        vector<string> excludes = cache.GetExcludes();
+        EXPECT_EQ(excludes, DEFAULT_EXCLUDE_DIR);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonEntityUsrConfigTest-an exception occurred by construction.";

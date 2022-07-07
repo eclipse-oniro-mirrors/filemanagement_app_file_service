@@ -29,17 +29,17 @@ void PrepareSmallDataSet(const TestManager &tm)
 {
     string root = tm.GetRootDirCurTest();
     if (!ForceCreateDirectory(root + DIR_TO_TAR + "/subdir1/sub-subdir") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir1/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir1/sub-subdir/file.txt") ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir1/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir1/sub-subdir/file.txt", to_string(__LINE__)) ||
         !ForceCreateDirectory(root + DIR_TO_TAR + "/subdir2/sub-subdir") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir2/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir2/sub-subdir/file.txt") ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir2/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir2/sub-subdir/file.txt", to_string(__LINE__)) ||
         !ForceCreateDirectory(root + DIR_TO_TAR + "/subdir3/sub-subdir") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir3/file.txt") ||
-        !SaveStringToFile(to_string(__LINE__), root + DIR_TO_TAR + "/subdir3/sub-subdir/file.txt") ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir3/file.txt", to_string(__LINE__)) ||
+        !SaveStringToFile(root + DIR_TO_TAR + "/subdir3/sub-subdir/file.txt", to_string(__LINE__)) ||
         !ForceCreateDirectory(root + DIR_TO_UNTAR)) {
         throw std::system_error(errno, std::system_category());
     }
@@ -48,7 +48,7 @@ void PrepareSmallDataSet(const TestManager &tm)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0100
  * @tc.name: tool_simulate_app_0100
- * @tc.desc: 不包含includeDirs和excludeDirs
+ * @tc.desc: 不包含includes和excludes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -68,7 +68,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0100, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -87,7 +88,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0100, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0110
  * @tc.name: tool_simulate_app_0110
- * @tc.desc: json文件中includeDirs标签参数为空
+ * @tc.desc: json文件中includes标签参数为空
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -102,12 +103,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0110, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["", "", ""]})");
+        SaveStringToFile(pathConfigFile, R"({"includes":["", "", ""]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -119,7 +121,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0110, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0120
  * @tc.name: tool_simulate_app_0120
- * @tc.desc: json文件中excludeDirs标签参数为空
+ * @tc.desc: json文件中excludes标签参数为空
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -134,12 +136,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0120, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":["", "", ""]})");
+        SaveStringToFile(pathConfigFile, R"({"excludes":["", "", ""]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -158,7 +161,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0120, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0130
  * @tc.name: tool_simulate_app_0130
- * @tc.desc: json文件中includeDirs标签无参数
+ * @tc.desc: json文件中includes标签无参数
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -178,7 +181,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0130, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -197,7 +201,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0130, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0140
  * @tc.name: tool_simulate_app_0140
- * @tc.desc: json文件中excludeDirs标签无参数
+ * @tc.desc: json文件中excludes标签无参数
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -212,12 +216,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0140, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":[]})");
+        SaveStringToFile(pathConfigFile, R"({"excludes":[]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -256,7 +261,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0150, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -275,7 +281,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0150, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0160
  * @tc.name: tool_simulate_app_0160
- * @tc.desc: json文件中includeDirs标签参数为特殊字符
+ * @tc.desc: json文件中includes标签参数为特殊字符
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -290,12 +296,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0160, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["123#$%^&*", "4565%#￥%"]})");
+        SaveStringToFile(pathConfigFile, R"({"includes":["123#$%^&*", "4565%#￥%"]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -307,7 +314,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0160, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0170
  * @tc.name: tool_simulate_app_0170
- * @tc.desc: json文件中excludeDirs标签参数为特殊字符
+ * @tc.desc: json文件中excludes标签参数为特殊字符
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -322,12 +329,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0170, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":["123#$%^&*"]})");
+        SaveStringToFile(pathConfigFile, R"({"excludes":["123#$%^&*"]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -346,7 +354,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0170, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0180
  * @tc.name: tool_simulate_app_0180
- * @tc.desc: json文件中includeDirs标签参数为中文汉字
+ * @tc.desc: json文件中includes标签参数为中文汉字
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -361,12 +369,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0180, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["测试代码", "备份恢复测试"]})");
+        SaveStringToFile(pathConfigFile, R"({"includes":["测试代码", "备份恢复测试"]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -378,7 +387,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0180, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0190
  * @tc.name: tool_simulate_app_0190
- * @tc.desc: json文件中excludeDirs标签参数为中文汉字
+ * @tc.desc: json文件中excludes标签参数为中文汉字
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -393,12 +402,13 @@ HWTEST_F(ToolsTest, tool_simulate_app_0190, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":["测试代码", "备份恢复测试"]})");
+        SaveStringToFile(pathConfigFile, R"({"excludes":["测试代码", "备份恢复测试"]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -437,7 +447,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0200, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -471,12 +482,15 @@ HWTEST_F(ToolsTest, tool_simulate_app_0210, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"includeDirs":["subdir1", "subdir2", "subdir3"], "excludeDirs":["subdir1/file.txt", "subdir2/*.md"], "includeDirs":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]})");
+        SaveStringToFile(
+            pathConfigFile,
+            R"({"includes":["subdir1", "subdir2", "subdir3"], "excludes":["subdir1/file.txt", "subdir2/*.md"], "includes":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -515,7 +529,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0220, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -534,7 +549,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0220, testing::ext::TestSize.Level0)
 /**
  * @tc.number: SUB_backup_tool_simulate_app_0230
  * @tc.name: tool_simulate_app_0230
- * @tc.desc: json文件excludeDirs标签中包含多层目录
+ * @tc.desc: json文件excludes标签中包含多层目录
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
@@ -549,12 +564,15 @@ HWTEST_F(ToolsTest, tool_simulate_app_0230, testing::ext::TestSize.Level0)
 
         string root = tm.GetRootDirCurTest();
         string pathConfigFile = root + "config.json";
-        SaveStringToFile(pathConfigFile, R"({"excludeDirs":["/data/backup/test/test1/test2/test3/test4/test5/test6/test7/test8/test9/test10/test11/test12/test13/test14/test15/test16/test17/test18/test19/test20/test21/test22/test23/test24/test25/test26/test27/test28/test29/test30/test31/test32/test33/test34/test35/test36/test37/test38/test39/test40/test41/test42/test43/test44/test45/test46/test47/test48/test49/test50/test51/test52/test53/test54/test55/test56/test57/test58/test59/test60/test61/test62/test63/test64/test65/test66/test67/test68/test69/test70/test71/test72/test73/test74/test75/test76/test77/test78/test79/test80/test81/test82/test83/test84/test85/test86/test87/test88/test89/test90/test91/test92/test93/test94/test95/test96/test97/test98/test99/test100/"]})");
+        SaveStringToFile(
+            pathConfigFile,
+            R"({"excludes":["/data/backup/test/test1/test2/test3/test4/test5/test6/test7/test8/test9/test10/test11/test12/test13/test14/test15/test16/test17/test18/test19/test20/test21/test22/test23/test24/test25/test26/test27/test28/test29/test30/test31/test32/test33/test34/test35/test36/test37/test38/test39/test40/test41/test42/test43/test44/test45/test46/test47/test48/test49/test50/test51/test52/test53/test54/test55/test56/test57/test58/test59/test60/test61/test62/test63/test64/test65/test66/test67/test68/test69/test70/test71/test72/test73/test74/test75/test76/test77/test78/test79/test80/test81/test82/test83/test84/test85/test86/test87/test88/test89/test90/test91/test92/test93/test94/test95/test96/test97/test98/test99/test100/"]})");
 
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret =
+            BProcess::ExecuteCmd({"backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;
@@ -593,7 +611,8 @@ HWTEST_F(ToolsTest, tool_simulate_app_0240, testing::ext::TestSize.Level0)
         string pathTarFile = root + "pkg.tar";
         string pathTaredDir = root + DIR_TO_TAR;
         int ret;
-        ret = BProcess::ExecuteCmd({"time", "backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
+        ret = BProcess::ExecuteCmd(
+            {"time", "backup_tool", "simulate", "app", "tar", pathConfigFile, pathTarFile, pathTaredDir});
         EXPECT_EQ(ret, 0);
 
         string pathUntarDir = root + DIR_TO_UNTAR;

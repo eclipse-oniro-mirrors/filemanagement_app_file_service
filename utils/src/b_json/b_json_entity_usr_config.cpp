@@ -11,25 +11,25 @@ using namespace std;
 
 BJsonEntityUsrConfig::BJsonEntityUsrConfig(Json::Value &obj) : obj_(obj) {}
 
-vector<string> BJsonEntityUsrConfig::GetIncludeDirs() const
+vector<string> BJsonEntityUsrConfig::GetIncludes() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
         return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
-    if (!obj_.isMember("includeDirs")) {
-        HILOGE("'includeDirs' field not found");
+    if (!obj_.isMember("includes")) {
+        HILOGE("'includes' field not found");
         return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
-    if (!obj_["includeDirs"].isArray()) {
-        HILOGE("'includeDirs' field must be an array");
+    if (!obj_["includes"].isArray()) {
+        HILOGE("'includes' field must be an array");
         return {BConstants::PATHES_TO_BACKUP.begin(), BConstants::PATHES_TO_BACKUP.end()};
     }
 
     vector<string> dirs;
-    for (auto &&item : obj_["includeDirs"]) {
+    for (auto &&item : obj_["includes"]) {
         if (!item.isString()) {
-            HILOGE("Each item of array 'includeDirs' must be of the type string");
+            HILOGE("Each item of array 'includes' must be of the type string");
             continue;
         }
         dirs.push_back(item.asString());
@@ -41,25 +41,25 @@ vector<string> BJsonEntityUsrConfig::GetIncludeDirs() const
     return dirs;
 }
 
-vector<string> BJsonEntityUsrConfig::GetExcludeDirs() const
+vector<string> BJsonEntityUsrConfig::GetExcludes() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
         return {};
     }
-    if (!obj_.isMember("excludeDirs")) {
-        HILOGE("'excludeDirs' field not found");
+    if (!obj_.isMember("excludes")) {
+        HILOGE("'excludes' field not found");
         return {};
     }
-    if (!obj_["excludeDirs"].isArray()) {
-        HILOGE("'excludeDirs' field must be an array");
+    if (!obj_["excludes"].isArray()) {
+        HILOGE("'excludes' field must be an array");
         return {};
     }
 
     vector<string> dirs;
-    for (auto &&item : obj_["excludeDirs"]) {
+    for (auto &&item : obj_["excludes"]) {
         if (!item.isString()) {
-            HILOGE("Each item of array 'excludeDirs' must be of the type string");
+            HILOGE("Each item of array 'excludes' must be of the type string");
             return {};
         }
         dirs.push_back(item.asString());
@@ -67,13 +67,13 @@ vector<string> BJsonEntityUsrConfig::GetExcludeDirs() const
     return dirs;
 }
 
-bool BJsonEntityUsrConfig::GetAllowToBackup() const
+bool BJsonEntityUsrConfig::GetAllowToBackupRestore() const
 {
-    if (!obj_ || !obj_.isMember("allowToBackup") || !obj_["allowToBackup"].isBool()) {
-        HILOGE("Failed to init field allowToBackup");
+    if (!obj_ || !obj_.isMember("allowToBackupRestore") || !obj_["allowToBackupRestore"].isBool()) {
+        HILOGE("Failed to init field allowToBackupRestore");
         return false;
     }
 
-    return obj_["allowToBackup"].asBool();
+    return obj_["allowToBackupRestore"].asBool();
 }
 } // namespace OHOS::FileManagement::Backup
