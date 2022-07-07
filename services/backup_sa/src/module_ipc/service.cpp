@@ -43,7 +43,7 @@ void Service::OnStart()
     bool res = SystemAbility::Publish(sptr(this));
     HILOGI("End, res = %{public}d", res);
 
-    string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR);
+    string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
     if (access(tmpPath.data(), F_OK) == 0 && !ForceRemoveDirectory(tmpPath.data())) {
         throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to clear folder tmp");
     }
@@ -63,11 +63,12 @@ UniqueFd Service::GetLocalCapabilities()
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         struct statfs fsInfo = {};
-        if (statfs(SA_ROOT_DIR, &fsInfo) == -1) {
+        if (statfs(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR.data(), &fsInfo) == -1) {
             throw BError(errno);
         }
 
-        BJsonCachedEntity<BJsonEntityCaps> cachedEntity(UniqueFd(open(SA_ROOT_DIR, O_TMPFILE | O_RDWR, 0600)));
+        BJsonCachedEntity<BJsonEntityCaps> cachedEntity(
+            UniqueFd(open(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR.data(), O_TMPFILE | O_RDWR, 0600)));
         auto cache = cachedEntity.Structuralize();
         cache.SetFreeDiskSpace(fsInfo.f_bfree);
         cache.SetOSFullName(GetOSFullName());
@@ -229,7 +230,8 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd()
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         TmpFileSN tmpFileSN = seed++;
-        string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR) + to_string(tmpFileSN);
+        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR) +
+                         to_string(tmpFileSN);
         if (access(tmpPath.data(), F_OK) == 0) {
             // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
@@ -263,7 +265,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
 
-        string tmpPath = string(SA_ROOT_DIR) + string(SA_TMP_DIR);
+        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + string(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
         UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
         if (dfdTmp < 0) {
             stringstream ss;
@@ -271,7 +273,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
         }
 
-        string path = string(SA_ROOT_DIR) + fileInfo.owner + string("/");
+        string path = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + fileInfo.owner + string("/");
         if (access(path.data(), F_OK) != 0 && mkdir(path.data(), S_IRWXU) != 0) {
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
         }
