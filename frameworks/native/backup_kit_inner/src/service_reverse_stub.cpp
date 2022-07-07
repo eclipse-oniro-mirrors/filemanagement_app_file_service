@@ -37,12 +37,12 @@ int32_t ServiceReverseStub::OnRemoteRequest(uint32_t code,
 ServiceReverseStub::ServiceReverseStub()
 {
     opToInterfaceMap_[SERVICER_BACKUP_ON_FILE_READY] = &ServiceReverseStub::CmdBackupOnFileReady;
-    opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdBackupOnSubTaskStarted;
-    opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnSubTaskFinished;
-    opToInterfaceMap_[SERVICER_BACKUP_ON_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnTaskFinished;
-    opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdRestoreOnSubTaskStarted;
-    opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnSubTaskFinished;
-    opToInterfaceMap_[SERVICER_RESTORE_ON_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnTaskFinished;
+    opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdBackupOnBundleStarted;
+    opToInterfaceMap_[SERVICER_BACKUP_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnBundleFinished;
+    opToInterfaceMap_[SERVICER_BACKUP_ON_TASK_FINISHED] = &ServiceReverseStub::CmdBackupOnAllBundlesFinished;
+    opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_STARTED] = &ServiceReverseStub::CmdRestoreOnBundleStarted;
+    opToInterfaceMap_[SERVICER_RESTORE_ON_SUB_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnBundleFinished;
+    opToInterfaceMap_[SERVICER_RESTORE_ON_TASK_FINISHED] = &ServiceReverseStub::CmdRestoreOnAllBundlesFinished;
 }
 
 int32_t ServiceReverseStub::CmdBackupOnFileReady(MessageParcel &data, MessageParcel &reply)
@@ -54,50 +54,50 @@ int32_t ServiceReverseStub::CmdBackupOnFileReady(MessageParcel &data, MessagePar
     return BError(BError::Codes::OK);
 }
 
-int32_t ServiceReverseStub::CmdBackupOnSubTaskStarted(MessageParcel &data, MessageParcel &reply)
+int32_t ServiceReverseStub::CmdBackupOnBundleStarted(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
     auto bundleName = data.ReadString();
-    BackupOnSubTaskStarted(errCode, bundleName);
+    BackupOnBundleStarted(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 
-int32_t ServiceReverseStub::CmdBackupOnSubTaskFinished(MessageParcel &data, MessageParcel &reply)
+int32_t ServiceReverseStub::CmdBackupOnBundleFinished(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
     auto bundleName = data.ReadString();
     uint32_t bundleTotalFiles = data.ReadInt32();
-    BackupOnSubTaskFinished(errCode, bundleName, bundleTotalFiles);
+    BackupOnBundleFinished(errCode, bundleName, bundleTotalFiles);
     return BError(BError::Codes::OK);
 }
 
-int32_t ServiceReverseStub::CmdBackupOnTaskFinished(MessageParcel &data, MessageParcel &reply)
+int32_t ServiceReverseStub::CmdBackupOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    BackupOnTaskFinished(errCode);
+    BackupOnAllBundlesFinished(errCode);
     return BError(BError::Codes::OK);
 }
 
-int32_t ServiceReverseStub::CmdRestoreOnSubTaskStarted(MessageParcel &data, MessageParcel &reply)
-{
-    int32_t errCode = data.ReadInt32();
-    auto bundleName = data.ReadString();
-    RestoreOnSubTaskStarted(errCode, bundleName);
-    return BError(BError::Codes::OK);
-}
-
-int32_t ServiceReverseStub::CmdRestoreOnSubTaskFinished(MessageParcel &data, MessageParcel &reply)
+int32_t ServiceReverseStub::CmdRestoreOnBundleStarted(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
     auto bundleName = data.ReadString();
-    RestoreOnSubTaskFinished(errCode, bundleName);
+    RestoreOnBundleStarted(errCode, bundleName);
     return BError(BError::Codes::OK);
 }
 
-int32_t ServiceReverseStub::CmdRestoreOnTaskFinished(MessageParcel &data, MessageParcel &reply)
+int32_t ServiceReverseStub::CmdRestoreOnBundleFinished(MessageParcel &data, MessageParcel &reply)
 {
     int32_t errCode = data.ReadInt32();
-    RestoreOnTaskFinished(errCode);
+    auto bundleName = data.ReadString();
+    RestoreOnBundleFinished(errCode, bundleName);
+    return BError(BError::Codes::OK);
+}
+
+int32_t ServiceReverseStub::CmdRestoreOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply)
+{
+    int32_t errCode = data.ReadInt32();
+    RestoreOnAllBundlesFinished(errCode);
     return BError(BError::Codes::OK);
 }
 } // namespace OHOS::FileManagement::Backup

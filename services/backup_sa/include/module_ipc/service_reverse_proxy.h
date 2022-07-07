@@ -16,13 +16,13 @@ namespace OHOS::FileManagement::Backup {
 class ServiceReverseProxy final : public IRemoteProxy<IServiceReverse>, protected NoCopyable {
 public:
     void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override;
-    void BackupOnSubTaskStarted(int32_t errCode, std::string bundleName) override;
-    void BackupOnSubTaskFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles) override;
-    void BackupOnTaskFinished(int32_t errCode) override;
+    void BackupOnBundleStarted(int32_t errCode, std::string bundleName) override;
+    void BackupOnBundleFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles) override;
+    void BackupOnAllBundlesFinished(int32_t errCode) override;
 
-    void RestoreOnSubTaskStarted(int32_t errCode, std::string bundleName) override;
-    void RestoreOnSubTaskFinished(int32_t errCode, std::string bundleName) override;
-    void RestoreOnTaskFinished(int32_t errCode) override;
+    void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) override;
+    void RestoreOnBundleFinished(int32_t errCode, std::string bundleName) override;
+    void RestoreOnAllBundlesFinished(int32_t errCode) override;
 
 public:
     explicit ServiceReverseProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IServiceReverse>(impl) {}

@@ -18,10 +18,10 @@ class BSessionBackup {
 public:
     struct Callbacks {
         std::function<void(const BFileInfo &, UniqueFd)> onFileReady; // 当备份服务有文件待发送时执行的回调
-        std::function<void(ErrCode, const BundleName)> onSubTaskStarted; // 当启动某个应用的备份流程结束时执行的回调函数
+        std::function<void(ErrCode, const BundleName)> onBundleStarted; // 当启动某个应用的备份流程结束时执行的回调函数
         std::function<void(ErrCode, const BundleName, uint32_t bundleTotalFiles)>
-            onSubTaskFinished; // 当某个应用的备份流程结束或意外中止时执行的回调函数
-        std::function<void(ErrCode)> onTaskFinished; // 当整个备份流程结束或意外中止时执行的回调函数
+            onBundleFinished; // 当某个应用的备份流程结束或意外中止时执行的回调函数
+        std::function<void(ErrCode)> onAllBundlesFinished; // 当整个备份流程结束或意外中止时执行的回调函数
         std::function<void()> onBackupServiceDied;   // 当备份服务意外死亡时执行的回调函数
     };
 
