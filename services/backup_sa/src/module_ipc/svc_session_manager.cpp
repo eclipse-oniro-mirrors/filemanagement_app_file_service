@@ -160,10 +160,11 @@ void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backup
                 }
                 BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
                 auto cache = cachedEntity.Structuralize();
-                if (cache.GetAllowToBackup()) {
+                if (cache.GetAllowToBackupRestore()) {
                     it.second.backupExtName = ext.name;
                 } else {
-                    string pendingMsg = string("Permission denied to getallowtobackup of bundle ").append(it.first);
+                    string pendingMsg =
+                        string("Permission denied to get allowToBackupRestore of bundle ").append(it.first);
                     throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
                 }
             }

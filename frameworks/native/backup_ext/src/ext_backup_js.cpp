@@ -131,11 +131,11 @@ int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
         string tarName = backupPath.append("/").append(pkgName);
         string root = "/";
 
-        vector<string> incDirs = usrConfig.GetIncludeDirs();
-        vector<string> excDirs = usrConfig.GetExcludeDirs();
+        vector<string> includes = usrConfig.GetIncludes();
+        vector<string> excludes = usrConfig.GetExcludes();
 
         auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
-        (tarballFunc->tar)(root, {incDirs.begin(), incDirs.end()}, {excDirs.begin(), excDirs.end()});
+        (tarballFunc->tar)(root, {includes.begin(), includes.end()}, {excludes.begin(), excludes.end()});
         if (chmod(tarName.data(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) < 0) {
             throw BError(errno);
         }
@@ -244,7 +244,7 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
         if (out.size()) {
             BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
             auto cache = cachedEntity.Structuralize();
-            if (cache.GetAllowToBackup()) {
+            if (cache.GetAllowToBackupRestore()) {
                 if (extAction == ExtensionAction::BACKUP) {
                     ret = HandleBackup(cache);
                 } else if (extAction == ExtensionAction::RESTORE) {

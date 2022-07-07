@@ -46,7 +46,7 @@ static void UntarFort(string_view root)
  * 要求输入相对路径，不填默认全部打包
  * @param excludes 待打包路径中无需打包的部分
  * 要求输入相对路径。可用于排除部分子目录
- * @return std::tuple<vector<string>, vector<string>> 返回合法的includeDirs, excludeDirs
+ * @return std::tuple<vector<string>, vector<string>> 返回合法的includes, excludes
  */
 static tuple<vector<string_view>, vector<string_view>> TarFilter(string_view tarballDir,
                                                                  string_view root,
