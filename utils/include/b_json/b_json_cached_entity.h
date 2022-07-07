@@ -46,10 +46,7 @@ public:
         const std::string jsonFileContent = Json::writeString(builder, obj_);
         HILOGI("Try to persist a Json object, whose content reads: %{public}s", jsonFileContent.c_str());
 
-        int ret = write(srcFile_, jsonFileContent.c_str(), jsonFileContent.length());
-        if (ret == -1) {
-            throw BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, std::generic_category().message(errno));
-        }
+        BFile::Write(srcFile_, jsonFileContent);
     }
 
     /**

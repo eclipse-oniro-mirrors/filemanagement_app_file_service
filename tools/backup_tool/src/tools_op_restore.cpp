@@ -8,18 +8,21 @@
 #include <fcntl.h>
 #include <memory>
 #include <mutex>
+#include <regex>
 #include <string>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <tuple>
+#include <unistd.h>
 #include <vector>
 
 #include "b_error/b_error.h"
+#include "b_filesystem/b_dir.h"
 #include "b_filesystem/b_file.h"
 #include "b_resources/b_constants.h"
 #include "backup_kit_inner.h"
-#include "directory_ex.h"
+#include "errors.h"
 #include "service_proxy.h"
 #include "tools_op.h"
 
@@ -48,6 +51,7 @@ public:
     }
 
     unique_ptr<BSessionRestore> session_ = {};
+
 private:
     uint32_t cnt_ = -1;
     mutable condition_variable cv_;
@@ -92,32 +96,28 @@ static void RestoreApp(shared_ptr<RstoreSession> restore, vector<BundleName> &bu
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
     }
     for (auto &bundleName : bundleNames) {
+        if (!regex_match(bundleName, regex("^[0-9a-zA-Z_.]+$"))) {
+            throw BError(BError::Codes::TOOL_INVAL_ARG, "bundleName is not alphanumeric");
+        }
         string path = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + bundleName;
         if (access(path.data(), F_OK) != 0) {
             throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
         }
-        vector<string> filePaths;
-        GetDirFiles(path, filePaths);
-        if (filePaths.size() == 0) {
-            throw BError(BError::Codes::TOOL_INVAL_ARG, "error path or empty dir");
+        const auto [err, filePaths] = BDir::GetDirFiles(path);
+        if (err != 0) {
+            throw BError(BError::Codes::TOOL_INVAL_ARG, "error path");
         }
         for (auto &filePath : filePaths) {
             const auto [errCode, tmpFileSN, RemoteFd] = restore->session_->GetFileOnServiceEnd(bundleName);
             if (errCode != 0 || RemoteFd < 0) {
                 throw BError(BError::Codes::TOOL_INVAL_ARG, "GetFileOnServiceEnd error");
             }
-            printf("errCode = %d tmpFileSN = %d RemoteFd = %d\n", errCode, tmpFileSN, RemoteFd.Get());
+            printf("errCode = %d tmpFileSN = %u RemoteFd = %d\n", errCode, tmpFileSN, RemoteFd.Get());
             UniqueFd fdLocal(open(filePath.data(), O_RDWR));
             if (fdLocal < 0) {
                 throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
             }
-            struct stat stat = {};
-            if (fstat(fdLocal, &stat) == -1) {
-                throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
-            }
-            if (sendfile(RemoteFd, fdLocal, nullptr, stat.st_size) == -1) {
-                throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
-            }
+            BFile::SendFile(RemoteFd, fdLocal);
             string fileName = filePath.substr(filePath.rfind("/") + 1);
             int ret = restore->session_->PublishFile(BFileInfo(bundleName, fileName, tmpFileSN));
             if (ret != 0) {
