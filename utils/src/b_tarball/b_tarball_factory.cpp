@@ -48,17 +48,39 @@ static void UntarFort(string_view root)
  * 要求输入相对路径。可用于排除部分子目录
  * @return std::tuple<vector<string>, vector<string>> 返回合法的includes, excludes
  */
-static tuple<vector<string_view>, vector<string_view>> TarFilter(string_view tarballDir,
-                                                                 string_view root,
-                                                                 vector<string_view> includes,
-                                                                 vector<string_view> excludes)
+static tuple<vector<string>, vector<string>> TarFilter(string_view tarballDir,
+                                                       string_view root,
+                                                       vector<string_view> includes,
+                                                       vector<string_view> excludes)
 {
     auto resolvedPath = make_unique<char[]>(PATH_MAX);
     if (!realpath(root.data(), resolvedPath.get()) || (string_view(resolvedPath.get()) != root)) {
         throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "The root must be an existing canonicalized path");
     }
 
-    return {includes, excludes};
+    auto removeBackSlash = [](const string_view &arg) -> string {
+        if (arg.empty()) {
+            return "";
+        }
+
+        size_t i = arg.size() - 1;
+        for (; i > 0; --i) {
+            if (arg[i] != '/') {
+                break;
+            }
+        }
+        return {arg.data(), i + 1};
+    };
+
+    vector<string> newExcludes;
+    for (auto &item : excludes) {
+        string str = removeBackSlash(item);
+        if (!str.empty()) {
+            newExcludes.push_back(str);
+        }
+    }
+
+    return {{includes.begin(), includes.end()}, newExcludes};
 }
 
 /**
@@ -128,8 +150,8 @@ unique_ptr<BTarballFactory::Impl> BTarballFactory::Create(string_view implType, 
         if (tarballImpl->tar) {
             tarballImpl->tar = [tarballDir {string(tarballDir)}, tar {tarballImpl->tar}](
                                    string_view root, vector<string_view> includes, vector<string_view> excludes) {
-                TarFilter(tarballDir, root, includes, excludes);
-                tar(root, includes, excludes);
+                auto [newIncludes, newExcludes] = TarFilter(tarballDir, root, includes, excludes);
+                tar(root, {newIncludes.begin(), newIncludes.end()}, {newExcludes.begin(), newExcludes.end()});
             };
         }
         if (tarballImpl->untar) {
