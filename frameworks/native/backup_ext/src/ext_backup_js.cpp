@@ -119,8 +119,8 @@ int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
     try {
         (void)CallObjectMethod("onBackup");
 
-        string backupPath = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup");
-        if (access(backupPath.data(), F_OK) != 0 && mkdir(backupPath.data(), S_IRWXU) != 0) {
+        string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_BAKCUP);
+        if (mkdir(path.data(), S_IRWXU) && errno != EEXIST) {
             stringstream ss;
             ss << "Failed to create folder backup. ";
             ss << std::generic_category().message(errno);
@@ -128,7 +128,7 @@ int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
         }
         // REM: 打包（处理includeDir, excludeDir），反馈，退出进程
         string pkgName = "1.tar";
-        string tarName = backupPath.append("/").append(pkgName);
+        string tarName = path.append("/").append(pkgName);
         string root = "/";
 
         vector<string> includes = usrConfig.GetIncludes();
@@ -173,11 +173,14 @@ int ExtBackupJs::HandleRestore()
     try {
         // REM: 给定version
         // REM: 解压启动Extension时即挂载好的备份目录中的数据
-        string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append("/backup/");
+        string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
 
         auto [errCode, files] = BDir::GetDirFiles(path);
         if (errCode) {
             throw BError(errCode);
+        }
+        if (files.empty()) {
+            HILOGI("No .tar package is found. The directory is %{public}s", path.c_str());
         }
 
         for (auto &tarName : files) {
