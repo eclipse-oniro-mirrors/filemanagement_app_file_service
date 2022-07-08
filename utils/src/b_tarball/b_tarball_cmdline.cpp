@@ -4,8 +4,8 @@
 
 #include "b_tarball/b_tarball_cmdline.h"
 
-#include <unistd.h>
 #include <string_view>
+#include <unistd.h>
 
 #include "b_error/b_error.h"
 #include "b_process/b_guard_cwd.h"
@@ -24,10 +24,11 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
         "-cvf",
         tarballPath_,
     };
-    // 未给定include的情况，打包全目录
+
     if (includes.empty()) {
-        includes.push_back(".");
+        throw BError(BError::Codes::UTILS_INVAL_TARBALL_ARG, "tar includes argument must be not empty");
     }
+
     for (auto &&include : includes) {
         argv.push_back(include);
     }
