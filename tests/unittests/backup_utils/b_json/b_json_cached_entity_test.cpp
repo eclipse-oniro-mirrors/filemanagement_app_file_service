@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "test_manager.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
 #include "directory_ex.h"
@@ -35,7 +36,11 @@ HWTEST_F(BJsonCachedEntityTest, b_json_construction_0100, testing::ext::TestSize
 {
     GTEST_LOG_(INFO) << "BJsonCachedEntityTest-begin b_json_construction_0100";
     try {
-        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open("/data/test/tempone.json", O_RDWR|O_CREAT, 0600)));
+        TestManager tm("b_json_construction_0100");
+
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + ".json";
+        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open(filePath.data(), O_RDWR | O_CREAT, 0600)));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonCachedEntityTest-an exception occurred by construction.";
@@ -56,7 +61,11 @@ HWTEST_F(BJsonCachedEntityTest, b_json_Structuralize_0100, testing::ext::TestSiz
 {
     GTEST_LOG_(INFO) << "BJsonCachedEntityTest-begin b_json_Structuralize_0100";
     try {
-        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open("/data/test/temptwo.json", O_RDWR|O_CREAT, 0600)));
+        TestManager tm("b_json_Structuralize_0100");
+
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + ".json";
+        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open(filePath.data(), O_RDWR | O_CREAT, 0600)));
         jce.Structuralize();
     } catch (...) {
         EXPECT_TRUE(false);
@@ -78,7 +87,11 @@ HWTEST_F(BJsonCachedEntityTest, b_json_Persist_0100, testing::ext::TestSize.Leve
 {
     GTEST_LOG_(INFO) << "BJsonCachedEntityTest-begin b_json_Persist_0100";
     try {
-        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open("/data/test/tempthree.json", O_RDWR|O_CREAT, 0600)));
+        TestManager tm("b_json_Persist_0100");
+
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + ".json";
+        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open(filePath.data(), O_RDWR | O_CREAT, 0600)));
         auto cache = jce.Structuralize();
         uint64_t space = 100;
         cache.SetFreeDiskSpace(space);
@@ -105,11 +118,14 @@ HWTEST_F(BJsonCachedEntityTest, b_json_ReloadFromFile_0100, testing::ext::TestSi
 {
     GTEST_LOG_(INFO) << "BJsonCachedEntityTest-begin b_json_ReloadFromFile_0100";
     try {
-        std::string filePath = "/data/tempfour.json";
-        std::string content = "{\"key1\":1,\"key2\":2,\"key3\":3}";
+        TestManager tm("b_json_ReloadFromFile_0100");
+
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + ".json";
+        std::string content = R"({"key1":1, "key2":2, "key3":3})";
         bool isOk = SaveStringToFile(filePath, content, true);
         EXPECT_TRUE(isOk);
-        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open("/data/tempfour.json", O_RDWR)));
+        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open(filePath.data(), O_RDWR)));
         auto cache = jce.Structuralize();
         uint64_t space = 100;
         cache.SetFreeDiskSpace(space);
@@ -138,7 +154,11 @@ HWTEST_F(BJsonCachedEntityTest, b_json_GetFd_0100, testing::ext::TestSize.Level0
 {
     GTEST_LOG_(INFO) << "BJsonCachedEntityTest-begin b_json_GetFd_0100";
     try {
-        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open("/data/test/tempfive.json", O_RDWR|O_CREAT, 0600)));
+        TestManager tm("b_json_GetFd_0100");
+
+        std::string path = tm.GetRootDirCurTest();
+        std::string filePath = path + ".json";
+        BJsonCachedEntity<BJsonEntityCaps> jce(UniqueFd(open(filePath.data(), O_RDWR | O_CREAT, 0600)));
         jce.GetFd();
     } catch (...) {
         EXPECT_TRUE(false);

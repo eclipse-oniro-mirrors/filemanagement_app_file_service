@@ -19,7 +19,10 @@ ohos_unittest("b_error_test") {
 ohos_unittest("b_file_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [ "b_filesystem/b_file_test.cpp" ]
+  sources = [
+    "b_filesystem/b_dir_test.cpp",
+    "b_filesystem/b_file_test.cpp",
+  ]
 
   deps = [
     "${path_backup}/tests/utils:backup_test_utils",
