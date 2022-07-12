@@ -30,7 +30,7 @@ void ServiceReverse::BackupOnBundleStarted(int32_t errCode, string bundleName)
     callbacksBackup_.onBundleStarted(errCode, bundleName);
 }
 
-void ServiceReverse::BackupOnBundleFinished(int32_t errCode, string bundleName, uint32_t bundleTotalFiles)
+void ServiceReverse::BackupOnBundleFinished(int32_t errCode, string bundleName, int32_t bundleTotalFiles)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s, files = %{public}d", errCode, bundleName.c_str(),
            bundleTotalFiles);
