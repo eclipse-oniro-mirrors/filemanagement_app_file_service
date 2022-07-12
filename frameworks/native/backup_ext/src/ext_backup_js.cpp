@@ -242,7 +242,7 @@ void ExtBackupJs::OnCommand(const AAFwk::Want &want, bool restart, int startId)
         vector<string> out;
         AppExecFwk::BundleMgrClient client;
         AppExecFwk::AbilityInfo &info = *abilityInfo_;
-        if (!client.GetResConfigFile(info, "ohos.extension.backup", out)) {
+        if (!client.GetProfileFromAbility(info, "ohos.extension.backup", out)) {
             throw BError(BError::Codes::EXT_INVAL_ARG, "Failed to invoke the GetResConfigFile method.");
         }
         if (out.size()) {
