@@ -195,8 +195,8 @@ void SvcSessionManager::UpdateExtMapInfo(const string &bundleName, bool bundleDo
         throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
     }
     if (bundleDone) {
-        it->second.numFilesSent = bundleTotalFiles;
+        it->second.numFilesTotal = bundleTotalFiles;
     } else
-        it->second.numFilesTotal++;
+        it->second.numFilesSent++;
 }
 } // namespace OHOS::FileManagement::Backup

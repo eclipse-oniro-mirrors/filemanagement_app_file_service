@@ -43,7 +43,7 @@ void ServiceReverseProxy::BackupOnBundleStarted(int32_t errCode, string bundleNa
     }
 }
 
-void ServiceReverseProxy::BackupOnBundleFinished(int32_t errCode, string bundleName, uint32_t bundleTotalFiles)
+void ServiceReverseProxy::BackupOnBundleFinished(int32_t errCode, string bundleName, int32_t bundleTotalFiles)
 {
     HILOGI("Begin");
     MessageParcel data;

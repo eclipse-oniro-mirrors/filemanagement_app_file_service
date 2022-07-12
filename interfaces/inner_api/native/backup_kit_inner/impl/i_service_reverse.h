@@ -32,7 +32,7 @@ public:
 public:
     virtual void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) = 0;
     virtual void BackupOnBundleStarted(int32_t errCode, std::string bundleName) = 0;
-    virtual void BackupOnBundleFinished(int32_t errCode, std::string bundleName, uint32_t bundleTotalFiles) = 0;
+    virtual void BackupOnBundleFinished(int32_t errCode, std::string bundleName, int32_t bundleTotalFiles) = 0;
     virtual void BackupOnAllBundlesFinished(int32_t errCode) = 0;
 
     virtual void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) = 0;

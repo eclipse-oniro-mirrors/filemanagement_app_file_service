@@ -66,7 +66,7 @@ int32_t ServiceReverseStub::CmdBackupOnBundleFinished(MessageParcel &data, Messa
 {
     int32_t errCode = data.ReadInt32();
     auto bundleName = data.ReadString();
-    uint32_t bundleTotalFiles = data.ReadInt32();
+    int32_t bundleTotalFiles = data.ReadInt32();
     BackupOnBundleFinished(errCode, bundleName, bundleTotalFiles);
     return BError(BError::Codes::OK);
 }
