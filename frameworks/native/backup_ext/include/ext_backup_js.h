@@ -17,7 +17,7 @@
 #include "want.h"
 
 namespace OHOS::FileManagement::Backup {
-class ExtBackupJs : public ExtBackup, public std::enable_shared_from_this<ExtBackupJs> {
+class ExtBackupJs : public ExtBackup {
 public:
     /**
      * @brief Called when this extension is started. You must override this function if you want to perform some
@@ -56,6 +56,25 @@ public:
      */
     void OnCommand(const AAFwk::Want &want, bool restart, int startId) override;
 
+    /**
+     * @brief Called when this backup extension ability is connected for the first time.
+     *
+     * You can override this function to implement your own processing logic.
+     *
+     * @param want Indicates the {@link Want} structure containing connection information about the backup
+     * extension.
+     * @return Returns a pointer to the <b>sid</b> of the connected backup extension ability.
+     */
+    sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
+
+    /**
+     * @brief Called when all abilities connected to this Wallpaper extension are disconnected.
+     *
+     * You can override this function to implement your own processing logic.
+     *
+     */
+    void OnDisconnect(const AAFwk::Want& want) override;
+
 public:
     /**
      * @brief Create ExtBackupJs.
@@ -64,6 +83,21 @@ public:
      * @return The ExtBackupJs instance.
      */
     static ExtBackupJs *Create(const std::unique_ptr<AbilityRuntime::Runtime> &runtime);
+
+    /**
+     * @brief Get the File Handle object
+     *
+     * @param fileName
+     * @return UniqueFd
+     */
+    UniqueFd GetFileHandle(std::string &fileName);
+
+    /**
+     * @brief clean up resources for backup/restore.
+     *
+     * @return clear error.
+     */
+    ErrCode HandleClear();
 
 public:
     ExtBackupJs(AbilityRuntime::JsRuntime &jsRuntime) : jsRuntime_(jsRuntime) {}
@@ -74,7 +108,6 @@ private:
                                                         const std::vector<NativeValue *> &argv = {});
     int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
     int HandleRestore();
-    int HandleClear();
 
     AbilityRuntime::JsRuntime &jsRuntime_;
     std::unique_ptr<NativeReference> jsObj_;

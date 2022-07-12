@@ -2,10 +2,6 @@
  * 版权所有 (c) 华为技术有限公司 2022
  */
 
-/*
- * 版权所有 (c) 华为技术有限公司 2022
- */
-
 #ifndef OHOS_FILEMGMT_BACKUP_SERVICE_REVERSE_PROXY_H
 #define OHOS_FILEMGMT_BACKUP_SERVICE_REVERSE_PROXY_H
 

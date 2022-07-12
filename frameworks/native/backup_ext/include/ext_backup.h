@@ -5,13 +5,12 @@
 #ifndef OHOS_FILEMGMT_BACKUP_EXT_BACKUP_H
 #define OHOS_FILEMGMT_BACKUP_EXT_BACKUP_H
 
+#include "ext_backup_context.h"
 #include "extension_base.h"
-#include "extension_context.h"
 #include "runtime.h"
 
 namespace OHOS::FileManagement::Backup {
-class ExtBackup : public AbilityRuntime::ExtensionBase<AbilityRuntime::ExtensionContext>,
-                  public std::enable_shared_from_this<ExtBackup> {
+class ExtBackup : public AbilityRuntime::ExtensionBase<ExtBackupContext> {
 public:
     /**
      * @brief Init the extension.

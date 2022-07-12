@@ -13,6 +13,7 @@
 
 #include "b_file_info.h"
 #include "i_service_reverse.h"
+#include "module_ipc/svc_backup_connection.h"
 #include "module_ipc/svc_death_recipient.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -20,6 +21,7 @@ struct BackupExtInfo {
     std::string backupExtName;
     uint32_t numFilesSent {0};
     int32_t numFilesTotal {-1};
+    sptr<SvcBackupConnection> backUpConnection;
 };
 
 class Service;
@@ -98,7 +100,16 @@ public:
      * @param bundleTotalFiles 文件总个数
      * @throw BError::Codes::SA_INVAL_ARG 获取异常
      */
-    void UpdateExtMapInfo(const std::string &bundleName, bool bundleDone = false, int32_t bundleTotalFiles = -1);
+    void OnBunleFileReady(const std::string &bundleName, bool bundleDone = false, int32_t bundleTotalFiles = -1);
+
+    /**
+     * @brief 设置backup extension connection信息
+     *
+     * @param bundleName 客户端信息
+     * @param backUpConnection SvcBackupConnection
+     * @throw BError::Codes::SA_INVAL_ARG 获取异常
+     */
+    void OnNewBundleConnected(const std::string &bundleName, sptr<SvcBackupConnection> &backUpConnection);
 
 private:
     /**

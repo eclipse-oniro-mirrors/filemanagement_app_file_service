@@ -3,6 +3,7 @@
  */
 
 #include "ext_backup.h"
+
 #include "ext_backup_js.h"
 #include "filemgmt_libhilog.h"
 
@@ -14,7 +15,7 @@ void ExtBackup::Init(const shared_ptr<AbilityRuntime::AbilityLocalRecord> &recor
                      const sptr<IRemoteObject> &token)
 {
     HILOGI("Boot 7# Init the BackupExtensionAbility(Base)");
-    AbilityRuntime::ExtensionBase<AbilityRuntime::ExtensionContext>::Init(record, application, handler, token);
+    AbilityRuntime::ExtensionBase<ExtBackupContext>::Init(record, application, handler, token);
 }
 
 ExtBackup *ExtBackup::Create(const unique_ptr<AbilityRuntime::Runtime> &runtime)

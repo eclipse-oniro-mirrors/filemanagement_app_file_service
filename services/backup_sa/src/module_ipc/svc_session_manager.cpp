@@ -182,7 +182,7 @@ const map<BundleName, BackupExtInfo> SvcSessionManager::GetBackupExtNameMap()
     return impl_.backupExtNameMap;
 }
 
-void SvcSessionManager::UpdateExtMapInfo(const string &bundleName, bool bundleDone, int32_t bundleTotalFiles)
+void SvcSessionManager::OnBunleFileReady(const string &bundleName, bool bundleDone, int32_t bundleTotalFiles)
 {
     shared_lock lock(lock_);
     if (!impl_.clientToken) {
@@ -198,5 +198,23 @@ void SvcSessionManager::UpdateExtMapInfo(const string &bundleName, bool bundleDo
         it->second.numFilesTotal = bundleTotalFiles;
     } else
         it->second.numFilesSent++;
+}
+
+void SvcSessionManager::OnNewBundleConnected(const string &bundleName, sptr<SvcBackupConnection> &backUpConnection)
+{
+    shared_lock lock(lock_);
+    if (!backUpConnection) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Svc backup connection is nullptr");
+    }
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    auto it = impl_.backupExtNameMap.find(bundleName);
+    if (it == impl_.backupExtNameMap.end()) {
+        stringstream ss;
+        ss << "Could not find the " << bundleName << " from current session";
+        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+    }
+    it->second.backUpConnection = backUpConnection;
 }
 } // namespace OHOS::FileManagement::Backup

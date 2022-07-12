@@ -20,6 +20,7 @@ enum class ExtensionAction {
 
 constexpr int SPAN_USERID_UID = 20000000;
 constexpr int SYSTEM_UID = 1000;
+constexpr int BACKUP_UID = 1089;
 
 // 应用备份数据暂存路径。
 static inline std::string_view SA_BUNDLE_BACKUP_DIR = "/data/service/el2/100/backup/bundles/";

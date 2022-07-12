@@ -17,6 +17,7 @@
 #include "b_tarball/b_tarball_factory.h"
 #include "bundle_mgr_client.h"
 #include "directory_ex.h"
+#include "ext_extension.h"
 #include "filemgmt_libhilog.h"
 #include "js_runtime_utils.h"
 #include "service_proxy.h"
@@ -283,7 +284,7 @@ ExtBackupJs *ExtBackupJs::Create(const unique_ptr<AbilityRuntime::Runtime> &runt
     return new ExtBackupJs(static_cast<AbilityRuntime::JsRuntime &>(*runtime));
 }
 
-int ExtBackupJs::HandleClear()
+ErrCode ExtBackupJs::HandleClear()
 {
     HILOGI("Do clear");
 
@@ -309,5 +310,54 @@ int ExtBackupJs::HandleClear()
         HILOGE("");
         return EPERM;
     }
+}
+
+sptr<IRemoteObject> ExtBackupJs::OnConnect(const AAFwk::Want &want)
+{
+    try {
+        HILOGI("begin");
+        Extension::OnConnect(want);
+
+        auto remoteObject =
+            sptr<BackupExtExtension>(new BackupExtExtension(std::static_pointer_cast<ExtBackupJs>(shared_from_this())));
+        // REM:经过测试remoteObject返回为空 OnConnect也是连接成功的
+        if (remoteObject == nullptr) {
+            HILOGI("%{public}s No memory allocated for BackupExtExtension", __func__);
+            return nullptr;
+        }
+        HILOGI("end");
+        return remoteObject->AsObject();
+    } catch (const BError &e) {
+        return nullptr;
+    } catch (const exception &e) {
+        HILOGE("%{public}s", e.what());
+        return nullptr;
+    } catch (...) {
+        HILOGE("");
+        return nullptr;
+    }
+}
+
+void ExtBackupJs::OnDisconnect(const AAFwk::Want &want)
+{
+    try {
+        HILOGI("begin");
+        Extension::OnDisconnect(want);
+        HILOGI("end");
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("%{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("");
+        return;
+    }
+}
+
+UniqueFd ExtBackupJs::GetFileHandle(string &fileName)
+{
+    HILOGI("begin fileName = %{public}s", fileName.data());
+    return UniqueFd(-1);
 }
 } // namespace OHOS::FileManagement::Backup

@@ -67,6 +67,7 @@ public:
         EXT_INVAL_ARG = 0x5000,
         EXT_BROKEN_FRAMEWORK = 0x5001,
         EXT_BROKEN_BACKUP_SA = 0x5002,
+        EXT_BROKEN_IPC = 0x5003,
     };
 
 public:
@@ -187,6 +188,7 @@ private:
         {Codes::EXT_INVAL_ARG, "Extension received an invalid argument"},
         {Codes::EXT_BROKEN_FRAMEWORK, "Extension found the appex framework is broken"},
         {Codes::EXT_BROKEN_BACKUP_SA, "Extension found the backup SA died"},
+        {Codes::EXT_BROKEN_IPC, "Extension failed to do IPC"},
     };
 
 private:
