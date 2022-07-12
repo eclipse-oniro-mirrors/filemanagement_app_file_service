@@ -8,6 +8,8 @@ ohos_shared_library("backup_extension_ability_native") {
     "src/ext_backup.cpp",
     "src/ext_backup_js.cpp",
     "src/ext_backup_loader.cpp",
+    "src/ext_extension.cpp",
+    "src/ext_extension_stub.cpp",
   ]
 
   defines = [
@@ -26,6 +28,7 @@ ohos_shared_library("backup_extension_ability_native") {
   deps = [
     "${path_ability_runtime}/frameworks/native/appkit:app_context",
     "${path_ability_runtime}/frameworks/native/appkit:appkit_native",
+    "${path_access_token}/interfaces/innerkits/accesstoken:libaccesstoken_sdk",
     "${path_backup}/utils:backup_utils",
   ]
 

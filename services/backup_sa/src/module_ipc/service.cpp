@@ -30,6 +30,7 @@
 #include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "ipc_skeleton.h"
+#include "module_ipc/svc_backup_connection.h"
 #include "parameter.h"
 #include "system_ability_definition.h"
 
@@ -154,9 +155,7 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<B
     }
 }
 
-ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote,
-                                   UniqueFd fd,
-                                   const vector<BundleName> &bundleNames)
+ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, const vector<BundleName> &bundleNames)
 {
     try {
         map<BundleName, BackupExtInfo> backupExtNameMap;
@@ -222,9 +221,8 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd(string &bundleN
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         TmpFileSN tmpFileSN = seed++;
-        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
-                             .append(bundleName)
-                             .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
+        string tmpPath =
+            string(BConstants::SA_BUNDLE_BACKUP_DIR).append(bundleName).append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
         if (!ForceCreateDirectory(tmpPath)) { // 强制创建文件夹
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
         }
@@ -326,15 +324,7 @@ ErrCode Service::AppFileReady(const string &fileName)
             throw BError(BError::Codes::SA_INVAL_ARG, ss.str());
         }
 
-        struct stat fileStat = {};
-        if (fstat(fd, &fileStat) != 0) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get file stat");
-        }
-        // if (fileStat.st_gid != SA_GID && fileStat.st_gid != BConstants::SYSTEM_UID) { // REM: uid整改后删除
-        //     throw BError(BError::Codes::SA_INVAL_ARG, "Gid is not in the whitelist");
-        // }
-
-        session_.UpdateExtMapInfo(callerName);
+        session_.OnBunleFileReady(callerName);
 
         auto proxy = session_.GetServiceReverseProxy();
         proxy->BackupOnFileReady(callerName, fileName, move(fd));
@@ -366,8 +356,8 @@ ErrCode Service::AppDone(ErrCode errCode)
             if (files.size() == 0) {
                 HILOGE("This path %{public}s existing files is empty", path.data());
             }
-            uint32_t bundleTotalFiles = files.size(); // REM:重新写一个 现阶段没有现成接口
-            session_.UpdateExtMapInfo(callerName, true, bundleTotalFiles);
+            int32_t bundleTotalFiles = files.size(); // REM:重新写一个 现阶段没有现成接口
+            session_.OnBunleFileReady(callerName, true, bundleTotalFiles);
 
             proxy->BackupOnBundleFinished(errCode, callerName, bundleTotalFiles);
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
