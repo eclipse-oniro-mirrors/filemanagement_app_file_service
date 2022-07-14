@@ -66,7 +66,7 @@ bool ToolsOp::TryMatch(CRefVStrView op) const
     return op == desc_.opName;
 }
 
-int ToolsOp::Execute(CRefVStrView args) const
+int ToolsOp::Execute(map<string, vector<string>> args) const
 {
     if (!desc_.funcExec) {
         fprintf(stderr, "Incomplete operation: executor is missing\n");

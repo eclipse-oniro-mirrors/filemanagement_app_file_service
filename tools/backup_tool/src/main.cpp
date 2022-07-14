@@ -5,11 +5,57 @@
 #include "errors.h"
 #include "tools_op.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <getopt.h>
+#include <iostream>
+#include <optional>
+#include <sstream>
+
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-int ParseOpAndExecute(int argc, char const *argv[])
+optional<map<string, vector<string>>> GetArgsMap(int argc, char *const argv[], const vector<ToolsOp::CmdInfo> argList)
 {
+    int i = 0;
+    map<int, string> mapOptToName;
+    vector<struct option> vecLongOptions;
+    for (auto &&arg : argList) {
+        mapOptToName[i] = arg.paramName;
+        vecLongOptions.emplace_back(option {
+            .name = arg.paramName.c_str(),
+            .has_arg = required_argument,
+            .flag = nullptr,
+            .val = i++,
+        });
+    }
+    vecLongOptions.emplace_back(option {nullptr, 0, nullptr, 0});
+
+    int opt = 0;
+    int options_index = 0;
+    map<string, vector<string>> mapArgToVals;
+    while ((opt = getopt_long(argc, argv, "", vecLongOptions.data(), &options_index)) != -1) {
+        if (opt == '?') {
+            // "我们匹配到了一个奇怪的命令 返回 nullopt,getopt_long 在opterr 未被赋值0时 会自动打印未被定义参数到终端"
+            return nullopt;
+        }
+        string argName = mapOptToName[opt];
+        if (mapArgToVals.find(argName) != mapArgToVals.end() && argList[opt].repeatable == true) {
+            mapArgToVals[argName].emplace_back(optarg);
+        } else if (mapArgToVals.find(argName) != mapArgToVals.end()) {
+            fprintf(stderr, "%s can only be entered once, but you repeat it.\n", argName.c_str());
+            return nullopt;
+        } else {
+            mapArgToVals.emplace(argName, vector<string> {optarg});
+        }
+    }
+    return mapArgToVals;
+}
+
+int ParseOpAndExecute(int argc, char *const argv[])
+{
+    int flag = -1;
     for (int i = 1; i < argc; i++) {
         // 暂存 {argv[1]...argv[i]};
         std::vector<string_view> curOp;
@@ -22,21 +68,21 @@ int ParseOpAndExecute(int argc, char const *argv[])
         auto &&opeartions = ToolsOp::GetAllOperations();
         auto matchedOp = std::find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
         if (matchedOp != opeartions.end()) {
-            // 暂存 {argv[i + 1]...argv[argc - 1]};
-            std::vector<string_view> curArgs;
-            for (int j = i + 1; j < argc; ++j) {
-                curArgs.emplace_back(argv[j]);
+            vector<ToolsOp::CmdInfo> argList = matchedOp->GetParams();
+            optional<map<string, vector<string>>> mapNameToArgs = GetArgsMap(argc, argv, argList);
+            if (mapNameToArgs.has_value()) {
+                flag = matchedOp->Execute(mapNameToArgs.value());
             }
-
-            return matchedOp->Execute(curArgs);
         }
     }
-    fprintf(stderr, "Invalid operation\n");
-    return -EPERM;
+    if (flag != 0) {
+        printf("backup_tool: missing operand\nTry 'backup_tool help' for more information.\n");
+    }
+    return flag;
 }
 } // namespace OHOS::FileManagement::Backup
 
-int main(int argc, char const *argv[])
+int main(int argc, char *const argv[])
 {
     return OHOS::FileManagement::Backup::ParseOpAndExecute(argc, argv);
 }
