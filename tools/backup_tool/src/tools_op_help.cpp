@@ -12,18 +12,19 @@ using namespace std;
 
 static std::string GenHelpMsg()
 {
-    return "This operation helps to dump the help messages";
+    return "\t\tThis operation helps to dump the help messages.";
 }
 
-static int Exec(ToolsOp::CRefVStrView args)
+static int Exec(map<string, vector<string>> mapArgToVal)
 {
     stringstream ss;
     auto &&allOps = ToolsOp::GetAllOperations();
+    ss << "Usage: backup_tool <SubCommand> [OPTION]... [ARG]..." << std::endl;
     for (size_t i = 0; i < allOps.size(); ++i) {
         auto desc = allOps[i].GetDescriptor();
 
         // echo: <op seqs>\n
-        ss << '<' << allOps[i].GetName() << '>' << std::endl;
+        ss << allOps[i].GetName();
 
         // echo: help msgs\n\n
         if (desc.funcGenHelpMsg) {

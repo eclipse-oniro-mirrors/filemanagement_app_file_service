@@ -61,8 +61,9 @@ private:
 
 static string GenHelpMsg()
 {
-    return "the functionality of the restore api. Arg list:\n"
-           "path_cap_file bundleName1 bundleName2...";
+    return "\t\tThis operation helps to restore application data.\n"
+           "\t\t--pathCapFile\t\t This parameter should be the path of the capability file.\n"
+           "\t\t--bundle\t\t This parameter is bundleName.";
 }
 
 static void OnBundleStarted(ErrCode err, const BundleName name)
@@ -127,10 +128,10 @@ static void RestoreApp(shared_ptr<RstoreSession> restore, vector<BundleName> &bu
     }
 }
 
-static int32_t Init(string_view pathCapFile, ToolsOp::CRefVStrView args)
+static int32_t Init(string pathCapFile, std::vector<string> bundles)
 {
     std::vector<BundleName> bundleNames;
-    for (auto &&bundleName : args) {
+    for (auto &&bundleName : bundles) {
         bundleNames.emplace_back(bundleName.data());
     }
     auto ctx = make_shared<RstoreSession>();
@@ -178,14 +179,12 @@ static int32_t Init(string_view pathCapFile, ToolsOp::CRefVStrView args)
     return 0;
 }
 
-static int Exec(ToolsOp::CRefVStrView args)
+static int Exec(map<string, vector<string>> mapArgToVal)
 {
-    if (args.empty()) {
-        fprintf(stderr, "Please input the name of API to restore\n");
-        return -EINVAL;
+    if (mapArgToVal.find("pathCapFile") == mapArgToVal.end() || mapArgToVal.find("bundles") == mapArgToVal.end()) {
+        return -EPERM;
     }
-    std::vector<string_view> argsWithoutHead(args.begin() + 1, args.end());
-    return Init(args.front(), argsWithoutHead);
+    return Init(*(mapArgToVal["pathCapFile"].begin()), mapArgToVal["bundles"]);
 }
 
 /**
@@ -195,6 +194,14 @@ static int Exec(ToolsOp::CRefVStrView args)
  */
 static bool g_autoRegHack = ToolsOp::Register(ToolsOp::Descriptor {
     .opName = {"restore"},
+    .argList = {{
+                    .paramName = "pathCapFile",
+                    .repeatable = false,
+                },
+                {
+                    .paramName = "bundles",
+                    .repeatable = true,
+                }},
     .funcGenHelpMsg = GenHelpMsg,
     .funcExec = Exec,
 });

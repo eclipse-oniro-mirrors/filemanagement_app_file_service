@@ -14,10 +14,10 @@ using namespace std;
 
 static std::string GenHelpMsg()
 {
-    return "This operation helps to check if the backup sa is available";
+    return "\tThis operation helps to check if the backup sa is available.";
 }
 
-static int Exec(ToolsOp::CRefVStrView args)
+static int Exec(map<string, vector<string>> mapArgToVal)
 {
     auto proxy = ServiceProxy::GetInstance();
     if (!proxy) {

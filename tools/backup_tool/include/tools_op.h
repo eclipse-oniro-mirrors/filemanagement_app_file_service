@@ -6,6 +6,8 @@
 #define OHOS_FILEMGMT_BACKUP_TOOLS_OP_H
 
 #include <functional>
+#include <string>
+#include <map>
 #include <string_view>
 #include <vector>
 
@@ -13,13 +15,20 @@ namespace OHOS::FileManagement::Backup {
 class ToolsOp {
 public:
     using CRefVStrView = const std::vector<std::string_view> &;
+    struct CmdInfo {
+        std::string paramName;
+        bool repeatable = false;
+    };
+
     struct Descriptor {
         // 命令名，必填
         std::vector<std::string_view> opName;
+        // 参数，选填
+        std::vector<CmdInfo> argList;
         // 命令帮助语句，选填
         std::function<std::string()> funcGenHelpMsg;
         // 命令执行主体，必填
-        std::function<int(CRefVStrView args)> funcExec;
+        std::function<int(std::map<std::string, std::vector<std::string>> args)> funcExec;
     };
 
     /**
@@ -35,6 +44,16 @@ public:
      * @return const std::string 当前操作的名称
      */
     const std::string GetName() const;
+
+    /**
+     * @brief 获取当前操作的参数
+     *
+     * @return std::vector<CmdInfo> 当前参数的向量
+     */
+    const std::vector<CmdInfo> GetParams() const
+    {
+        return desc_.argList;
+    }
 
     /**
      * @brief 获取当前操作的原始具体信息
@@ -80,7 +99,7 @@ public:
      * @param args 给定参数表
      * @return int 错误码（0 表示成功，非零表示失败）
      */
-    int Execute(CRefVStrView args) const;
+    int Execute(std::map<std::string, std::vector<std::string>> mapArg) const;
 
 private:
     Descriptor desc_;
