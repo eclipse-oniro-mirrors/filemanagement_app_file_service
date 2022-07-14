@@ -9,11 +9,12 @@
 #include <tuple>
 #include <vector>
 
-#include "b_json/b_json_entity_usr_config.h"
+#include "b_resources/b_constants.h"
 #include "ext_backup.h"
 #include "js_runtime.h"
 #include "native_reference.h"
 #include "native_value.h"
+#include "unique_fd.h"
 #include "want.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -73,7 +74,7 @@ public:
      * You can override this function to implement your own processing logic.
      *
      */
-    void OnDisconnect(const AAFwk::Want& want) override;
+    void OnDisconnect(const AAFwk::Want &want) override;
 
 public:
     /**
@@ -93,11 +94,25 @@ public:
     UniqueFd GetFileHandle(std::string &fileName);
 
     /**
-     * @brief clean up resources for backup/restore.
+     * @brief Get the Extension Action object
      *
-     * @return clear error.
+     * @return BConstants::ExtensionAction
      */
-    ErrCode HandleClear();
+    BConstants::ExtensionAction GetExtensionAction() const;
+
+    /**
+     * @brief Get the User Config, then check if
+     *
+     * @return allowed ro not
+     */
+    bool AllowToBackupRestore() const;
+
+    /**
+     * @brief Get the user configure
+     *
+     * @return user configure
+     */
+    std::string GetUsrConfig() const;
 
 public:
     ExtBackupJs(AbilityRuntime::JsRuntime &jsRuntime) : jsRuntime_(jsRuntime) {}
@@ -106,11 +121,10 @@ public:
 private:
     std::tuple<ErrCode, NativeValue *> CallObjectMethod(std::string_view name,
                                                         const std::vector<NativeValue *> &argv = {});
-    int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
-    int HandleRestore();
 
     AbilityRuntime::JsRuntime &jsRuntime_;
     std::unique_ptr<NativeReference> jsObj_;
+    BConstants::ExtensionAction extAction_ {BConstants::ExtensionAction::INVALID};
 };
 } // namespace OHOS::FileManagement::Backup
 

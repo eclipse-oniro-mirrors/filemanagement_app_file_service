@@ -5,8 +5,14 @@
 #ifndef OHOS_FILEMGMT_BACKUP_BACKUP_EXT_EXTENSION_H
 #define OHOS_FILEMGMT_BACKUP_BACKUP_EXT_EXTENSION_H
 
+#include <string>
+#include <vector>
+
+#include "b_json/b_json_entity_usr_config.h"
+#include "b_resources/b_constants.h"
 #include "ext_backup_js.h"
 #include "ext_extension_stub.h"
+#include "thread_pool.h"
 
 namespace OHOS::FileManagement::Backup {
 class BackupExtExtension : public ExtExtensionStub {
@@ -16,6 +22,16 @@ public:
     ErrCode PublishFile(std::string &fileName) override;
     ErrCode HandleBackup() override;
 
+public:
+    explicit BackupExtExtension(const std::shared_ptr<Backup::ExtBackupJs> &extension) : extension_(extension)
+    {
+        threadPool_.Start(BConstants::EXTENSION_THREAD_POOL_COUNT);
+    }
+    ~BackupExtExtension()
+    {
+        threadPool_.Stop();
+    }
+
 private:
     /**
      * @brief verify caller uid
@@ -23,12 +39,40 @@ private:
      */
     void VerifyCaller();
 
-public:
-    explicit BackupExtExtension(const std::shared_ptr<Backup::ExtBackupJs> &extension) : extension_(extension) {}
-    ~BackupExtExtension() = default;
+    /**
+     * @brief backup
+     *
+     * @param usrConfig user configure
+     */
+    int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
+
+    /**
+     * @brief restore
+     *
+     * @param fileName name of the file that to be untar
+     */
+    int HandleRestore(const string &fileName);
+
+    /**
+     * @brief Executing Backup Tasks Asynchronously
+     *
+     * @param extAction action
+     *
+     * @param config user configure
+     */
+    void AsyncTaskBackup(const std::string config);
+
+    /**
+     * @brief Executing Restoration Tasks Asynchronously
+     *
+     * @param fileName ready file to untar
+     */
+    void AsyncTaskRestore(const std::string fileName);
 
 private:
     std::shared_ptr<ExtBackupJs> extension_;
+    std::vector<std::string> tars_;
+    OHOS::ThreadPool threadPool_;
 };
 } // namespace OHOS::FileManagement::Backup
 

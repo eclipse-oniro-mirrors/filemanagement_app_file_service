@@ -21,7 +21,7 @@ void BTarballCmdline::Tar(string_view root, vector<string_view> includes, vector
 
     vector<string_view> argv = {
         "/system/bin/tar",
-        "-cvf",
+        "-cf",
         tarballPath_,
     };
 
@@ -47,7 +47,7 @@ void BTarballCmdline::Untar(string_view root)
 {
     BProcess::ExecuteCmd({
         "tar",
-        "-xvf",
+        "-xf",
         tarballPath_,
         "-C",
         root,
