@@ -27,7 +27,7 @@ public:
     UniqueFd GetLocalCapabilities() override;
     std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
-    ErrCode AppFileReady(const std::string &fileName) override;
+    ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override;
     ErrCode AppDone(ErrCode errCode) override;
 
     // 以下都是非IPC接口

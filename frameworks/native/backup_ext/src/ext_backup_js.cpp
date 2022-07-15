@@ -21,6 +21,7 @@
 #include "filemgmt_libhilog.h"
 #include "js_runtime_utils.h"
 #include "service_proxy.h"
+#include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -147,7 +148,12 @@ int ExtBackupJs::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
             throw BError(BError::Codes::EXT_BROKEN_BACKUP_SA, std::generic_category().message(errno));
         }
 
-        ErrCode ret = proxy->AppFileReady(pkgName);
+        UniqueFd fd(open(tarName.data(), O_RDONLY));
+        if (fd < 0) {
+            throw BError(BError::Codes::EXT_INVAL_ARG, std::generic_category().message(errno));
+        }
+
+        ErrCode ret = proxy->AppFileReady(pkgName, move(fd));
         if (SUCCEEDED(ret)) {
             HILOGI("The application is packaged successfully, package name is %{public}s", pkgName.c_str());
         } else {
