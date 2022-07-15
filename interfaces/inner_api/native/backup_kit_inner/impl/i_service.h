@@ -35,7 +35,7 @@ public:
     virtual UniqueFd GetLocalCapabilities() = 0;
     virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) = 0;
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;
-    virtual ErrCode AppFileReady(const std::string &fileName) = 0;
+    virtual ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) = 0;
     virtual ErrCode AppDone(ErrCode errCode) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Filemanagement.Backup.IService")

@@ -163,7 +163,12 @@ int32_t ServiceStub::CmdAppFileReady(MessageParcel &data, MessageParcel &reply)
     if (!data.ReadString(fileName)) {
         return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive fileName");
     }
-    int res = AppFileReady(fileName);
+    UniqueFd fd(data.ReadFileDescriptor());
+    if (fd < 0) {
+        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive fd");
+    }
+
+    int res = AppFileReady(fileName, move(fd));
     if (!reply.WriteInt32(res)) {
         stringstream ss;
         ss << "Failed to send the result " << res;

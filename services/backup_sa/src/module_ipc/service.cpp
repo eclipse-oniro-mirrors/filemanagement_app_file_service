@@ -305,23 +305,12 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
     }
 }
 
-ErrCode Service::AppFileReady(const string &fileName)
+ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
 {
     try {
         string callerName = VerifyCallerAndGetCallerName();
         if (!regex_match(fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
-        }
-
-        string path = string(BConstants::SA_BUNDLE_BACKUP_DIR)
-                          .append(callerName)
-                          .append(BConstants::SA_BUNDLE_BACKUP_BAKCUP)
-                          .append(fileName);
-        UniqueFd fd(open(path.data(), O_RDONLY));
-        if (fd < 0) {
-            stringstream ss;
-            ss << "Failed to open path " << errno;
-            throw BError(BError::Codes::SA_INVAL_ARG, ss.str());
         }
 
         session_.OnBunleFileReady(callerName);

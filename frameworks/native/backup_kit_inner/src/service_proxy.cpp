@@ -161,7 +161,7 @@ ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
     return reply.ReadInt32();
 }
 
-ErrCode ServiceProxy::AppFileReady(const string &fileName)
+ErrCode ServiceProxy::AppFileReady(const string &fileName, UniqueFd fd)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -169,6 +169,9 @@ ErrCode ServiceProxy::AppFileReady(const string &fileName)
 
     if (!data.WriteString(fileName)) {
         return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the filename").GetCode();
+    }
+    if (!data.WriteFileDescriptor(fd)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fd").GetCode();
     }
 
     MessageParcel reply;
