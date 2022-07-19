@@ -4,7 +4,6 @@
 
 #include "tools_op.h"
 
-#include <error.h>
 #include <regex>
 #include <sstream>
 
