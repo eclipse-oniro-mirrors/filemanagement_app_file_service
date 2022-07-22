@@ -52,4 +52,45 @@ ErrCode SvcExtensionProxy::HandleClear()
     HILOGI("Successful");
     return reply.ReadInt32();
 }
+
+ErrCode SvcExtensionProxy::HandleBackup()
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IExtension::CMD_HANDLE_BACKUP, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return ErrCode(-ret);
+    }
+
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
+
+ErrCode SvcExtensionProxy::PublishFile(string &fileName)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteString(fileName)) {
+        BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fileName");
+        return ErrCode(-EPERM);
+    }
+
+    MessageParcel reply;
+    MessageOption option;
+    int32_t ret = Remote()->SendRequest(IExtension::CMD_PUBLISH_FILE, data, reply, option);
+    if (ret != NO_ERROR) {
+        HILOGE("Received error %{public}d when doing IPC", ret);
+        return ErrCode(-ret);
+    }
+
+    HILOGI("Successful");
+    return reply.ReadInt32();
+}
 } // namespace OHOS::FileManagement::Backup

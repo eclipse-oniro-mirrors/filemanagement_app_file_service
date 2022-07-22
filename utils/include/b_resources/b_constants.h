@@ -50,6 +50,9 @@ constexpr int DEV_MAX_SIZE = 8;
 constexpr int PREFIX_SIZE = 155;
 constexpr int PADDING_SIZE = 12;
 
+// SA THREAD_POOL 最大线程数
+constexpr int SA_THREAD_POOL_COUNT = 1;
+
 // 打包文件头部Header结构体fileSize字段最大值。
 constexpr off_t FILESIZE_MAX = 077777777777;
 
@@ -72,6 +75,9 @@ static inline std::string_view SA_BUNDLE_BACKUP_ROOT_DIR = "/data/service/el2/10
 static inline std::string_view SA_BUNDLE_BACKUP_TMP_DIR = "/tmp/";
 static inline std::string_view BACKUP_TOOL_RECEIVE_DIR = "/data/backup/received/";
 static inline std::string_view PATH_BUNDLE_BACKUP_HOME = "/data/storage/el2/backup";
+
+// 应用备份恢复所需的索引文件
+static inline std::string_view EXT_BACKUP_MANAGE = "manage.json";
 
 // 应用默认备份的目录，其均为相对根路径的路径。为避免模糊匹配，务必以斜线为结尾。
 static inline std::array<std::string_view, 6> PATHES_TO_BACKUP = {

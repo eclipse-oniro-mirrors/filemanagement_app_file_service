@@ -63,6 +63,11 @@ public:
         std::unique_ptr<char[]> rawBuf = BFile::ReadFile(srcFile_);
         std::string_view sv(rawBuf.get());
 
+        if (sv.empty()) {
+            HILOGI("This Json file is empty");
+            return 0;
+        }
+
         bool res = jsonReader->parse(sv.data(), sv.data() + sv.length(), &jValue, &errs);
         if (!res || !errs.empty()) {
             return BError(BError::Codes::UTILS_INVAL_JSON_ENTITY, errs).GetCode();

@@ -29,6 +29,7 @@ public:
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
     ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override;
     ErrCode AppDone(ErrCode errCode) override;
+    ErrCode GetExtFileName(std::string &bundleName, std::string &fileName) override;
 
     // 以下都是非IPC接口
 public:

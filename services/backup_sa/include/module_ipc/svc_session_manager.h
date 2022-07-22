@@ -9,19 +9,22 @@
 #define OHOS_FILEMGMT_BACKUP_SVC_SESSION_MANAGER_H
 
 #include <map>
+#include <memory>
 #include <shared_mutex>
 
 #include "b_file_info.h"
 #include "i_service_reverse.h"
 #include "module_ipc/svc_backup_connection.h"
 #include "module_ipc/svc_death_recipient.h"
+#include "module_sched/sched_scheduler.h"
 
 namespace OHOS::FileManagement::Backup {
 struct BackupExtInfo {
+    bool receExtManageJson {false};
+    bool receExtAppDone {false};
     std::string backupExtName;
-    uint32_t numFilesSent {0};
-    int32_t numFilesTotal {-1};
     sptr<SvcBackupConnection> backUpConnection;
+    std::set<std::string> fileNameInfo;
 };
 
 class Service;
@@ -66,7 +69,7 @@ public:
      * @param bundleName 调用者名称
      * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
      */
-    void VerifyBundleName(std::string bundleName);
+    void VerifyBundleName(std::string &bundleName);
 
     /**
      * @brief 获取IServiceReverse
@@ -85,38 +88,69 @@ public:
     IServiceReverse::Scenario GetScenario();
 
     /**
-     * @brief 获取 bundleName 与 ExtName map表
-     *
-     * @return std::map 返回backupExtNameMap
-     * @throw BError::Codes::SA_INVAL_ARG 获取异常
-     */
-    const std::map<BundleName, BackupExtInfo> GetBackupExtNameMap();
-
-    /**
-     * @brief 设置bundleName发送文件计数加一
+     * @brief 更新backupExtNameMap并判断是否完成分发
      *
      * @param bundleName 客户端信息
-     * @param bundleDone false累加sentFileCount, true保存existingFiles
-     * @param bundleTotalFiles 文件总个数
+     * @param fileName 文件名称
      * @throw BError::Codes::SA_INVAL_ARG 获取异常
      */
-    void OnBunleFileReady(const std::string &bundleName, bool bundleDone = false, int32_t bundleTotalFiles = -1);
+    void OnBunleFileReady(const std::string &bundleName, const std::string &fileName = "");
 
     /**
-     * @brief 设置backup extension connection信息
+     * @brief 设置backup manage.json 信息
      *
      * @param bundleName 客户端信息
-     * @param backUpConnection SvcBackupConnection
+     * @param fd manage.json 文件描述符
+     * @return UniqueFd 返回manage.json 文件描述符
      * @throw BError::Codes::SA_INVAL_ARG 获取异常
      */
-    void OnNewBundleConnected(const std::string &bundleName, sptr<SvcBackupConnection> &backUpConnection);
+    UniqueFd OnBunleExtManageInfo(const std::string &bundleName, UniqueFd fd);
 
     /**
-     * @brief 更新extension map 信息
+     * @brief 通知Extension 文件内容已就绪
+     *
+     * @param bundleName 应用名称
+     * @param fileName   文件名称
+     */
+    void PublishFile(const std::string &bundleName, const std::string &fileName);
+
+    /**
+     * @brief 获取真实文件推送给TOOL
+     *
+     * @param bundleName
+     * @param fileName
+     */
+    void GetFileHandle(const std::string &bundleName, const std::string &fileName);
+
+    /**
+     * @brief 暂存真实文件请求
+     *
+     * @param bundleName
+     * @param fileName
+     */
+    void QueueGetFileRequest(const std::string &bundleName, std::string &fileName);
+
+    /**
+     * @brief 启动entension
+     *
+     */
+    void Start();
+
+    /**
+     * @brief 判断extension 是否连接成功
+     *
+     * @param bundleName 应用名称
+     * @return true connect ok
+     * @return false connect false
+     */
+    bool TryExtConnect(const std::string &bundleName);
+
+    /**
+     * @brief backup extension died
      *
      * @param bundleName 应用名称
      */
-    void UpdateExtMapInfo(const std::string &bundleName);
+    void OnBackupExtensionDied(const std::string &bundleName);
 
 private:
     /**
@@ -142,6 +176,7 @@ private:
     wptr<Service> reversePtr_;
     sptr<SvcDeathRecipient> deathRecipient_;
     Impl impl_;
+    std::unique_ptr<SchedScheduler> sched_;
 };
 } // namespace OHOS::FileManagement::Backup
 

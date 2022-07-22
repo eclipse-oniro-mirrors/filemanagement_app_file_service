@@ -7,9 +7,10 @@
 #include "ability_manager_client.h"
 #include "filemgmt_libhilog.h"
 #include "module_ipc/svc_extension_proxy.h"
+#include "module_ipc/svc_session_manager.h"
 
 namespace OHOS::FileManagement::Backup {
-constexpr int WAIT_TIME = 1;
+constexpr int WAIT_TIME = 3;
 using namespace std;
 
 void SvcBackupConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &element,
@@ -22,34 +23,40 @@ void SvcBackupConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &el
         return;
     }
     backupProxy_ = iface_cast<SvcExtensionProxy>(remoteObject);
-    std::unique_lock<std::mutex> lock(condition_.mutex);
-    condition_.condition.notify_all();
     if (backupProxy_ == nullptr) {
         HILOGE("Failed to ability connect done, backupProxy_ is nullptr");
         return;
     }
     isConnected_.store(true);
+    std::unique_lock<std::mutex> lock(mutex_);
+    condition_.notify_all();
     HILOGI("called end");
 }
 
 void SvcBackupConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
 {
+    if (isConnectedDone_ == false) {
+        string bundleName = element.GetBundleName();
+        HILOGE("It's error that the backup extension dies before the backup sa. name : %{public}s", bundleName.data());
+        functor_(bundleName);
+    }
     HILOGI("called begin");
     backupProxy_ = nullptr;
     isConnected_.store(false);
+    condition_.notify_all();
     HILOGI("called end");
 }
 
 ErrCode SvcBackupConnection::ConnectBackupExtAbility(AAFwk::Want &want)
 {
     HILOGI("called begin");
-    std::unique_lock<std::mutex> lock(condition_.mutex);
+    std::unique_lock<std::mutex> lock(mutex_);
     ErrCode ret =
         AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want, this, AppExecFwk::Constants::START_USERID);
-    if (condition_.condition.wait_for(lock, std::chrono::seconds(WAIT_TIME),
-                                      [this] { return backupProxy_ != nullptr; })) {
-        HILOGI("Wait connect timeout.");
+    if (condition_.wait_for(lock, std::chrono::seconds(WAIT_TIME), [this] { return backupProxy_ != nullptr; })) {
+        HILOGI("Wait until the connection ends");
     }
+
     HILOGI("called end, ret=%{public}d", ret);
     return ret;
 }
@@ -57,10 +64,12 @@ ErrCode SvcBackupConnection::ConnectBackupExtAbility(AAFwk::Want &want)
 ErrCode SvcBackupConnection::DisconnectBackupExtAbility()
 {
     HILOGI("called begin");
-    std::unique_lock<std::mutex> lock(condition_.mutex);
-    backupProxy_ = nullptr;
-    isConnected_.store(false);
+    isConnectedDone_.store(true);
+    std::unique_lock<std::mutex> lock(mutex_);
     ErrCode ret = AppExecFwk::AbilityManagerClient::GetInstance()->DisconnectAbility(this);
+    if (condition_.wait_for(lock, std::chrono::seconds(WAIT_TIME), [this] { return backupProxy_ == nullptr; })) {
+        HILOGI("Wait until the connection ends");
+    }
     HILOGI("called end, ret=%{public}d", ret);
     return ret;
 }

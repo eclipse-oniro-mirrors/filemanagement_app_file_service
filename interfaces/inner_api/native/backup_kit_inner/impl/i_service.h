@@ -25,6 +25,7 @@ public:
         SERVICE_CMD_APP_FILE_READY,
         SERVICE_CMD_APP_DONE,
         SERVICE_CMD_START,
+        SERVICE_CMD_GET_EXT_FILE_NAME,
     };
 
     virtual ErrCode InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames) = 0;
@@ -37,6 +38,7 @@ public:
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;
     virtual ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) = 0;
     virtual ErrCode AppDone(ErrCode errCode) = 0;
+    virtual ErrCode GetExtFileName(std::string &bundleName, std::string &fileName) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.Filemanagement.Backup.IService")
 };

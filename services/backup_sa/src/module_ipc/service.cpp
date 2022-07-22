@@ -189,20 +189,7 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
 ErrCode Service::Start()
 {
     try {
-        IServiceReverse::Scenario scenario = session_.GetScenario();
-        auto proxy = session_.GetServiceReverseProxy();
-        auto backupExtNameMap = session_.GetBackupExtNameMap();
-        for (auto it : backupExtNameMap) {
-            int ret = LaunchBackupExtension(scenario, it.first, it.second.backupExtName);
-            if (scenario == IServiceReverse::Scenario::BACKUP) {
-                proxy->BackupOnBundleStarted(ret, it.first);
-            } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-                proxy->RestoreOnBundleStarted(ret, it.first);
-            } else {
-                string pendingMsg = string("Invalid scenario ").append(to_string(static_cast<int32_t>(scenario)));
-                throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
-            }
-        }
+        session_.Start();
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode();
@@ -256,42 +243,11 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
     try {
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-        session_.VerifyBundleName(fileInfo.owner);
 
         if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
-
-        string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
-                             .append(fileInfo.owner)
-                             .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
-        UniqueFd dfdTmp(open(tmpPath.data(), O_RDONLY));
-        if (dfdTmp < 0) {
-            stringstream ss;
-            ss << "Failed to open tmpPath " << errno;
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-        }
-
-        string pathRx = string(BConstants::SA_BUNDLE_BACKUP_DIR)
-                            .append(fileInfo.owner)
-                            .append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
-        if (!ForceCreateDirectory(pathRx)) { // 强制创建文件夹
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
-        }
-
-        UniqueFd dfdNew(open(pathRx.data(), O_RDONLY));
-        if (dfdNew < 0) {
-            stringstream ss;
-            ss << "Failed to open path " << errno;
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-        }
-
-        string tmpFile = to_string(fileInfo.sn);
-        if (renameat(dfdTmp, tmpFile.data(), dfdNew, fileInfo.fileName.data()) == -1) {
-            stringstream ss;
-            ss << "Failed to rename file " << errno;
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-        }
+        session_.PublishFile(fileInfo.owner, fileInfo.fileName);
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
@@ -312,12 +268,13 @@ ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
         if (!regex_match(fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
+        if (fileName == BConstants::EXT_BACKUP_MANAGE) {
+            fd = session_.OnBunleExtManageInfo(callerName, move(fd));
+        }
 
-        session_.OnBunleFileReady(callerName);
+        session_.GetServiceReverseProxy()->BackupOnFileReady(callerName, fileName, move(fd));
 
-        auto proxy = session_.GetServiceReverseProxy();
-        proxy->BackupOnFileReady(callerName, fileName, move(fd));
-
+        session_.OnBunleFileReady(callerName, fileName);
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode(); // 任意异常产生，终止监听该任务
@@ -334,33 +291,7 @@ ErrCode Service::AppDone(ErrCode errCode)
 {
     try {
         string callerName = VerifyCallerAndGetCallerName();
-        IServiceReverse::Scenario scenario = session_.GetScenario();
-        auto proxy = session_.GetServiceReverseProxy();
-        if (scenario == IServiceReverse::Scenario::BACKUP) {
-            string path =
-                string(BConstants::SA_BUNDLE_BACKUP_DIR).append(callerName).append(BConstants::SA_BUNDLE_BACKUP_BAKCUP);
-
-            vector<string> files;
-            GetDirFiles(path, files);
-            if (files.size() == 0) {
-                HILOGE("This path %{public}s existing files is empty", path.data());
-            }
-            int32_t bundleTotalFiles = files.size(); // REM:重新写一个 现阶段没有现成接口
-            session_.OnBunleFileReady(callerName, true, bundleTotalFiles);
-
-            proxy->BackupOnBundleFinished(errCode, callerName, bundleTotalFiles);
-        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-            session_.UpdateExtMapInfo(callerName);
-            proxy->RestoreOnBundleFinished(errCode, callerName);
-            string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
-                                 .append(callerName)
-                                 .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
-            if (!ForceRemoveDirectory(tmpPath)) {
-                HILOGI("Failed to delete the backup cache %{public}s", callerName.c_str());
-            }
-        } else {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
-        }
+        session_.OnBunleFileReady(callerName);
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
@@ -400,6 +331,24 @@ ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
         HILOGI("Started %{public}s[100]'s %{public}s with %{public}s set to %{public}d", bundleName.c_str(),
                backupExtName.c_str(), BConstants::EXTENSION_ACTION_PARA, action);
         return ret;
+    } catch (const BError &e) {
+        return e.GetCode();
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return BError(-EPERM);
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return BError(-EPERM);
+    }
+}
+
+ErrCode Service::GetExtFileName(string &bundleName, string &fileName)
+{
+    try {
+        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_.QueueGetFileRequest(bundleName, fileName);
+
+        return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {

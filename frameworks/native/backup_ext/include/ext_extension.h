@@ -13,6 +13,8 @@ class BackupExtExtension : public ExtExtensionStub {
 public:
     UniqueFd GetFileHandle(std::string &fileName) override;
     ErrCode HandleClear() override;
+    ErrCode PublishFile(std::string &fileName) override;
+    ErrCode HandleBackup() override;
 
 private:
     /**

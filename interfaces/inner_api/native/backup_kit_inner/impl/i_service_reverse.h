@@ -24,21 +24,27 @@ public:
         SERVICER_BACKUP_ON_SUB_TASK_STARTED,
         SERVICER_BACKUP_ON_SUB_TASK_FINISHED,
         SERVICER_BACKUP_ON_TASK_FINISHED,
+        SERVICER_BACKUP_ON_BACKUP_SERVICE_DIED,
 
         SERVICER_RESTORE_ON_SUB_TASK_STARTED,
         SERVICER_RESTORE_ON_SUB_TASK_FINISHED,
         SERVICER_RESTORE_ON_TASK_FINISHED,
+        SERVICER_RESTORE_ON_FILE_READY,
+        SERVICER_RESTORE_ON_BACKUP_SERVICE_DIED,
     };
 
 public:
     virtual void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) = 0;
     virtual void BackupOnBundleStarted(int32_t errCode, std::string bundleName) = 0;
-    virtual void BackupOnBundleFinished(int32_t errCode, std::string bundleName, int32_t bundleTotalFiles) = 0;
+    virtual void BackupOnBundleFinished(int32_t errCode, std::string bundleName) = 0;
     virtual void BackupOnAllBundlesFinished(int32_t errCode) = 0;
+    virtual void BackupOnBackupServiceDied() = 0;
 
     virtual void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) = 0;
     virtual void RestoreOnBundleFinished(int32_t errCode, std::string bundleName) = 0;
     virtual void RestoreOnAllBundlesFinished(int32_t errCode) = 0;
+    virtual void RestoreOnFileReady(std::string bundleName, std::string fileName, int fd) = 0;
+    virtual void RestoreOnBackupServiceDied() = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.FileManagement.Backup.IServiceReverse")
 };

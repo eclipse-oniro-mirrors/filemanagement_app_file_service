@@ -7,13 +7,13 @@
 
 #include "ability_connect_callback_stub.h"
 #include "i_extension.h"
+#include "module_ipc/svc_death_recipient.h"
+#include "module_sched/sched_scheduler.h"
+#include "refbase.h"
 
 namespace OHOS::FileManagement::Backup {
 class SvcBackupConnection : public AAFwk::AbilityConnectionStub {
 public:
-    SvcBackupConnection() {}
-    virtual ~SvcBackupConnection() override {};
-
     /**
      * @brief This method is called back to receive the connection result after an ability calls the
      * ConnectAbility method to connect it to an extension ability.
@@ -62,17 +62,17 @@ public:
      */
     sptr<IExtension> GetBackupExtProxy();
 
-    struct ConnectCondition {
-        std::condition_variable condition;
-        std::mutex mutex;
-    };
+public:
+    SvcBackupConnection(std::function<void(const std::string &)> functor) : functor_(functor) {}
+    virtual ~SvcBackupConnection() override {};
 
 private:
-    static sptr<SvcBackupConnection> instance_;
-    static std::mutex mutex_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
     std::atomic<bool> isConnected_ = {false};
+    std::atomic<bool> isConnectedDone_ = {false};
     sptr<IExtension> backupProxy_;
-    ConnectCondition condition_;
+    std::function<void(const std::string &)> functor_;
 };
 } // namespace OHOS::FileManagement::Backup
 

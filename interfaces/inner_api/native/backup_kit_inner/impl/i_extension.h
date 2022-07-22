@@ -18,11 +18,15 @@ public:
     enum {
         CMD_GET_FILE_HANDLE = 1,
         CMD_HANDLE_CLAER,
+        CMD_PUBLISH_FILE,
+        CMD_HANDLE_BACKUP,
     };
 
 public:
     virtual UniqueFd GetFileHandle(std::string &fileName) = 0;
-    virtual ErrCode  HandleClear() = 0;
+    virtual ErrCode HandleClear() = 0;
+    virtual ErrCode HandleBackup() = 0;
+    virtual ErrCode PublishFile(std::string &fileName) = 0;
 };
 } // namespace OHOS::FileManagement::Backup
 
