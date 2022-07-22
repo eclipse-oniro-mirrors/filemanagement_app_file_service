@@ -35,7 +35,7 @@ ohos_shared_library("backup_sa") {
     "bundle_framework:appexecfwk_core",
     "ipc:ipc_core",
     "safwk:system_ability_fwk",
-    "samgr_standard:samgr_proxy",
+    "samgr:samgr_proxy",
     "startup_l2:syspara",
   ]
 
