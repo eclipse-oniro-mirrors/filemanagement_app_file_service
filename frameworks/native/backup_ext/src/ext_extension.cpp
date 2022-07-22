@@ -52,4 +52,16 @@ ErrCode BackupExtExtension::HandleClear()
     ErrCode ret = extension_->HandleClear();
     return ret;
 }
+
+ErrCode BackupExtExtension::PublishFile(string &fileName)
+{
+    HILOGI("begin fileName = %{public}s", fileName.data());
+    return ERR_OK;
+}
+
+ErrCode BackupExtExtension::HandleBackup()
+{
+    HILOGI("begin");
+    return ERR_OK;
+}
 } // namespace OHOS::FileManagement::Backup

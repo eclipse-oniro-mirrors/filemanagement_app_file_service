@@ -30,14 +30,13 @@ void ServiceReverse::BackupOnBundleStarted(int32_t errCode, string bundleName)
     callbacksBackup_.onBundleStarted(errCode, bundleName);
 }
 
-void ServiceReverse::BackupOnBundleFinished(int32_t errCode, string bundleName, int32_t bundleTotalFiles)
+void ServiceReverse::BackupOnBundleFinished(int32_t errCode, string bundleName)
 {
-    HILOGI("errCode = %{public}d, bundleName = %{public}s, files = %{public}d", errCode, bundleName.c_str(),
-           bundleTotalFiles);
+    HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
     if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onBundleFinished) {
         return;
     }
-    callbacksBackup_.onBundleFinished(errCode, bundleName, bundleTotalFiles);
+    callbacksBackup_.onBundleFinished(errCode, bundleName);
 }
 
 void ServiceReverse::BackupOnAllBundlesFinished(int32_t errCode)
@@ -47,6 +46,14 @@ void ServiceReverse::BackupOnAllBundlesFinished(int32_t errCode)
         return;
     }
     callbacksBackup_.onAllBundlesFinished(errCode);
+}
+
+void ServiceReverse::BackupOnBackupServiceDied()
+{
+    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onBackupServiceDied) {
+        return;
+    }
+    callbacksBackup_.onBackupServiceDied();
 }
 
 void ServiceReverse::RestoreOnBundleStarted(int32_t errCode, string bundleName)
@@ -74,6 +81,25 @@ void ServiceReverse::RestoreOnAllBundlesFinished(int32_t errCode)
         return;
     }
     callbacksRestore_.onAllBundlesFinished(errCode);
+}
+
+void ServiceReverse::RestoreOnFileReady(string bundleName, string fileName, int fd)
+{
+    HILOGI("bundlename = %{public}s, filename = %{private}s, fd = %{private}d", bundleName.c_str(), fileName.c_str(),
+           fd);
+    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onFileReady) {
+        return;
+    }
+    BFileInfo bFileInfo(bundleName, fileName, 0);
+    callbacksRestore_.onFileReady(bFileInfo, UniqueFd(fd));
+}
+
+void ServiceReverse::RestoreOnBackupServiceDied()
+{
+    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onBackupServiceDied) {
+        return;
+    }
+    callbacksRestore_.onBackupServiceDied();
 }
 
 ServiceReverse::ServiceReverse(BSessionBackup::Callbacks callbacks)

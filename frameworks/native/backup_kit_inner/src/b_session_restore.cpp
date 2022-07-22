@@ -45,7 +45,7 @@ tuple<ErrCode, TmpFileSN, UniqueFd> BSessionRestore::GetFileOnServiceEnd(string 
 {
     auto proxy = ServiceProxy::GetInstance();
     if (proxy == nullptr) {
-        return {ErrCode(BError::Codes::SDK_BROKEN_IPC), 0, UniqueFd(-1)};
+        return {BError(BError::Codes::SDK_BROKEN_IPC), 0, UniqueFd(-1)};
     }
     return proxy->GetFileOnServiceEnd(bundleName);
 }
@@ -63,9 +63,19 @@ ErrCode BSessionRestore::Start()
 {
     auto proxy = ServiceProxy::GetInstance();
     if (proxy == nullptr) {
-        return ErrCode(BError::Codes::SDK_BROKEN_IPC);
+        return BError(BError::Codes::SDK_BROKEN_IPC);
     }
 
     return proxy->Start();
+}
+
+ErrCode BSessionRestore::GetExtFileName(string &bundleName, string &fileName)
+{
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        return BError(BError::Codes::SDK_BROKEN_IPC, "Failed to proxy because of is empty").GetCode();
+    }
+
+    return proxy->GetExtFileName(bundleName, fileName);
 }
 } // namespace OHOS::FileManagement::Backup

@@ -113,9 +113,10 @@ static void OnBundleStarted(ErrCode err, const BundleName name)
     printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
 }
 
-static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name, uint32_t existingFiles)
+static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
-    printf("BundleFinished errCode = %d, BundleName = %s, existingFiles = %u\n", err, name.c_str(), existingFiles);
+    printf("BundleFinished errCode = %d, BundleName = %s\n", err, name.c_str());
+    uint32_t existingFiles = 1;
     ctx->SetBundleTotalFiles(name, existingFiles);
     ctx->TryNotify();
 }
@@ -160,7 +161,7 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
         BSessionBackup::Callbacks {
             .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
             .onBundleStarted = OnBundleStarted,
-            .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2, placeholders::_3),
+            .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
             .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
             .onBackupServiceDied = OnBackupServiceDied,
         });

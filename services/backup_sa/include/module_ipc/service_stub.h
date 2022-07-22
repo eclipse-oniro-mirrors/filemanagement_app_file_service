@@ -31,6 +31,7 @@ private:
     int32_t CmdPublishFile(MessageParcel &data, MessageParcel &reply);
     int32_t CmdAppFileReady(MessageParcel &data, MessageParcel &reply);
     int32_t CmdAppDone(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdGetExtFileName(MessageParcel &data, MessageParcel &reply);
 };
 } // namespace OHOS::FileManagement::Backup
 

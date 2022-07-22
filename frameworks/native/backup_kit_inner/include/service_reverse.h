@@ -14,12 +14,15 @@ class ServiceReverse final : public ServiceReverseStub {
 public:
     void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override;
     void BackupOnBundleStarted(int32_t errCode, std::string bundleName) override;
-    void BackupOnBundleFinished(int32_t errCode, std::string bundleName, int32_t bundleTotalFiles) override;
+    void BackupOnBundleFinished(int32_t errCode, std::string bundleName) override;
     void BackupOnAllBundlesFinished(int32_t errCode) override;
+    void BackupOnBackupServiceDied() override;
 
     void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) override;
     void RestoreOnBundleFinished(int32_t errCode, std::string bundleName) override;
     void RestoreOnAllBundlesFinished(int32_t errCode) override;
+    void RestoreOnFileReady(std::string bundleName, std::string fileName, int fd) override;
+    void RestoreOnBackupServiceDied() override;
 
 public:
     ServiceReverse() = delete;

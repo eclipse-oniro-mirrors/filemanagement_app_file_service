@@ -12,7 +12,9 @@ namespace OHOS::FileManagement::Backup {
 class SvcExtensionProxy : public IRemoteProxy<IExtension> {
 public:
     UniqueFd GetFileHandle(std::string &fileName) override;
-    ErrCode  HandleClear() override;
+    ErrCode HandleClear() override;
+    ErrCode HandleBackup() override;
+    ErrCode PublishFile(std::string &fileName) override;
 
 public:
     explicit SvcExtensionProxy(const sptr<IRemoteObject> &remote) : IRemoteProxy<IExtension>(remote) {}

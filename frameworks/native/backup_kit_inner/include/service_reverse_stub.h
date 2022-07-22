@@ -27,10 +27,13 @@ private:
     int32_t CmdBackupOnBundleStarted(MessageParcel &data, MessageParcel &reply);
     int32_t CmdBackupOnBundleFinished(MessageParcel &data, MessageParcel &reply);
     int32_t CmdBackupOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdBackupOnBackupServiceDied(MessageParcel &data, MessageParcel &reply);
 
     int32_t CmdRestoreOnBundleStarted(MessageParcel &data, MessageParcel &reply);
     int32_t CmdRestoreOnBundleFinished(MessageParcel &data, MessageParcel &reply);
     int32_t CmdRestoreOnAllBundlesFinished(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdRestoreOnFileReady(MessageParcel &data, MessageParcel &reply);
+    int32_t CmdRestoreOnBackupServiceDied(MessageParcel &data, MessageParcel &reply);
 };
 } // namespace OHOS::FileManagement::Backup
 

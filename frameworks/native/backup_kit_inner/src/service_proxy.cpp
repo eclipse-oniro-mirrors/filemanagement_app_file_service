@@ -208,6 +208,32 @@ ErrCode ServiceProxy::AppDone(ErrCode errCode)
     return reply.ReadInt32();
 }
 
+ErrCode ServiceProxy::GetExtFileName(string &bundleName, string &fileName)
+{
+    HILOGI("Start");
+    MessageParcel data;
+    data.WriteInterfaceToken(GetDescriptor());
+
+    if (!data.WriteString(bundleName)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the bundleName").GetCode();
+    }
+    if (!data.WriteString(fileName)) {
+        return BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fileName").GetCode();
+    }
+
+    MessageParcel reply;
+    MessageOption option;
+    option.SetFlags(MessageOption::TF_ASYNC);
+    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_EXT_FILE_NAME, data, reply, option);
+    if (ret != NO_ERROR) {
+        stringstream ss;
+        ss << "Failed to send out the request because of " << ret;
+        BError(BError::Codes::SDK_INVAL_ARG, ss.str());
+    }
+    HILOGI("Successful");
+    return ret;
+}
+
 sptr<IService> ServiceProxy::GetInstance()
 {
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
