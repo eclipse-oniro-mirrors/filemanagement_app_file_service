@@ -1,6 +1,7 @@
 /*
  * 版权所有 (c) 华为技术有限公司 2022
  */
+
 #include <cerrno>
 #include <condition_variable>
 #include <cstdint>
@@ -9,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <regex>
+#include <set>
 #include <string>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
@@ -20,6 +22,7 @@
 #include "b_error/b_error.h"
 #include "b_filesystem/b_dir.h"
 #include "b_filesystem/b_file.h"
+#include "b_json/b_json_entity_ext_manage.h"
 #include "b_resources/b_constants.h"
 #include "backup_kit_inner.h"
 #include "errors.h"
@@ -29,21 +32,43 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-class RstoreSession {
+class Session {
 public:
-    void UpdateBundleCountAndTryNotifty()
+    void UpdateBundleSendFiles(const BundleName &bundleName, const std::string &fileName)
     {
         lock_guard<mutex> lk(lock_);
-        cnt_--;
-        if (cnt_ == 0) {
+        bundleStatusMap_[bundleName].sendFile.insert(fileName);
+    }
+
+    void UpdateBundleSentFiles(const BundleName &bundleName, const std::string &fileName)
+    {
+        lock_guard<mutex> lk(lock_);
+        bundleStatusMap_[bundleName].sentFile.insert(fileName);
+        TryClearBundleOfMap(bundleName);
+    }
+
+    void TryNotify(bool flag = false)
+    {
+        if (flag == true) {
+            ready_ = true;
+            cv_.notify_all();
+        } else if (bundleStatusMap_.size() == 0 && cnt_ == 0) {
             ready_ = true;
             cv_.notify_all();
         }
     }
-    void SetTaskNumber(uint32_t count)
+
+    void UpdateBundleFinishedCount()
     {
-        cnt_ = count;
+        lock_guard<mutex> lk(lock_);
+        cnt_--;
     }
+
+    void SetBundleFinishedCount(uint32_t cnt)
+    {
+        cnt_ = cnt;
+    }
+
     void Wait()
     {
         unique_lock<mutex> lk(lock_);
@@ -53,10 +78,23 @@ public:
     unique_ptr<BSessionRestore> session_ = {};
 
 private:
-    uint32_t cnt_ = -1;
+    struct BundleStatus {
+        set<string> sendFile;
+        set<string> sentFile;
+    };
+
+    void TryClearBundleOfMap(const BundleName &bundleName)
+    {
+        if (bundleStatusMap_[bundleName].sendFile == bundleStatusMap_[bundleName].sentFile) {
+            bundleStatusMap_.erase(bundleName);
+        }
+    }
+
+    map<string, BundleStatus> bundleStatusMap_;
     mutable condition_variable cv_;
     mutex lock_;
     bool ready_ = false;
+    uint32_t cnt_;
 };
 
 static string GenHelpMsg()
@@ -66,15 +104,40 @@ static string GenHelpMsg()
            "\t\t--bundle\t\t This parameter is bundleName.";
 }
 
+static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, UniqueFd fd)
+{
+    printf("FileReady owner = %s, fileName = %s, sn = %u, fd = %d\n", fileInfo.owner.c_str(), fileInfo.fileName.c_str(),
+           fileInfo.sn, fd.Get());
+    if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, "Filename is not alphanumeric");
+    }
+    string tmpPath = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + fileInfo.owner + "/" + fileInfo.fileName;
+    if (access(tmpPath.data(), F_OK) != 0) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+    }
+    UniqueFd fdLocal(open(tmpPath.data(), O_RDONLY));
+    if (fdLocal < 0) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+    }
+    BFile::SendFile(fd, fdLocal);
+    int ret = ctx->session_->PublishFile(fileInfo);
+    if (ret != 0) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, "PublishFile error");
+    }
+    ctx->UpdateBundleSentFiles(fileInfo.owner, fileInfo.fileName);
+    ctx->TryNotify();
+}
+
 static void OnBundleStarted(ErrCode err, const BundleName name)
 {
     printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
 }
 
-static void OnBundleFinished(shared_ptr<RstoreSession> ctx, ErrCode err, const BundleName name)
+static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
     printf("BundleFinished errCode = %d, BundleName = %s\n", err, name.c_str());
-    ctx->UpdateBundleCountAndTryNotifty();
+    ctx->UpdateBundleFinishedCount();
+    ctx->TryNotify();
 }
 
 static void OnAllBundlesFinished(ErrCode err)
@@ -86,12 +149,13 @@ static void OnAllBundlesFinished(ErrCode err)
     }
 }
 
-static void OnBackupServiceDied()
+static void OnBackupServiceDied(shared_ptr<Session> ctx)
 {
     printf("backupServiceDied\n");
+    ctx->TryNotify(true);
 }
 
-static void RestoreApp(shared_ptr<RstoreSession> restore, vector<BundleName> &bundleNames)
+static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNames)
 {
     if (!restore || !restore->session_) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
@@ -109,21 +173,9 @@ static void RestoreApp(shared_ptr<RstoreSession> restore, vector<BundleName> &bu
             throw BError(BError::Codes::TOOL_INVAL_ARG, "error path");
         }
         for (auto &filePath : filePaths) {
-            const auto [errCode, tmpFileSN, RemoteFd] = restore->session_->GetFileOnServiceEnd(bundleName);
-            if (errCode != 0 || RemoteFd < 0) {
-                throw BError(BError::Codes::TOOL_INVAL_ARG, "GetFileOnServiceEnd error");
-            }
-            printf("errCode = %d tmpFileSN = %u RemoteFd = %d\n", errCode, tmpFileSN, RemoteFd.Get());
-            UniqueFd fdLocal(open(filePath.data(), O_RDWR));
-            if (fdLocal < 0) {
-                throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
-            }
-            BFile::SendFile(RemoteFd, fdLocal);
             string fileName = filePath.substr(filePath.rfind("/") + 1);
-            int ret = restore->session_->PublishFile(BFileInfo(bundleName, fileName, tmpFileSN));
-            if (ret != 0) {
-                throw BError(BError::Codes::TOOL_INVAL_ARG, "PublishFile error");
-            }
+            restore->session_->GetExtFileName(bundleName, fileName);
+            restore->UpdateBundleSendFiles(bundleName, fileName);
         }
     }
 }
@@ -134,19 +186,19 @@ static int32_t Init(string pathCapFile, std::vector<string> bundles)
     for (auto &&bundleName : bundles) {
         bundleNames.emplace_back(bundleName.data());
     }
-    auto ctx = make_shared<RstoreSession>();
+    auto ctx = make_shared<Session>();
     ctx->session_ = BSessionRestore::Init(
         bundleNames, BSessionRestore::Callbacks {
+                        .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
                         .onBundleStarted = OnBundleStarted,
                         .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
                         .onAllBundlesFinished = OnAllBundlesFinished,
-                        .onBackupServiceDied = OnBackupServiceDied,
-                     });
+                        .onBackupServiceDied = bind(OnBackupServiceDied, ctx)
+                    });
     if (ctx->session_ == nullptr) {
         printf("Failed to init restore");
         return -EPERM;
     }
-    ctx->SetTaskNumber(bundleNames.size());
     UniqueFd fdRemote(ctx->session_->GetLocalCapabilities());
     if (fdRemote < 0) {
         printf("Failed to receive fd");
@@ -170,6 +222,7 @@ static int32_t Init(string pathCapFile, std::vector<string> bundles)
         fprintf(stderr, "Failed to Copy file. error: %d %s\n", errno, strerror(errno));
         return -errno;
     }
+    ctx->SetBundleFinishedCount(bundleNames.size());
     RestoreApp(ctx, bundleNames);
     int ret = ctx->session_->Start();
     if (ret != 0) {
