@@ -1,9 +1,10 @@
 /*
  * 版权所有 (c) 华为技术有限公司 2022
  */
-#include <atomic>
+
 #include <cerrno>
 #include <condition_variable>
+#include <cstdint>
 #include <cstring>
 #include <fcntl.h>
 #include <functional>
@@ -11,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <regex>
+#include <set>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -19,6 +21,7 @@
 #include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
 #include "b_resources/b_constants.h"
+#include "b_json/b_json_entity_ext_manage.h"
 #include "backup_kit_inner.h"
 #include "directory_ex.h"
 #include "service_proxy.h"
@@ -29,18 +32,18 @@ using namespace std;
 
 class Session {
 public:
-    void UpdateBundleReceivedFiles(const BundleName &bundleName)
+    void UpdateBundleReceivedFiles(const BundleName &bundleName, const std::string &fileName)
     {
         lock_guard<mutex> lk(lock_);
-        bundleStatusMap_[bundleName].currentFiles++;
+        bundleStatusMap_[bundleName].receivedFile.insert(fileName);
         TryClearBundleOfMap(bundleName);
     }
 
-    void SetBundleTotalFiles(const BundleName &bundleName, const uint32_t &existingFiles)
+    void SetIndexFiles(const BundleName &bundleName, UniqueFd fd)
     {
-        lock_guard<mutex> lk(lock_);
-        bundleStatusMap_[bundleName].totalFiles = existingFiles;
-        TryClearBundleOfMap(bundleName);
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(move(fd));
+        auto cache = cachedEntity.Structuralize();
+        bundleStatusMap_[bundleName].indexFile = cache.GetExtManage();
     }
 
     void TryNotify(bool flag = false)
@@ -48,10 +51,21 @@ public:
         if (flag == true) {
             ready_ = true;
             cv_.notify_all();
-        } else if (bundleStatusMap_.size() == 0) {
+        } else if (bundleStatusMap_.size() == 0 && cnt_ == 0) {
             ready_ = true;
             cv_.notify_all();
         }
+    }
+
+    void UpdateBundleFinishedCount()
+    {
+        lock_guard<mutex> lk(lock_);
+        cnt_--;
+    }
+
+    void SetBundleFinishedCount(uint32_t cnt)
+    {
+        cnt_ = cnt;
     }
 
     void Wait()
@@ -64,13 +78,13 @@ public:
 
 private:
     struct BundleStatus {
-        uint32_t currentFiles = 0;
-        uint32_t totalFiles = -1;
+        set<string> receivedFile;
+        set<string> indexFile;
     };
 
     void TryClearBundleOfMap(const BundleName &bundleName)
     {
-        if (bundleStatusMap_[bundleName].currentFiles == bundleStatusMap_[bundleName].totalFiles) {
+        if (bundleStatusMap_[bundleName].indexFile == bundleStatusMap_[bundleName].receivedFile) {
             bundleStatusMap_.erase(bundleName);
         }
     }
@@ -79,6 +93,7 @@ private:
     mutable condition_variable cv_;
     mutex lock_;
     bool ready_ = false;
+    uint32_t cnt_;
 };
 
 static string GenHelpMsg()
@@ -99,12 +114,16 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
     if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, "Filename is not alphanumeric");
     }
-    UniqueFd fdLocal(open((tmpPath + "/" + fileInfo.fileName).data(), O_WRONLY | O_CREAT, S_IRWXU));
+    UniqueFd fdLocal(open((tmpPath + "/" + fileInfo.fileName).data(), O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU));
     if (fdLocal < 0) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
     }
     BFile::SendFile(fdLocal, fd);
-    ctx->UpdateBundleReceivedFiles(fileInfo.owner);
+    if (fileInfo.fileName == BConstants::EXT_BACKUP_MANAGE) {
+        ctx->SetIndexFiles(fileInfo.owner, move(fd));
+    } else {
+        ctx->UpdateBundleReceivedFiles(fileInfo.owner, fileInfo.fileName);
+    }
     ctx->TryNotify();
 }
 
@@ -116,8 +135,7 @@ static void OnBundleStarted(ErrCode err, const BundleName name)
 static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
     printf("BundleFinished errCode = %d, BundleName = %s\n", err, name.c_str());
-    uint32_t existingFiles = 1;
-    ctx->SetBundleTotalFiles(name, existingFiles);
+    ctx->UpdateBundleFinishedCount();
     ctx->TryNotify();
 }
 
@@ -133,9 +151,10 @@ static void OnAllBundlesFinished(shared_ptr<Session> ctx, ErrCode err)
     ctx->TryNotify();
 }
 
-static void OnBackupServiceDied()
+static void OnBackupServiceDied(shared_ptr<Session> ctx)
 {
     printf("backupServiceDied\n");
+    ctx->TryNotify(true);
 }
 
 static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
@@ -163,12 +182,13 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
             .onBundleStarted = OnBundleStarted,
             .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
             .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
-            .onBackupServiceDied = OnBackupServiceDied,
+            .onBackupServiceDied = bind(OnBackupServiceDied, ctx)
         });
     if (ctx->session_ == nullptr) {
         printf("Failed to init backup");
         return -EPERM;
     }
+    ctx->SetBundleFinishedCount(bundleNames.size());
     int ret = ctx->session_->Start();
     if (ret != 0) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, "backup start error");
