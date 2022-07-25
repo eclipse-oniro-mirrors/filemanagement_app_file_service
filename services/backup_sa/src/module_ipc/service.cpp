@@ -232,8 +232,8 @@ tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd(string &bundleN
             // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
             throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
         }
-
-        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0660));
+        // REM : 文件权限777 会在8月10日之前解决
+        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0777));
         if (fd < 0) {
             stringstream ss;
             ss << "Failed to open tmpPath " << errno;
