@@ -6,6 +6,7 @@
 #define OHOS_FILEMGMT_BACKUP_B_CONSTANTS_H
 
 #include <array>
+#include <string>
 #include <string_view>
 #include <unistd.h>
 
@@ -18,9 +19,50 @@ enum class ExtensionAction {
     CLEAR = 3,
 };
 
+enum EntryKey {
+    SUPER_LONG_PATH = 0,
+    SUPER_LONG_LINK_PATH,
+    SUPER_LONG_SIZE,
+};
+
 constexpr int SPAN_USERID_UID = 20000000;
 constexpr int SYSTEM_UID = 1000;
 constexpr int BACKUP_UID = 1089;
+
+constexpr int DECIMAL_BASE = 10; // 十进制基数
+
+constexpr int HEADER_SIZE = 512;         // 打包文件头部Header结构体大小
+constexpr int BLOCK_SIZE = 512;          // 打包文件数据段尾部补充的全零字节块上限大小
+constexpr int BLOCK_PADDING_SIZE = 1024; // 打包文件尾部追加的全零字节块大小
+
+// 打包文件头部Header结构体各字段数组/字符串大小。
+constexpr int PATHNAME_MAX_SIZE = 100;
+constexpr int MODE_MAX_SIZE = 8;
+constexpr int UGID_MAX_SIZE = 8;
+constexpr int FILESIZE_MAX_SIZE = 12;
+constexpr int TIME_MAX_SIZE = 12;
+constexpr int CHKSUM_MAX_SIZE = 8;
+constexpr int LINKNAME_MAX_SIZE = 100;
+constexpr int MAGIC_SIZE = 6;
+constexpr int VERSION_SIZE = 2;
+constexpr int UGNAME_MAX_SIZE = 32;
+constexpr int DEV_MAX_SIZE = 8;
+constexpr int PREFIX_SIZE = 155;
+constexpr int PADDING_SIZE = 12;
+
+// 打包文件头部Header结构体fileSize字段最大值。
+constexpr off_t FILESIZE_MAX = 077777777777;
+
+// 打包文件头部Header结构体typeFlag字段值。
+constexpr char TYPEFLAG_REGULAR_FILE = '0';
+constexpr char TYPEFLAG_SYMBOLIC_LINK = '2';
+constexpr char TYPEFLAG_DIRECTORY = '5';
+constexpr char TYPEFLAG_EXTENDED = 'x';
+
+// 打包文件扩展数据段字段值。
+static inline std::string ENTRY_NAME_LINKPATH = "linkpath";
+static inline std::string ENTRY_NAME_PATH = "path";
+static inline std::string ENTRY_NAME_SIZE = "size";
 
 // 应用备份数据暂存路径。
 static inline std::string_view SA_BUNDLE_BACKUP_DIR = "/data/service/el2/100/backup/bundles/";
