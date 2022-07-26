@@ -217,4 +217,28 @@ void SvcSessionManager::OnNewBundleConnected(const string &bundleName, sptr<SvcB
     }
     it->second.backUpConnection = backUpConnection;
 }
+
+void SvcSessionManager::UpdateExtMapInfo(const string &bundleName)
+{
+    shared_lock lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+
+    auto it = impl_.backupExtNameMap.find(bundleName);
+    if (it == impl_.backupExtNameMap.end()) {
+        stringstream ss;
+        ss << "Could not find the " << bundleName << " from current session";
+        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+    }
+    auto serverPtr = reversePtr_.promote();
+    if (!serverPtr) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No reverse ptr was specified");
+    }
+    int ret = serverPtr->LaunchBackupExtension(IServiceReverse::Scenario::CLEAR, it->first, it->second.backupExtName);
+    if (ret) {
+        throw BError(BError::Codes::SA_INVAL_ARG,
+                     string("Failed to launch backup extension for clear error : ").append(to_string(ret)));
+    }
+}
 } // namespace OHOS::FileManagement::Backup
