@@ -22,9 +22,13 @@
         "rom": "",
         "ram": "",
         "build": {
-            "sub_component": [
-                "//foundation/filemanagement/app_file_service:libremotefileshare"
-            ],
+            "group_type": {
+                "base_group": [],
+                "fwk_group": [
+                    "//foundation/filemanagement/app_file_service:libremotefileshare"
+                ],
+                "service_group": []
+            },
             "test": [
                 "//foundation/filemanagement/app_file_service/test/fuzztest:fuzztest"
             ]
