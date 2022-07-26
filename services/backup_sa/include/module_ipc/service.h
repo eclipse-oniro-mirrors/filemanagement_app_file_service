@@ -35,6 +35,9 @@ public:
     void OnStart() override;
     void OnStop() override;
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
+    ErrCode LaunchBackupExtension(IServiceReverse::Scenario scenario,
+                                  const BundleName &bundleName,
+                                  const std::string &backupExtName);
 
 public:
     explicit Service(int32_t saID, bool runOnCreate = false)
@@ -43,9 +46,6 @@ public:
 
 private:
     std::string VerifyCallerAndGetCallerName();
-    ErrCode LaunchBackupExtension(IServiceReverse::Scenario scenario,
-                                  const BundleName &bundleName,
-                                  const std::string &backupExtName);
 
 private:
     static sptr<Service> instance_;

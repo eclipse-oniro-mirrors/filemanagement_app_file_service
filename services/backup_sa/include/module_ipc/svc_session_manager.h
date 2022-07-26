@@ -111,6 +111,13 @@ public:
      */
     void OnNewBundleConnected(const std::string &bundleName, sptr<SvcBackupConnection> &backUpConnection);
 
+    /**
+     * @brief 更新extension map 信息
+     *
+     * @param bundleName 应用名称
+     */
+    void UpdateExtMapInfo(const std::string &bundleName);
+
 private:
     /**
      * @brief 校验BundleName和ability type 并补全Impl.backupExtNameMap信息

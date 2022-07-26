@@ -350,7 +350,14 @@ ErrCode Service::AppDone(ErrCode errCode)
 
             proxy->BackupOnBundleFinished(errCode, callerName, bundleTotalFiles);
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            session_.UpdateExtMapInfo(callerName);
             proxy->RestoreOnBundleFinished(errCode, callerName);
+            string tmpPath = string(BConstants::SA_BUNDLE_BACKUP_DIR)
+                                 .append(callerName)
+                                 .append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
+            if (!ForceRemoveDirectory(tmpPath)) {
+                HILOGI("Failed to delete the backup cache %{public}s", callerName.c_str());
+            }
         } else {
             throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
         }
@@ -377,6 +384,8 @@ ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
             action = BConstants::ExtensionAction::BACKUP;
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
             action = BConstants::ExtensionAction::RESTORE;
+        } else if (scenario == IServiceReverse::Scenario::CLEAR) {
+            action = BConstants::ExtensionAction::CLEAR;
         } else {
             throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
         }

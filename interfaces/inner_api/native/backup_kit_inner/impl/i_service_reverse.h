@@ -16,6 +16,7 @@ public:
         UNDEFINED,
         BACKUP,
         RESTORE,
+        CLEAR,
     };
 
     enum {
