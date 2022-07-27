@@ -237,8 +237,7 @@ void SvcSessionManager::UpdateExtMapInfo(const string &bundleName)
     }
     int ret = serverPtr->LaunchBackupExtension(IServiceReverse::Scenario::CLEAR, it->first, it->second.backupExtName);
     if (ret) {
-        throw BError(BError::Codes::SA_INVAL_ARG,
-                     string("Failed to launch backup extension for clear error : ").append(to_string(ret)));
+        HILOGI("Failed to launch backup extension for clear error : %{public}d", ret);
     }
 }
 } // namespace OHOS::FileManagement::Backup
