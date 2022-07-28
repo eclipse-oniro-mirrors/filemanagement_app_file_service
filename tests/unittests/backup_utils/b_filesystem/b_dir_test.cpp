@@ -58,6 +58,7 @@ HWTEST_F(BDirTest, b_dir_GetDirFiles_0100, testing::ext::TestSize.Level0)
         tie(bSucc, out) = BDir::GetDirFiles("dev");
         EXPECT_EQ(bSucc, true);
     } catch (...) {
+        EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
     }
     GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetDirFiles_0100";
