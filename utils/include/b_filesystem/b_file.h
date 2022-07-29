@@ -40,6 +40,16 @@ public:
      */
     static void Write(const UniqueFd &fd, const string &str);
 
+    /**
+     * @brief copy file from old path to new path
+     *
+     * @param from old path
+     * @param to new path
+     * @return true copy succeess
+     * @return false some error occur
+     */
+    static bool CopyFile(const string &from, const string &to);
+
 private:
 };
 } // namespace OHOS::FileManagement::Backup

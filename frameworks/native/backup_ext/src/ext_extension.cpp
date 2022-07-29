@@ -4,13 +4,18 @@
 #include "ext_extension.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <utime.h>
+#include <vector>
 
 #include "accesstoken_kit.h"
 #include "b_error/b_error.h"
 #include "b_filesystem/b_dir.h"
+#include "b_filesystem/b_file.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_ext_manage.h"
 #include "b_resources/b_constants.h"
@@ -46,7 +51,7 @@ UniqueFd BackupExtExtension::GetFileHandle(const string &fileName)
         return UniqueFd(-1);
     }
 
-    HILOGI("begin fileName = %{public}s", fileName.data());
+    HILOGI("fileName is %{public}s", fileName.data());
     VerifyCaller();
     if (extension_ == nullptr) {
         HILOGE("%{public}s end failed.", __func__);
@@ -56,7 +61,7 @@ UniqueFd BackupExtExtension::GetFileHandle(const string &fileName)
     string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
     if (mkdir(path.data(), S_IRWXU) && errno != EEXIST) {
         stringstream ss;
-        ss << "Failed to create folder backup. ";
+        ss << "Failed to create backup folder. ";
         ss << std::generic_category().message(errno);
         throw BError(BError::Codes::EXT_INVAL_ARG, ss.str());
     }
@@ -99,17 +104,15 @@ ErrCode BackupExtExtension::HandleClear()
     return ERR_OK;
 }
 
-ErrCode IndexFileReady(const string &pkgName, sptr<IService> proxy)
+ErrCode IndexFileReady(const map<string, pair<string, struct stat>> &pkgInfo, sptr<IService> proxy)
 {
-    set<string> info;
-    info.insert(pkgName);
     string indexFile = string(BConstants::PATH_BUNDLE_BACKUP_HOME)
                            .append(BConstants::SA_BUNDLE_BACKUP_BAKCUP)
                            .append(BConstants::EXT_BACKUP_MANAGE);
     BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(
         UniqueFd(open(indexFile.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)));
     auto cache = cachedEntity.Structuralize();
-    cache.SetExtManage(info);
+    cache.SetExtManage(pkgInfo);
     cachedEntity.Persist();
     close(cachedEntity.GetFd().Release());
 
@@ -126,21 +129,36 @@ ErrCode IndexFileReady(const string &pkgName, sptr<IService> proxy)
     return ret;
 }
 
-ErrCode TarFileReady(const string &tarName, const string &pkgName, sptr<IService> proxy)
+ErrCode BigFileReady(sptr<IService> proxy)
 {
-    UniqueFd fd(open(tarName.data(), O_RDONLY));
-    if (fd < 0) {
-        throw BError(BError::Codes::EXT_INVAL_ARG, std::generic_category().message(errno));
-    }
+    string indexFile = string(BConstants::PATH_BUNDLE_BACKUP_HOME)
+                           .append(BConstants::SA_BUNDLE_BACKUP_BAKCUP)
+                           .append(BConstants::EXT_BACKUP_MANAGE);
+    BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(UniqueFd(open(indexFile.data(), O_RDONLY)));
+    auto cache = cachedEntity.Structuralize();
+    map<string, pair<string, struct stat>> pkgInfo = cache.GetExtManageInfo();
 
-    ErrCode ret = proxy->AppFileReady(pkgName, std::move(fd));
-    if (SUCCEEDED(ret)) {
-        HILOGI("The application is packaged successfully, package name is %{public}s", pkgName.c_str());
-    } else {
-        HILOGI(
-            "The application is packaged successfully but the AppFileReady interface fails to be invoked: "
-            "%{public}d",
-            ret);
+    ErrCode ret {ERR_OK};
+    for (auto &item : pkgInfo) {
+        if (item.first.empty() || item.second.first.empty()) {
+            continue;
+        }
+
+        UniqueFd fd(open(item.second.first.data(), O_RDONLY));
+        if (fd < 0) {
+            HILOGE("open file failed, file name is %{public}s", std::get<0>(item.second).c_str());
+            continue;
+        }
+
+        ret = proxy->AppFileReady(item.first, std::move(fd));
+        if (SUCCEEDED(ret)) {
+            HILOGI("The application is packaged successfully, package name is %{public}s", item.first.c_str());
+        } else {
+            HILOGI(
+                "The application is packaged successfully but the AppFileReady interface fails to be invoked: "
+                "%{public}d",
+                ret);
+        }
     }
     return ret;
 }
@@ -163,7 +181,7 @@ ErrCode BackupExtExtension::PublishFile(const string &fileName)
 
         // 异步执行解压操作
         if (extension_->AllowToBackupRestore()) {
-            AsyncTaskRestore(fileName);
+            AsyncTaskRestore();
         }
 
         return ERR_OK;
@@ -189,6 +207,41 @@ ErrCode BackupExtExtension::HandleBackup()
     return BError(-EPERM);
 }
 
+map<string, pair<string, struct stat>> GetBigFileInfo(const vector<string> &includes, const vector<string> &excludes)
+{
+    auto [errCode, files] = BDir::GetBigFiles(includes, excludes);
+    if (errCode != 0) {
+        return {};
+    }
+
+    auto GetStringHash = [](const map<string, pair<string, struct stat>> &m, const string &str) -> string {
+        ostringstream strHex;
+        strHex << hex;
+
+        hash<string> strHash;
+        size_t szHash = strHash(str);
+        strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << static_cast<unsigned int>(szHash);
+        string name = strHex.str();
+        for (int i = 0; m.find(name) != m.end(); ++i, strHex.str("")) {
+            szHash = strHash(str + to_string(i));
+            strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << static_cast<unsigned int>(szHash);
+            name = strHex.str();
+        }
+
+        return strHex.str();
+    };
+
+    map<string, pair<string, struct stat>> bigFiles;
+    for (const auto &item : files) {
+        string md5Name = GetStringHash(bigFiles, item.first);
+        if (!md5Name.empty()) {
+            bigFiles.emplace(md5Name, make_pair(item.first, item.second));
+        }
+    }
+
+    return bigFiles;
+}
+
 int BackupExtExtension::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
 {
     HILOGI("Do backup");
@@ -199,18 +252,23 @@ int BackupExtExtension::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
 
         string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_BAKCUP);
         if (mkdir(path.data(), S_IRWXU) && errno != EEXIST) {
-            stringstream ss;
-            ss << "Failed to create folder backup. ";
-            ss << std::generic_category().message(errno);
-            throw BError(BError::Codes::EXT_INVAL_ARG, ss.str());
+            throw BError(errno);
+        }
+
+        vector<string> includes = usrConfig.GetIncludes();
+        vector<string> excludes = usrConfig.GetExcludes();
+        auto bigFileInfo = GetBigFileInfo(includes, excludes);
+        for (const auto &item : bigFileInfo) {
+            if (!item.second.first.empty()) {
+                excludes.push_back(item.second.first);
+            }
         }
 
         string pkgName = "1.tar";
         string tarName = path + pkgName;
         string root = "/";
-
-        vector<string> includes = usrConfig.GetIncludes();
-        vector<string> excludes = usrConfig.GetExcludes();
+        struct stat sta = {};
+        bigFileInfo.emplace(pkgName, make_pair(tarName, sta));
 
         // 打包
         auto tarballTar = BTarballFactory::Create("cmdline", tarName);
@@ -225,8 +283,8 @@ int BackupExtExtension::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
         }
 
         ErrCode ret = ERR_OK;
-        ret = IndexFileReady(pkgName, proxy);
-        ret = TarFileReady(tarName, pkgName, proxy);
+        ret = IndexFileReady(bigFileInfo, proxy);
+        ret = BigFileReady(proxy);
         return ret;
     } catch (const BError &e) {
         return e.GetCode();
@@ -250,9 +308,6 @@ int BackupExtExtension::HandleRestore(const string &fileName)
         // REM: 解压启动Extension时即挂载好的备份目录中的数据
         string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
         string tarName = path + fileName;
-
-        if (ExtractFileExt(tarName) != "tar")
-            return EPERM;
 
         auto tarballFunc = BTarballFactory::Create("cmdline", tarName);
         (tarballFunc->untar)("/");
@@ -296,6 +351,9 @@ void BackupExtExtension::AsyncTaskBackup(const string config)
         } else {
             proxy->AppDone(ret);
         }
+
+        // 清空备份目录
+        ptr->HandleClear();
     };
 
     // REM: 这里异步化了，需要做并发控制
@@ -342,29 +400,92 @@ bool IsAllFileReceived(vector<string> tars)
     return false;
 }
 
-void BackupExtExtension::AsyncTaskRestore(const string fileName)
+void RestoreBigFiles()
 {
-    auto task = [obj {wptr<BackupExtExtension>(this)}, tars {tars_}, fileName]() {
+    // 获取索引文件内容
+    string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
+    string indexFile = path + string(BConstants::EXT_BACKUP_MANAGE);
+    BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(UniqueFd(open(indexFile.data(), O_RDONLY)));
+    auto cache = cachedEntity.Structuralize();
+    auto info = cache.GetExtManageInfo();
+
+    for (auto &item : info) {
+        if (item.first.empty() || item.first.size() < BConstants::BIG_FILE_NAME_SIZE ||
+            item.first.rfind('.') != string::npos) {
+            continue;
+        }
+
+        string fileName = path + item.first;
+        auto [filePath, sta] = item.second;
+
+        if (access(fileName.data(), F_OK) != 0) {
+            HILOGI("file dose not exist. %{public}s", fileName.c_str());
+            continue;
+        }
+        if (filePath.empty()) {
+            HILOGE("file path is empty. %{public}s", filePath.c_str());
+            continue;
+        }
+        if (rename(fileName.data(), filePath.data()) != 0) {
+            HILOGE("failed to rename the file, try to copy it. %{public}s , %{public}d", fileName.c_str(), errno);
+            if (!BFile::CopyFile(fileName, filePath)) {
+                HILOGE("failed to copy the file. from %{public}s to %{public}s", fileName.c_str(), filePath.c_str());
+                continue;
+            }
+            HILOGI("succeed to rename or copy the file. from %{public}s to %{public}s", fileName.c_str(),
+                   filePath.c_str());
+        }
+        set<string> lks = cache.GetHardLinkInfo(item.first);
+        for (const auto &item : lks) {
+            if (link(filePath.data(), item.data())) {
+                HILOGI("failed to create hard link file %{public}s  errno : %{public}d", item.c_str(), errno);
+            }
+        }
+
+        struct timespec tv[2] = {};
+        tv[0] = sta.st_atim;
+        tv[1] = sta.st_mtim;
+        UniqueFd fd(open(filePath.data(), O_RDONLY));
+        if (futimens(fd.Get(), tv) != 0) {
+            HILOGI("failed to change the file time. %{public}s , %{public}d", filePath.c_str(), errno);
+        }
+    }
+}
+
+void BackupExtExtension::AsyncTaskRestore()
+{
+    auto task = [obj {wptr<BackupExtExtension>(this)}, tars {tars_}]() {
         auto ptr = obj.promote();
         if (!ptr) {
             HILOGI("ext_extension handle have been already released");
             return;
         }
 
-        if (fileName != string(BConstants::EXT_BACKUP_MANAGE)) {
-            ptr->HandleRestore(fileName);
+        if (!IsAllFileReceived(tars)) {
+            return;
         }
 
-        if (IsAllFileReceived(tars)) {
-            // REM: 处理返回结果 ret
-            auto proxy = ServiceProxy::GetInstance();
-            if (proxy == nullptr) {
-                HILOGE("Failed to obtain the ServiceProxy handle");
-                return;
-            } else {
-                proxy->AppDone(ERR_OK);
+        // 解压
+        int ret = ERR_OK;
+        for (auto item : tars) {
+            if (ExtractFileExt(item) == "tar") {
+                ret = ptr->HandleRestore(item);
             }
         }
+        // 恢复大文件
+        RestoreBigFiles();
+
+        // 处理返回结果
+        auto proxy = ServiceProxy::GetInstance();
+        if (proxy == nullptr) {
+            HILOGE("Failed to obtain the ServiceProxy handle");
+            return;
+        } else {
+            proxy->AppDone(ret);
+        }
+
+        // 清空恢复目录
+        ptr->HandleClear();
     };
 
     // REM: 这里异步化了，需要做并发控制

@@ -4,15 +4,67 @@
 
 #include "b_filesystem/b_dir.h"
 
+#include <algorithm>
 #include <dirent.h>
+#include <fnmatch.h>
 #include <functional>
+#include <glob.h>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "b_error/b_error.h"
+#include "b_resources/b_constants.h"
 #include "directory_ex.h"
+#include "errors.h"
 #include "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
+
+pair<ErrCode, map<string, struct stat>> GetDirFilesDetail(const string &path, bool recursion, off_t size = -1)
+{
+    map<string, struct stat> files;
+    unique_ptr<DIR, function<void(DIR *)>> dir = {opendir(path.c_str()), closedir};
+    if (!dir) {
+        HILOGE("Invalid directory path: %{private}s", path.c_str());
+        return {BError(errno).GetCode(), files};
+    }
+
+    struct dirent *ptr = nullptr;
+    while (!!(ptr = readdir(dir.get()))) {
+        // current dir OR parent dir
+        if ((strcmp(ptr->d_name, ".") == 0) || (strcmp(ptr->d_name, "..") == 0)) {
+            continue;
+        } else if (ptr->d_type == DT_DIR) {
+            if (!recursion) {
+                continue;
+            }
+
+            auto [errCode, subfiles] =
+                GetDirFilesDetail(IncludeTrailingPathDelimiter(path) + string(ptr->d_name), recursion);
+            if (errCode != 0) {
+                return {errCode, files};
+            }
+            files.merge(subfiles);
+        } else {
+            struct stat sta = {};
+            string fileName = IncludeTrailingPathDelimiter(path) + string(ptr->d_name);
+            if (stat(fileName.data(), &sta) == -1) {
+                continue;
+            }
+            if (sta.st_size < size) {
+                continue;
+            }
+            HILOGI("%{public}s is big file which size is %{public}ld", fileName.c_str(), sta.st_size);
+            files.try_emplace(fileName, sta);
+        }
+    }
+
+    return {BError(BError::Codes::OK).GetCode(), files};
+}
 
 tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
 {
@@ -36,5 +88,66 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
     }
 
     return {BError(BError::Codes::OK).GetCode(), files};
+}
+
+set<string> ExpandPathWildcard(const vector<string> &vec)
+{
+    unique_ptr<glob_t, function<void(glob_t *)>> gl {new glob_t, [](glob_t *ptr) { globfree(ptr); }};
+    gl->gl_offs = 0;
+
+    int flags = GLOB_DOOFFS | GLOB_MARK;
+    for (const string &pattern : vec) {
+        if (!pattern.empty()) {
+            glob(pattern.data(), flags, NULL, gl.get());
+            flags |= GLOB_APPEND;
+        }
+    }
+
+    set<string> expandPath;
+    for (size_t i = 0; i < gl->gl_pathc; ++i) {
+        expandPath.emplace(gl->gl_pathv[i]);
+    }
+
+    return expandPath;
+}
+
+pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &includes,
+                                                          const vector<string> &excludes)
+{
+    set<string> inc = ExpandPathWildcard(includes);
+
+    map<string, struct stat> incFiles;
+    for (const auto &item : inc) {
+        auto [errCode, files] =
+            OHOS::FileManagement::Backup::GetDirFilesDetail(item, true, BConstants::BIG_FILE_BOUNDARY);
+        if (errCode == 0) {
+            HILOGI("found big files. total number is : %{public}ld", files.size());
+            incFiles.merge(std::move(files));
+        }
+    }
+
+    auto IsMatch = [](const vector<string> &s, const string str) -> bool {
+        if (str.empty()) {
+            return false;
+        }
+        for (const string &item : s) {
+            if (!item.empty() && (fnmatch(item.data(), str.data(), FNM_LEADING_DIR) == 0)) {
+                HILOGI("file %{public}s matchs exclude condition", str.c_str());
+                return true;
+            }
+        }
+        return false;
+    };
+
+    map<string, struct stat> bigFiles;
+    for (const auto &item : incFiles) {
+        if (!IsMatch(excludes, item.first)) {
+            HILOGI("file %{public}s matchs include condition and unmatchs exclude condition", item.first.c_str());
+            bigFiles[item.first] = item.second;
+        }
+    }
+
+    HILOGI("total number of big files is %{public}ld", bigFiles.size());
+    return {ERR_OK, std::move(bigFiles)};
 }
 } // namespace OHOS::FileManagement::Backup
