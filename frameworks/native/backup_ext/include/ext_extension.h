@@ -65,9 +65,8 @@ private:
     /**
      * @brief Executing Restoration Tasks Asynchronously
      *
-     * @param fileName ready file to untar
      */
-    void AsyncTaskRestore(const std::string fileName);
+    void AsyncTaskRestore();
 
 private:
     std::shared_ptr<ExtBackupJs> extension_;
