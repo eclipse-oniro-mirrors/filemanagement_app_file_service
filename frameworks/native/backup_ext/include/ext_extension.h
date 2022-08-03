@@ -17,9 +17,9 @@
 namespace OHOS::FileManagement::Backup {
 class BackupExtExtension : public ExtExtensionStub {
 public:
-    UniqueFd GetFileHandle(std::string &fileName) override;
+    UniqueFd GetFileHandle(const std::string &fileName) override;
     ErrCode HandleClear() override;
-    ErrCode PublishFile(std::string &fileName) override;
+    ErrCode PublishFile(const std::string &fileName) override;
     ErrCode HandleBackup() override;
 
 public:

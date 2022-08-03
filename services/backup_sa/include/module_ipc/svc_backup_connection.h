@@ -7,9 +7,6 @@
 
 #include "ability_connect_callback_stub.h"
 #include "i_extension.h"
-#include "module_ipc/svc_death_recipient.h"
-#include "module_sched/sched_scheduler.h"
-#include "refbase.h"
 
 namespace OHOS::FileManagement::Backup {
 class SvcBackupConnection : public AAFwk::AbilityConnectionStub {
@@ -63,7 +60,11 @@ public:
     sptr<IExtension> GetBackupExtProxy();
 
 public:
-    SvcBackupConnection(std::function<void(const std::string &)> functor) : functor_(functor) {}
+    SvcBackupConnection(std::function<void(const std::string &&)> callDied,
+                        std::function<void(const std::string &&)> callStart)
+        : callDied_(callDied), callStart_(callStart)
+    {
+    }
     virtual ~SvcBackupConnection() override {};
 
 private:
@@ -72,7 +73,9 @@ private:
     std::atomic<bool> isConnected_ = {false};
     std::atomic<bool> isConnectedDone_ = {false};
     sptr<IExtension> backupProxy_;
-    std::function<void(const std::string &)> functor_;
+    
+    std::function<void(const std::string &&)> callDied_;
+    std::function<void(const std::string &&)> callStart_;
 };
 } // namespace OHOS::FileManagement::Backup
 

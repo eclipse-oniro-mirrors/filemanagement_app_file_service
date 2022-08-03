@@ -21,7 +21,6 @@ ServiceStub::ServiceStub()
     opToInterfaceMap_[SERVICE_CMD_INIT_RESTORE_SESSION] = &ServiceStub::CmdInitRestoreSession;
     opToInterfaceMap_[SERVICE_CMD_INIT_BACKUP_SESSION] = &ServiceStub::CmdInitBackupSession;
     opToInterfaceMap_[SERVICE_CMD_GET_LOCAL_CAPABILITIES] = &ServiceStub::CmdGetLocalCapabilities;
-    opToInterfaceMap_[SERVICE_CMD_GET_FILE_ON_SERVICE_END] = &ServiceStub::CmdGetFileOnServiceEnd;
     opToInterfaceMap_[SERVICE_CMD_PUBLISH_FILE] = &ServiceStub::CmdPublishFile;
     opToInterfaceMap_[SERVICE_CMD_APP_FILE_READY] = &ServiceStub::CmdAppFileReady;
     opToInterfaceMap_[SERVICE_CMD_APP_DONE] = &ServiceStub::CmdAppDone;
@@ -122,21 +121,6 @@ int32_t ServiceStub::CmdGetLocalCapabilities(MessageParcel &data, MessageParcel 
     UniqueFd fd(GetLocalCapabilities());
     if (!reply.WriteFileDescriptor(fd)) {
         return BError(BError::Codes::SA_BROKEN_IPC, "Failed to send out the file");
-    }
-    return BError(BError::Codes::OK);
-}
-
-int32_t ServiceStub::CmdGetFileOnServiceEnd(MessageParcel &data, MessageParcel &reply)
-{
-    HILOGE("Begin");
-    string bundleName;
-    if (!data.ReadString(bundleName)) {
-        return BError(BError::Codes::SA_INVAL_ARG, "Failed to receive bundleName");
-    }
-
-    auto [errCode, tmpFileSN, fd] = GetFileOnServiceEnd(bundleName);
-    if (!reply.WriteInt32(errCode) || !reply.WriteUint32(tmpFileSN) || !reply.WriteFileDescriptor(fd)) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to send the result");
     }
     return BError(BError::Codes::OK);
 }

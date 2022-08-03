@@ -40,7 +40,7 @@ void BackupExtExtension::VerifyCaller()
     }
 }
 
-UniqueFd BackupExtExtension::GetFileHandle(string &fileName)
+UniqueFd BackupExtExtension::GetFileHandle(const string &fileName)
 {
     if (extension_->GetExtensionAction() != BConstants::ExtensionAction::RESTORE) {
         return UniqueFd(-1);
@@ -145,7 +145,7 @@ ErrCode TarFileReady(const string &tarName, const string &pkgName, sptr<IService
     return ret;
 }
 
-ErrCode BackupExtExtension::PublishFile(string &fileName)
+ErrCode BackupExtExtension::PublishFile(const string &fileName)
 {
     HILOGI("begin publish file. fileName is %{public}s", fileName.data());
     try {

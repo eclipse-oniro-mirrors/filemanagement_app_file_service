@@ -28,19 +28,19 @@ void SvcBackupConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &el
         return;
     }
     isConnected_.store(true);
-    std::unique_lock<std::mutex> lock(mutex_);
-    condition_.notify_all();
+    string bundleName = element.GetBundleName();
+    callStart_(move(bundleName));
     HILOGI("called end");
 }
 
 void SvcBackupConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
 {
+    HILOGI("called begin");
     if (isConnectedDone_ == false) {
         string bundleName = element.GetBundleName();
         HILOGE("It's error that the backup extension dies before the backup sa. name : %{public}s", bundleName.data());
-        functor_(bundleName);
+        callDied_(move(bundleName));
     }
-    HILOGI("called begin");
     backupProxy_ = nullptr;
     isConnected_.store(false);
     condition_.notify_all();
@@ -53,10 +53,6 @@ ErrCode SvcBackupConnection::ConnectBackupExtAbility(AAFwk::Want &want)
     std::unique_lock<std::mutex> lock(mutex_);
     ErrCode ret =
         AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want, this, AppExecFwk::Constants::START_USERID);
-    if (condition_.wait_for(lock, std::chrono::seconds(WAIT_TIME), [this] { return backupProxy_ != nullptr; })) {
-        HILOGI("Wait until the connection ends");
-    }
-
     HILOGI("called end, ret=%{public}d", ret);
     return ret;
 }

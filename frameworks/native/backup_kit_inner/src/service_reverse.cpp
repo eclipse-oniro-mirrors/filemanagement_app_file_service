@@ -48,14 +48,6 @@ void ServiceReverse::BackupOnAllBundlesFinished(int32_t errCode)
     callbacksBackup_.onAllBundlesFinished(errCode);
 }
 
-void ServiceReverse::BackupOnBackupServiceDied()
-{
-    if (scenario_ != Scenario::BACKUP || !callbacksBackup_.onBackupServiceDied) {
-        return;
-    }
-    callbacksBackup_.onBackupServiceDied();
-}
-
 void ServiceReverse::RestoreOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("errCode = %{public}d, bundleName = %{public}s", errCode, bundleName.c_str());
@@ -92,14 +84,6 @@ void ServiceReverse::RestoreOnFileReady(string bundleName, string fileName, int 
     }
     BFileInfo bFileInfo(bundleName, fileName, 0);
     callbacksRestore_.onFileReady(bFileInfo, UniqueFd(fd));
-}
-
-void ServiceReverse::RestoreOnBackupServiceDied()
-{
-    if (scenario_ != Scenario::RESTORE || !callbacksRestore_.onBackupServiceDied) {
-        return;
-    }
-    callbacksRestore_.onBackupServiceDied();
 }
 
 ServiceReverse::ServiceReverse(BSessionBackup::Callbacks callbacks)

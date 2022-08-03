@@ -5,10 +5,12 @@
 #ifndef OHOS_FILEMGMT_BACKUP_SERVICE_H
 #define OHOS_FILEMGMT_BACKUP_SERVICE_H
 
+#include <cstdint>
 #include <mutex>
 
 #include "i_service_reverse.h"
 #include "iremote_stub.h"
+#include "module_sched/sched_scheduler.h"
 #include "service_stub.h"
 #include "svc_session_manager.h"
 #include "system_ability.h"
@@ -25,7 +27,6 @@ public:
                               const std::vector<BundleName> &bundleNames) override;
     ErrCode Start() override;
     UniqueFd GetLocalCapabilities() override;
-    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
     ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override;
     ErrCode AppDone(ErrCode errCode) override;
@@ -36,9 +37,47 @@ public:
     void OnStart() override;
     void OnStop() override;
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
-    ErrCode LaunchBackupExtension(IServiceReverse::Scenario scenario,
-                                  const BundleName &bundleName,
-                                  const std::string &backupExtName);
+    int Dump(int fd, const std::vector<std::u16string> &args) override;
+
+    /**
+     * @brief 启动 backup extension
+     *
+     * @param bundleName
+     * @param backupExtName
+     * @return ErrCode
+     */
+    ErrCode LaunchBackupExtension(const BundleName &bundleName, const std::string &backupExtName);
+
+    /**
+     * @brief backup extension died
+     *
+     * @param bundleName 应用名称
+     */
+    void OnBackupExtensionDied(const std::string &&bundleName, ErrCode ret);
+
+    /**
+     * @brief 获取 ExtConnect 连接状态
+     *
+     * @param bundleName 应用名称
+     * @return true connect ok
+     * @return false connect failed
+     */
+    bool TryExtConnect(const std::string &bundleName);
+
+    /**
+     * @brief 执行backup extension 备份恢复流程
+     *
+     * @param bundleName 应用名称
+     */
+    void ExtStart(const std::string &bundleName);
+
+    /**
+     * @brief Get the File Handle object
+     *
+     * @param bundleName 应用名称
+     * @param fileName 文件名称
+     */
+    void GetFileHandle(const std::string &bundleName, const std::string &fileName);
 
 public:
     explicit Service(int32_t saID, bool runOnCreate = false)
@@ -54,6 +93,7 @@ private:
     static inline std::atomic<uint32_t> seed {1};
 
     SvcSessionManager session_;
+    std::unique_ptr<SchedScheduler> sched_;
 };
 } // namespace OHOS::FileManagement::Backup
 

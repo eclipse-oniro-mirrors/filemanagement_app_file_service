@@ -115,28 +115,6 @@ UniqueFd ServiceProxy::GetLocalCapabilities()
     return fd;
 }
 
-tuple<ErrCode, TmpFileSN, UniqueFd> ServiceProxy::GetFileOnServiceEnd(string &bundleName)
-{
-    HILOGI("Start");
-    MessageParcel data;
-    data.WriteInterfaceToken(GetDescriptor());
-
-    if (!data.WriteString(bundleName)) {
-        return {BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the bundleName").GetCode(), 0, UniqueFd(-1)};
-    }
-
-    MessageParcel reply;
-    MessageOption option;
-    int32_t ret = Remote()->SendRequest(IService::SERVICE_CMD_GET_FILE_ON_SERVICE_END, data, reply, option);
-    if (ret != NO_ERROR) {
-        HILOGE("Received error %{public}d when doing IPC", ret);
-        return {ret, 0, UniqueFd(-1)};
-    }
-
-    HILOGI("Successful");
-    return {reply.ReadInt32(), reply.ReadUint32(), UniqueFd(reply.ReadFileDescriptor())};
-}
-
 ErrCode ServiceProxy::PublishFile(const BFileInfo &fileInfo)
 {
     HILOGI("Start");

@@ -23,10 +23,10 @@ public:
     };
 
 public:
-    virtual UniqueFd GetFileHandle(std::string &fileName) = 0;
+    virtual UniqueFd GetFileHandle(const std::string &fileName) = 0;
     virtual ErrCode HandleClear() = 0;
     virtual ErrCode HandleBackup() = 0;
-    virtual ErrCode PublishFile(std::string &fileName) = 0;
+    virtual ErrCode PublishFile(const std::string &fileName) = 0;
 };
 } // namespace OHOS::FileManagement::Backup
 
