@@ -20,7 +20,10 @@ ohos_executable("backup_tool") {
 
   include_dirs = [ "include" ]
 
-  external_deps = [ "backup:backup_kit_inner" ]
+  external_deps = [
+    "backup:backup_kit_inner",
+    "hitrace_native:hitrace_meter",
+  ]
 
   deps = [ "${path_backup}/utils/:backup_utils" ]
 

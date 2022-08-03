@@ -23,6 +23,7 @@
 #include "b_resources/b_constants.h"
 #include "b_json/b_json_entity_ext_manage.h"
 #include "backup_kit_inner.h"
+#include "base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/hitrace_meter.h"
 #include "directory_ex.h"
 #include "service_proxy.h"
 #include "tools_op.h"
@@ -159,6 +160,7 @@ static void OnBackupServiceDied(shared_ptr<Session> ctx)
 
 static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
 {
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InitPathCapFile");
     std::vector<BundleName> bundleNames;
     for (auto &&bundleName : bundles) {
         bundleNames.emplace_back(bundleName.data());
@@ -167,6 +169,7 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
     UniqueFd fd(open(pathCapFile.data(), O_RDONLY));
     if (fd < 0) {
         fprintf(stderr, "Failed to open file error: %d %s\n", errno, strerror(errno));
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
     }
 
@@ -186,6 +189,7 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
         });
     if (ctx->session_ == nullptr) {
         printf("Failed to init backup");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -EPERM;
     }
     ctx->SetBundleFinishedCount(bundleNames.size());
@@ -194,6 +198,7 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
         throw BError(BError::Codes::TOOL_INVAL_ARG, "backup start error");
     }
     ctx->Wait();
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
     return 0;
 }
 
