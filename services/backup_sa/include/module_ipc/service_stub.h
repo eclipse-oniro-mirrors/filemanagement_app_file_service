@@ -27,7 +27,6 @@ private:
     int32_t CmdInitBackupSession(MessageParcel &data, MessageParcel &reply);
     int32_t CmdStart(MessageParcel &data, MessageParcel &reply);
     int32_t CmdGetLocalCapabilities(MessageParcel &data, MessageParcel &reply);
-    int32_t CmdGetFileOnServiceEnd(MessageParcel &data, MessageParcel &reply);
     int32_t CmdPublishFile(MessageParcel &data, MessageParcel &reply);
     int32_t CmdAppFileReady(MessageParcel &data, MessageParcel &reply);
     int32_t CmdAppDone(MessageParcel &data, MessageParcel &reply);

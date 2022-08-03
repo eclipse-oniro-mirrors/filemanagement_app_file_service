@@ -11,9 +11,25 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
+BSessionRestore::~BSessionRestore()
+{
+    if (!deathRecipient_) {
+        return;
+    }
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        return;
+    }
+    auto remoteObject = proxy->AsObject();
+    if (remoteObject != nullptr) {
+        HILOGI("remoteObject died. Died remote obj = %{public}p", remoteObject.GetRefPtr());
+        remoteObject->RemoveDeathRecipient(deathRecipient_);
+    }
+    deathRecipient_ = nullptr;
+}
+
 unique_ptr<BSessionRestore> BSessionRestore::Init(std::vector<BundleName> bundlesToRestore, Callbacks callbacks)
 {
-    HILOGI("Begin");
     try {
         auto restore = make_unique<BSessionRestore>();
         auto proxy = ServiceProxy::GetInstance();
@@ -25,6 +41,8 @@ unique_ptr<BSessionRestore> BSessionRestore::Init(std::vector<BundleName> bundle
             HILOGE("Failed to Restore because of %{public}d", res);
             return nullptr;
         }
+
+        restore->RegisterBackupServiceDied(callbacks.onBackupServiceDied);
         return restore;
     } catch (const exception e) {
         HILOGE("Failed to Restore because of %{public}s", e.what());
@@ -39,15 +57,6 @@ UniqueFd BSessionRestore::GetLocalCapabilities()
         return UniqueFd(-1);
     }
     return UniqueFd(proxy->GetLocalCapabilities());
-}
-
-tuple<ErrCode, TmpFileSN, UniqueFd> BSessionRestore::GetFileOnServiceEnd(string &bundleName)
-{
-    auto proxy = ServiceProxy::GetInstance();
-    if (proxy == nullptr) {
-        return {BError(BError::Codes::SDK_BROKEN_IPC), 0, UniqueFd(-1)};
-    }
-    return proxy->GetFileOnServiceEnd(bundleName);
 }
 
 ErrCode BSessionRestore::PublishFile(BFileInfo fileInfo)
@@ -77,5 +86,24 @@ ErrCode BSessionRestore::GetExtFileName(string &bundleName, string &fileName)
     }
 
     return proxy->GetExtFileName(bundleName, fileName);
+}
+
+void BSessionRestore::RegisterBackupServiceDied(std::function<void()> functor)
+{
+    auto proxy = ServiceProxy::GetInstance();
+    if (proxy == nullptr) {
+        return;
+    }
+    auto remoteObj = proxy->AsObject();
+    if (!remoteObj) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Proxy's remote object can't be nullptr");
+    }
+
+    auto callback = [functor](const wptr<IRemoteObject> &obj) {
+        HILOGI("service died. Died remote obj = %{public}p", obj.GetRefPtr());
+        functor();
+    };
+    deathRecipient_ = sptr(new SvcDeathRecipient(callback));
+    remoteObj->AddDeathRecipient(deathRecipient_);
 }
 } // namespace OHOS::FileManagement::Backup

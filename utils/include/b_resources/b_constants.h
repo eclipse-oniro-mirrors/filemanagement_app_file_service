@@ -16,7 +16,6 @@ enum class ExtensionAction {
     INVALID = 0,
     BACKUP = 1,
     RESTORE = 2,
-    CLEAR = 3,
 };
 
 enum EntryKey {
@@ -53,6 +52,8 @@ constexpr int PADDING_SIZE = 12;
 
 // SA THREAD_POOL 最大线程数
 constexpr int SA_THREAD_POOL_COUNT = 1;
+// extension 最大启动数
+constexpr int EXT_CONNECT_MAX_COUNT = 3;
 
 // 打包文件头部Header结构体fileSize字段最大值。
 constexpr off_t FILESIZE_MAX = 077777777777;

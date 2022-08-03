@@ -11,6 +11,7 @@
 
 #include "b_file_info.h"
 #include "errors.h"
+#include "svc_death_recipient.h"
 #include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -42,6 +43,19 @@ public:
      * @return ErrCode 规范错误码
      */
     ErrCode Start();
+
+    /**
+     * @brief 注册备份服务意外死亡时执行的回调函数
+     *
+     * @param functor 回调函数
+     */
+    void RegisterBackupServiceDied(std::function<void()> functor);
+
+public:
+    ~BSessionBackup();
+
+private:
+    sptr<SvcDeathRecipient> deathRecipient_;
 };
 } // namespace OHOS::FileManagement::Backup
 

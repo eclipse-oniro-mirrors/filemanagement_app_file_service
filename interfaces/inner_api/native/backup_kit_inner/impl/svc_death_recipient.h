@@ -14,6 +14,7 @@ class SvcDeathRecipient : public IRemoteObject::DeathRecipient {
 public:
     void OnRemoteDied(const wptr<IRemoteObject> &object) override
     {
+        object->RemoveDeathRecipient(this);
         functor_(object);
     };
 

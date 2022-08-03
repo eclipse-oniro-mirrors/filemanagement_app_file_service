@@ -11,7 +11,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-UniqueFd SvcExtensionProxy::GetFileHandle(string &fileName)
+UniqueFd SvcExtensionProxy::GetFileHandle(const string &fileName)
 {
     HILOGI("Start");
     MessageParcel data;
@@ -71,7 +71,7 @@ ErrCode SvcExtensionProxy::HandleBackup()
     return reply.ReadInt32();
 }
 
-ErrCode SvcExtensionProxy::PublishFile(string &fileName)
+ErrCode SvcExtensionProxy::PublishFile(const string &fileName)
 {
     HILOGI("Start");
     MessageParcel data;

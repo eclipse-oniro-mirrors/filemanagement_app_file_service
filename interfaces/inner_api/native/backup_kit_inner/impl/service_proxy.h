@@ -17,7 +17,6 @@ public:
                               const std::vector<BundleName> &bundleNames) override;
     ErrCode Start() override;
     UniqueFd GetLocalCapabilities() override;
-    std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) override;
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
     ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override;
     ErrCode AppDone(ErrCode errCode) override;

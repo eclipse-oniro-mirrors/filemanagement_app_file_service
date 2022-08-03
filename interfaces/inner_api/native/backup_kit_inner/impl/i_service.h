@@ -20,7 +20,6 @@ public:
         SERVICE_CMD_INIT_RESTORE_SESSION,
         SERVICE_CMD_INIT_BACKUP_SESSION,
         SERVICE_CMD_GET_LOCAL_CAPABILITIES,
-        SERVICE_CMD_GET_FILE_ON_SERVICE_END,
         SERVICE_CMD_PUBLISH_FILE,
         SERVICE_CMD_APP_FILE_READY,
         SERVICE_CMD_APP_DONE,
@@ -34,7 +33,6 @@ public:
                                       const std::vector<BundleName> &bundleNames) = 0;
     virtual ErrCode Start() = 0;
     virtual UniqueFd GetLocalCapabilities() = 0;
-    virtual std::tuple<ErrCode, TmpFileSN, UniqueFd> GetFileOnServiceEnd(std::string &bundleName) = 0;
     virtual ErrCode PublishFile(const BFileInfo &fileInfo) = 0;
     virtual ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) = 0;
     virtual ErrCode AppDone(ErrCode errCode) = 0;

@@ -21,6 +21,7 @@
 #include "ability_util.h"
 #include "accesstoken_kit.h"
 #include "b_error/b_error.h"
+#include "b_file_info.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
 #include "b_process/b_multiuser.h"
@@ -83,6 +84,7 @@ UniqueFd Service::GetLocalCapabilities()
 void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
 {
     session_.Deactive(obj, force);
+    sched_ = nullptr;
 }
 
 string Service::VerifyCallerAndGetCallerName()
@@ -142,6 +144,8 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<B
             .clientProxy = remote,
         });
 
+        sched_ = make_unique<SchedScheduler>(wptr(this));
+
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         StopAll(nullptr, true);
@@ -179,6 +183,8 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
             throw BError(BError::Codes::SA_INVAL_ARG, "Invalid field FreeDiskSpace or unsufficient space");
         }
 
+        sched_ = make_unique<SchedScheduler>(wptr(this));
+
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         StopAll(nullptr, true);
@@ -189,7 +195,13 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
 ErrCode Service::Start()
 {
     try {
-        session_.Start();
+        HILOGE("begin");
+        vector<pair<string, string>> extNameVec;
+        session_.GetBackupExtNameVec(extNameVec);
+        for (auto [bundleName, backupExtName] : extNameVec) {
+            sched_->QueueSetExtBundleName(bundleName, backupExtName);
+        }
+        sched_->SchedConn();
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode();
@@ -202,52 +214,26 @@ ErrCode Service::Start()
     }
 }
 
-tuple<ErrCode, TmpFileSN, UniqueFd> Service::GetFileOnServiceEnd(string &bundleName)
-{
-    try {
-        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-
-        TmpFileSN tmpFileSN = seed++;
-        string tmpPath =
-            string(BConstants::SA_BUNDLE_BACKUP_DIR).append(bundleName).append(BConstants::SA_BUNDLE_BACKUP_TMP_DIR);
-        if (!ForceCreateDirectory(tmpPath)) { // 强制创建文件夹
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Failed to create folder");
-        }
-
-        tmpPath.append(to_string(tmpFileSN));
-        if (access(tmpPath.data(), F_OK) == 0) {
-            // 约束服务启动时清空临时目录，且生成的临时文件名必不重复
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, "Tmp file to create is existed");
-        }
-        // REM : 文件权限777 会在8月10日之前解决
-        UniqueFd fd(open(tmpPath.data(), O_RDWR | O_CREAT, 0777));
-        if (fd < 0) {
-            stringstream ss;
-            ss << "Failed to open tmpPath " << errno;
-            throw BError(BError::Codes::SA_BROKEN_ROOT_DIR, ss.str());
-        }
-
-        return {ERR_OK, tmpFileSN, move(fd)};
-    } catch (const BError &e) {
-        return {e.GetCode(), -1, UniqueFd(-1)};
-    } catch (const exception &e) {
-        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return {BError(-EPERM), -1, UniqueFd(-1)};
-    } catch (...) {
-        HILOGE("Unexpected exception");
-        return {BError(-EPERM), -1, UniqueFd(-1)};
-    }
-}
-
 ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
     try {
+        HILOGE("begin");
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
-        session_.PublishFile(fileInfo.owner, fileInfo.fileName);
+
+        auto backUpConnection = session_.GetExtConnection(fileInfo.owner);
+
+        auto proxy = backUpConnection->GetBackupExtProxy();
+        if (!proxy) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
+        }
+        ErrCode res = proxy->PublishFile(fileInfo.fileName);
+        if (res) {
+            HILOGE("Failed to publish file for backup extension");
+        }
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
@@ -264,6 +250,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
 {
     try {
+        HILOGE("begin");
         string callerName = VerifyCallerAndGetCallerName();
         if (!regex_match(fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
@@ -274,7 +261,22 @@ ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
 
         session_.GetServiceReverseProxy()->BackupOnFileReady(callerName, fileName, move(fd));
 
-        session_.OnBunleFileReady(callerName, fileName);
+        if (session_.OnBunleFileReady(callerName, fileName)) {
+            auto backUpConnection = session_.GetExtConnection(callerName);
+            auto proxy = backUpConnection->GetBackupExtProxy();
+            if (!proxy) {
+                throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
+            }
+            // 通知extension清空缓存
+            proxy->HandleClear();
+            // 通知TOOL 备份完成
+            session_.GetServiceReverseProxy()->BackupOnBundleFinished(BError(BError::Codes::OK), callerName);
+            // 断开extension
+            backUpConnection->DisconnectBackupExtAbility();
+            session_.RemoveExtInfo(callerName);
+            // 移除调度器
+            sched_->RemoveExtConn(callerName);
+        }
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode(); // 任意异常产生，终止监听该任务
@@ -290,9 +292,25 @@ ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
 ErrCode Service::AppDone(ErrCode errCode)
 {
     try {
+        HILOGE("begin");
         string callerName = VerifyCallerAndGetCallerName();
-        session_.OnBunleFileReady(callerName);
-
+        if (session_.OnBunleFileReady(callerName)) {
+            auto backUpConnection = session_.GetExtConnection(callerName);
+            auto proxy = backUpConnection->GetBackupExtProxy();
+            if (!proxy) {
+                throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
+            }
+            proxy->HandleClear();
+            IServiceReverse::Scenario scenario = session_.GetScenario();
+            if (scenario == IServiceReverse::Scenario::BACKUP) {
+                session_.GetServiceReverseProxy()->BackupOnBundleFinished(BError(BError::Codes::OK), callerName);
+            } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+                session_.GetServiceReverseProxy()->RestoreOnBundleFinished(BError(BError::Codes::OK), callerName);
+            }
+            backUpConnection->DisconnectBackupExtAbility();
+            session_.RemoveExtInfo(callerName);
+            sched_->RemoveExtConn(callerName);
+        }
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode(); // 任意异常产生，终止监听该任务
@@ -305,18 +323,16 @@ ErrCode Service::AppDone(ErrCode errCode)
     }
 }
 
-ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
-                                       const BundleName &bundleName,
-                                       const string &backupExtName)
+ErrCode Service::LaunchBackupExtension(const BundleName &bundleName, const string &backupExtName)
 {
     try {
+        HILOGE("begin %{public}s", bundleName.data());
+        IServiceReverse::Scenario scenario = session_.GetScenario();
         BConstants::ExtensionAction action;
         if (scenario == IServiceReverse::Scenario::BACKUP) {
             action = BConstants::ExtensionAction::BACKUP;
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
             action = BConstants::ExtensionAction::RESTORE;
-        } else if (scenario == IServiceReverse::Scenario::CLEAR) {
-            action = BConstants::ExtensionAction::CLEAR;
         } else {
             throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
         }
@@ -325,12 +341,9 @@ ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
         want.SetElementName(bundleName, backupExtName);
         want.SetParam(BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
 
-        const int default_request_code = -1;
-        int ret = AAFwk::AbilityManagerClient::GetInstance()->StartAbility(want, default_request_code,
-                                                                           AppExecFwk::Constants::START_USERID);
-        HILOGI("Started %{public}s[100]'s %{public}s with %{public}s set to %{public}d", bundleName.c_str(),
-               backupExtName.c_str(), BConstants::EXTENSION_ACTION_PARA, action);
-        return ret;
+        auto backUpConnection = session_.GetExtConnection(bundleName);
+        ErrCode ret = backUpConnection->ConnectBackupExtAbility(want);
+        return BError(ret);
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
@@ -345,8 +358,13 @@ ErrCode Service::LaunchBackupExtension(IServiceReverse::Scenario scenario,
 ErrCode Service::GetExtFileName(string &bundleName, string &fileName)
 {
     try {
+        HILOGE("begin");
         session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-        session_.QueueGetFileRequest(bundleName, fileName);
+        if (!sched_) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Invalid sched scheduler");
+        }
+        sched_->QueueGetFileRequest(bundleName, fileName);
+        sched_->Sched(bundleName);
 
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
@@ -358,5 +376,122 @@ ErrCode Service::GetExtFileName(string &bundleName, string &fileName)
         HILOGE("Unexpected exception");
         return BError(-EPERM);
     }
+}
+
+void Service::OnBackupExtensionDied(const string &&bundleName, ErrCode ret)
+{
+    try {
+        HILOGI("extension died. Died bundleName = %{public}s", bundleName.data());
+        string callName = move(bundleName);
+        session_.VerifyBundleName(callName);
+        auto scenario = session_.GetScenario();
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            session_.GetServiceReverseProxy()->BackupOnBundleFinished(ret, callName);
+        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            session_.GetServiceReverseProxy()->RestoreOnBundleFinished(ret, callName);
+        }
+        session_.RemoveExtInfo(callName);
+        sched_->RemoveExtConn(callName);
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
+}
+
+bool Service::TryExtConnect(const string &bundleName)
+{
+    try {
+        HILOGE("begin %{public}s", bundleName.data());
+        auto backUpConnection = session_.GetExtConnection(bundleName);
+        bool flag = backUpConnection->IsExtAbilityConnected();
+        HILOGE("flag = %{public}d", flag);
+        if (!flag) {
+            return false;
+        }
+        return true;
+    } catch (const BError &e) {
+        return false;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return false;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return false;
+    }
+}
+
+void Service::ExtStart(const std::string &bundleName)
+{
+    try {
+        HILOGE("begin %{public}s", bundleName.data());
+        IServiceReverse::Scenario scenario = session_.GetScenario();
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            auto backUpConnection = session_.GetExtConnection(bundleName);
+            auto proxy = backUpConnection->GetBackupExtProxy();
+            if (!proxy) {
+                throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
+            }
+            auto ret = proxy->HandleBackup();
+            session_.GetServiceReverseProxy()->BackupOnBundleStarted(ret, bundleName);
+        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            session_.GetServiceReverseProxy()->RestoreOnBundleStarted(BError(BError::Codes::OK), bundleName);
+            sched_->Sched(bundleName);
+        }
+        return;
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
+}
+
+void Service::GetFileHandle(const string &bundleName, const string &fileName)
+{
+    try {
+        HILOGE("begin");
+        IServiceReverse::Scenario scenario = session_.GetScenario();
+        if (scenario != IServiceReverse::Scenario::RESTORE) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Invalid Scenario");
+        }
+        auto backUpConnection = session_.GetExtConnection(bundleName);
+        auto proxy = backUpConnection->GetBackupExtProxy();
+        if (!proxy) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
+        }
+        UniqueFd fd = proxy->GetFileHandle(fileName);
+        if (fd < 0) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get file handle");
+        }
+        session_.GetServiceReverseProxy()->RestoreOnFileReady(bundleName, fileName, move(fd));
+        return;
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
+}
+
+int Service::Dump(int fd, const std::vector<std::u16string> &args)
+{
+    if (fd < 0) {
+        HILOGI("HiDumper handle invalid");
+        return -1;
+    }
+
+    session_.DumpInfo(fd, args);
+    return 0;
 }
 } // namespace OHOS::FileManagement::Backup

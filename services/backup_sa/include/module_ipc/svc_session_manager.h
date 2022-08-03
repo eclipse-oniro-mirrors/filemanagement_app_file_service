@@ -11,12 +11,12 @@
 #include <map>
 #include <memory>
 #include <shared_mutex>
+#include <vector>
 
 #include "b_file_info.h"
 #include "i_service_reverse.h"
 #include "module_ipc/svc_backup_connection.h"
-#include "module_ipc/svc_death_recipient.h"
-#include "module_sched/sched_scheduler.h"
+#include "svc_death_recipient.h"
 
 namespace OHOS::FileManagement::Backup {
 struct BackupExtInfo {
@@ -93,8 +93,10 @@ public:
      * @param bundleName 客户端信息
      * @param fileName 文件名称
      * @throw BError::Codes::SA_INVAL_ARG 获取异常
+     * @return true 分发已完成
+     * @return false 分发未完成
      */
-    void OnBunleFileReady(const std::string &bundleName, const std::string &fileName = "");
+    bool OnBunleFileReady(const std::string &bundleName, const std::string &fileName = "");
 
     /**
      * @brief 设置backup manage.json 信息
@@ -107,50 +109,34 @@ public:
     UniqueFd OnBunleExtManageInfo(const std::string &bundleName, UniqueFd fd);
 
     /**
-     * @brief 通知Extension 文件内容已就绪
+     * @brief Remove backup extension info
      *
      * @param bundleName 应用名称
-     * @param fileName   文件名称
      */
-    void PublishFile(const std::string &bundleName, const std::string &fileName);
+    void RemoveExtInfo(const std::string &bundleName);
 
     /**
-     * @brief 获取真实文件推送给TOOL
+     * @brief get backupExtName info
+     *
+     * @param extNameVec
+     */
+    void GetBackupExtNameVec(std::vector<std::pair<std::string, std::string>> &extNameVec);
+
+    /**
+     * @brief get extension connection info
      *
      * @param bundleName
-     * @param fileName
+     * @return wptr<SvcBackupConnection>
      */
-    void GetFileHandle(const std::string &bundleName, const std::string &fileName);
+    wptr<SvcBackupConnection> GetExtConnection(const BundleName &bundleName);
 
     /**
-     * @brief 暂存真实文件请求
+     * @brief HiDumper dump info
      *
-     * @param bundleName
-     * @param fileName
+     * @param fd 对端dump句柄
+     * @param args 服务参数
      */
-    void QueueGetFileRequest(const std::string &bundleName, std::string &fileName);
-
-    /**
-     * @brief 启动entension
-     *
-     */
-    void Start();
-
-    /**
-     * @brief 判断extension 是否连接成功
-     *
-     * @param bundleName 应用名称
-     * @return true connect ok
-     * @return false connect false
-     */
-    bool TryExtConnect(const std::string &bundleName);
-
-    /**
-     * @brief backup extension died
-     *
-     * @param bundleName 应用名称
-     */
-    void OnBackupExtensionDied(const std::string &bundleName);
+    void DumpInfo(const int fd, const std::vector<std::u16string> &args);
 
 private:
     /**
@@ -161,6 +147,13 @@ private:
      * @throw BError::Codes::SA_BROKEN_IPC
      */
     void GetBundleExtNames(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
+
+    /**
+     * @brief 初始化 extension backUpConnection
+     *
+     * @param backupExtNameMap
+     */
+    void InitExtConn(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
 
 public:
     /**
@@ -176,7 +169,6 @@ private:
     wptr<Service> reversePtr_;
     sptr<SvcDeathRecipient> deathRecipient_;
     Impl impl_;
-    std::unique_ptr<SchedScheduler> sched_;
 };
 } // namespace OHOS::FileManagement::Backup
 

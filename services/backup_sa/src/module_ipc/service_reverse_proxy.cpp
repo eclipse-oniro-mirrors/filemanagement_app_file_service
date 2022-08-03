@@ -75,22 +75,6 @@ void ServiceReverseProxy::BackupOnAllBundlesFinished(int32_t errCode)
     }
 }
 
-void ServiceReverseProxy::BackupOnBackupServiceDied()
-{
-    HILOGI("Begin");
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor())) {
-        throw BError(BError::Codes::SA_BROKEN_IPC);
-    }
-
-    MessageParcel reply;
-    MessageOption option;
-    if (int err = Remote()->SendRequest(IServiceReverse::SERVICER_BACKUP_ON_BACKUP_SERVICE_DIED, data, reply, option);
-        err != ERR_OK) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, to_string(err));
-    }
-}
-
 void ServiceReverseProxy::RestoreOnBundleStarted(int32_t errCode, string bundleName)
 {
     HILOGI("Begin");
@@ -151,22 +135,6 @@ void ServiceReverseProxy::RestoreOnFileReady(string bundleName, string fileName,
     MessageParcel reply;
     MessageOption option;
     if (int err = Remote()->SendRequest(IServiceReverse::SERVICER_RESTORE_ON_FILE_READY, data, reply, option);
-        err != ERR_OK) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, to_string(err));
-    }
-}
-
-void ServiceReverseProxy::RestoreOnBackupServiceDied()
-{
-    HILOGI("Begin");
-    MessageParcel data;
-    if (!data.WriteInterfaceToken(GetDescriptor())) {
-        throw BError(BError::Codes::SA_BROKEN_IPC);
-    }
-
-    MessageParcel reply;
-    MessageOption option;
-    if (int err = Remote()->SendRequest(IServiceReverse::SERVICER_RESTORE_ON_BACKUP_SERVICE_DIED, data, reply, option);
         err != ERR_OK) {
         throw BError(BError::Codes::SA_BROKEN_IPC, to_string(err));
     }
