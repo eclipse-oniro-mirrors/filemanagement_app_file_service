@@ -25,6 +25,7 @@
 #include "b_json/b_json_entity_ext_manage.h"
 #include "b_resources/b_constants.h"
 #include "backup_kit_inner.h"
+#include "base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/hitrace_meter.h"
 #include "errors.h"
 #include "service_proxy.h"
 #include "tools_op.h"
@@ -157,6 +158,7 @@ static void OnBackupServiceDied(shared_ptr<Session> ctx)
 
 static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNames)
 {
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "RestoreApp");
     if (!restore || !restore->session_) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
     }
@@ -178,10 +180,12 @@ static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNa
             restore->UpdateBundleSendFiles(bundleName, fileName);
         }
     }
+    FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
 static int32_t Init(string pathCapFile, std::vector<string> bundles)
 {
+    StartTrace(HITRACE_TAG_FILEMANAGEMENT, "Init");
     std::vector<BundleName> bundleNames;
     for (auto &&bundleName : bundles) {
         bundleNames.emplace_back(bundleName.data());
@@ -197,29 +201,35 @@ static int32_t Init(string pathCapFile, std::vector<string> bundles)
                     });
     if (ctx->session_ == nullptr) {
         printf("Failed to init restore");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -EPERM;
     }
     UniqueFd fdRemote(ctx->session_->GetLocalCapabilities());
     if (fdRemote < 0) {
         printf("Failed to receive fd");
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return fdRemote;
     }
     if (lseek(fdRemote, 0, SEEK_SET) == -1) {
         fprintf(stderr, "Failed to lseek. error: %d %s\n", errno, strerror(errno));
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
     }
     struct stat stat = {};
     if (fstat(fdRemote, &stat) == -1) {
         fprintf(stderr, "Failed to fstat. error: %d %s\n", errno, strerror(errno));
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
     }
     UniqueFd fdLocal(open(pathCapFile.data(), O_WRONLY | O_CREAT, S_IRWXU));
     if (fdLocal < 0) {
         fprintf(stderr, "Failed to open file. error: %d %s\n", errno, strerror(errno));
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
     }
     if (sendfile(fdLocal, fdRemote, nullptr, stat.st_size) == -1) {
         fprintf(stderr, "Failed to Copy file. error: %d %s\n", errno, strerror(errno));
+        FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
     }
     ctx->SetBundleFinishedCount(bundleNames.size());
