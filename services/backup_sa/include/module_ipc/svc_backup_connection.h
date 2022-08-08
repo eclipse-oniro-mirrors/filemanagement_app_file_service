@@ -73,7 +73,7 @@ private:
     std::atomic<bool> isConnected_ = {false};
     std::atomic<bool> isConnectedDone_ = {false};
     sptr<IExtension> backupProxy_;
-    
+
     std::function<void(const std::string &&)> callDied_;
     std::function<void(const std::string &&)> callStart_;
 };

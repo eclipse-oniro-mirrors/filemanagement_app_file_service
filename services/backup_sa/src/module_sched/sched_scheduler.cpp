@@ -4,6 +4,7 @@
 
 #include "module_sched/sched_scheduler.h"
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 
@@ -32,8 +33,8 @@ void SchedScheduler::Sched(const string &bundName)
         HILOGI("wait for extension connect %{public}s", bundName.data());
         return;
     }
-
-    for (int i = getFileRequests_.size() - 1; i >= 0; i--) {
+    int size = static_cast<int>(getFileRequests_.size());
+    for (int i = size - 1; i >= 0; i--) {
         auto [bundleName, fileName] = getFileRequests_[i];
         if (bundName == bundleName) {
             auto task = [reversePtr {reversePtr_}, bundleName {bundleName}, fileName {fileName}]() {
