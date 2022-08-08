@@ -54,8 +54,6 @@ void Service::OnStop()
 UniqueFd Service::GetLocalCapabilities()
 {
     try {
-        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-
         struct statfs fsInfo = {};
         if (statfs(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR.data(), &fsInfo) == -1) {
             throw BError(errno);

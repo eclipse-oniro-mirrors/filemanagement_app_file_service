@@ -20,8 +20,8 @@
 
 #include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
-#include "b_resources/b_constants.h"
 #include "b_json/b_json_entity_ext_manage.h"
+#include "b_resources/b_constants.h"
 #include "backup_kit_inner.h"
 #include "base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/hitrace_meter.h"
 #include "directory_ex.h"
@@ -100,6 +100,7 @@ private:
 static string GenHelpMsg()
 {
     return "\t\tThis operation helps to backup application data.\n"
+           "\t\t--isLocal\t\t This parameter should be true or flase; true: local backup false: others.\n"
            "\t\t--pathCapFile\t\t This parameter should be the path of the capability file.\n"
            "\t\t--bundle\t\t This parameter is bundleName.";
 }
@@ -158,19 +159,26 @@ static void OnBackupServiceDied(shared_ptr<Session> ctx)
     ctx->TryNotify(true);
 }
 
-static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
+static int32_t InitPathCapFile(string isLocal, string pathCapFile, std::vector<string> bundles)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InitPathCapFile");
     std::vector<BundleName> bundleNames;
     for (auto &&bundleName : bundles) {
         bundleNames.emplace_back(bundleName.data());
     }
-
-    UniqueFd fd(open(pathCapFile.data(), O_RDONLY));
+    UniqueFd fd(open(pathCapFile.data(), O_RDWR | O_CREAT, S_IRWXU));
     if (fd < 0) {
         fprintf(stderr, "Failed to open file error: %d %s\n", errno, strerror(errno));
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
         return -errno;
+    }
+    if (isLocal == "true") {
+        auto proxy = ServiceProxy::GetInstance();
+        if (!proxy) {
+            fprintf(stderr, "Get an empty backup sa proxy\n");
+            return -EFAULT;
+        }
+        BFile::SendFile(fd, proxy->GetLocalCapabilities());
     }
 
     if (access((BConstants::BACKUP_TOOL_RECEIVE_DIR).data(), F_OK) != 0 &&
@@ -204,10 +212,12 @@ static int32_t InitPathCapFile(string pathCapFile, std::vector<string> bundles)
 
 static int Exec(map<string, vector<string>> mapArgToVal)
 {
-    if (mapArgToVal.find("pathCapFile") == mapArgToVal.end() || mapArgToVal.find("bundles") == mapArgToVal.end()) {
+    if (mapArgToVal.find("pathCapFile") == mapArgToVal.end() || mapArgToVal.find("bundles") == mapArgToVal.end() ||
+        mapArgToVal.find("isLocal") == mapArgToVal.end()) {
         return -EPERM;
     }
-    return InitPathCapFile(*(mapArgToVal["pathCapFile"].begin()), mapArgToVal["bundles"]);
+    return InitPathCapFile(*(mapArgToVal["isLocal"].begin()), *(mapArgToVal["pathCapFile"].begin()),
+                           mapArgToVal["bundles"]);
 }
 
 /**
@@ -224,6 +234,10 @@ static bool g_autoRegHack = ToolsOp::Register(ToolsOp::Descriptor {
                 {
                     .paramName = "bundles",
                     .repeatable = true,
+                },
+                {
+                    .paramName = "isLocal",
+                    .repeatable = false,
                 }},
     .funcGenHelpMsg = GenHelpMsg,
     .funcExec = Exec,
