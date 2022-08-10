@@ -24,10 +24,12 @@
 
 #include <map>
 #include <memory>
+#include <refbase.h>
 #include <shared_mutex>
 #include <vector>
 
 #include "b_file_info.h"
+#include "b_resources/b_constants.h"
 #include "i_service_reverse.h"
 #include "module_ipc/svc_backup_connection.h"
 #include "svc_death_recipient.h"
@@ -39,10 +41,11 @@ struct BackupExtInfo {
     std::string backupExtName;
     sptr<SvcBackupConnection> backUpConnection;
     std::set<std::string> fileNameInfo;
+    BConstants::ServiceSchedAction schedAction {BConstants::ServiceSchedAction::WAIT};
 };
 
 class Service;
-class SvcSessionManager {
+class SvcSessionManager : public virtual RefBase {
 public:
     struct Impl {
         uint32_t clientToken {0};
@@ -130,13 +133,6 @@ public:
     void RemoveExtInfo(const std::string &bundleName);
 
     /**
-     * @brief get backupExtName info
-     *
-     * @param extNameVec
-     */
-    void GetBackupExtNameVec(std::vector<std::pair<std::string, std::string>> &extNameVec);
-
-    /**
      * @brief get extension connection info
      *
      * @param bundleName
@@ -151,6 +147,54 @@ public:
      * @param args 服务参数
      */
     void DumpInfo(const int fd, const std::vector<std::u16string> &args);
+
+    /**
+     * @brief 暂存restore流程真实文件请求
+     *
+     * @param bundleName 应用名称
+     * @param fileName  文件名称
+     */
+    void SetExtFileNameRequest(const std::string &bundleName, const std::string &fileName);
+
+    /**
+     * @brief 获取restore流程真实文件请求
+     *
+     * @param bundleName 应用名称
+     * @return std::set<std::string> 返回真实文件vec
+     */
+    std::set<std::string> GetExtFileNameRequest(const std::string &bundleName);
+
+    /**
+     * @brief 获取ServiceSchedAction状态
+     *
+     * @param bundleName 应用名称
+     * @return BConstants::ServiceSchedAction
+     */
+    BConstants::ServiceSchedAction GetServiceSchedAction(const std::string &bundleName);
+
+    /**
+     * @brief 设置ServiceSchedAction状态
+     *
+     * @param bundleName 应用名称
+     * @param action 状态
+     */
+    void SetServiceSchedAction(const std::string &bundleName, BConstants::ServiceSchedAction action);
+
+    /**
+     * @brief 获取所需要的调度信息
+     *
+     * @return std::string 返回bundleName
+     */
+    bool GetSchedBundleName(std::string &bundleName);
+
+    /**
+     * @brief 获取backup extension name
+     *
+     * @param bundleName 应用名称
+     * @return std::string
+     * @return std::string extension name
+     */
+    std::string GetBackupExtName(const std::string &bundleName);
 
 private:
     /**
@@ -169,7 +213,20 @@ private:
      */
     virtual void InitExtConn(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
 
+    /**
+     * @brief 初始化 clientProxy
+     *
+     * @param newImpl
+     */
     virtual void InitClient(Impl &newImpl);
+
+    /**
+     * @brief 获取BackupExtNameMap iterator
+     *
+     * @param bundleName 应用名称
+     * @return std::map<BundleName, BackupExtInfo>::iterator
+     */
+    std::map<BundleName, BackupExtInfo>::iterator GetBackupExtNameMap(const std::string &bundleName);
 
 public:
     /**
@@ -185,6 +242,7 @@ private:
     wptr<Service> reversePtr_;
     sptr<SvcDeathRecipient> deathRecipient_;
     Impl impl_;
+    uint32_t extConnectNum_ {0};
 };
 } // namespace OHOS::FileManagement::Backup
 

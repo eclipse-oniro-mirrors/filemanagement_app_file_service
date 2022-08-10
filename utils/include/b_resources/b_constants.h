@@ -29,6 +29,13 @@ enum class ExtensionAction {
     RESTORE = 2,
 };
 
+enum ServiceSchedAction {
+    WAIT = 0,
+    START = 1,
+    RUNNING = 2,
+    FINISH = 3,
+};
+
 enum EntryKey {
     SUPER_LONG_PATH = 0,
     SUPER_LONG_LINK_PATH,
@@ -68,6 +75,8 @@ constexpr int PADDING_SIZE = 12;
 constexpr int SA_THREAD_POOL_COUNT = 1;
 // extension 最大启动数
 constexpr int EXT_CONNECT_MAX_COUNT = 3;
+// SA 启动 extension 等待连接最大时间
+constexpr int EXT_CONNECT_MAX_TIME = 15000;
 
 // 打包文件头部Header结构体fileSize字段最大值。
 constexpr off_t FILESIZE_MAX = 077777777777;

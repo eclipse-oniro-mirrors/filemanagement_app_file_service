@@ -16,6 +16,7 @@
 #include "module_sched/sched_scheduler.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <tuple>
 #include <utility>
 
@@ -27,121 +28,22 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void SchedScheduler::QueueGetFileRequest(const string &bundleName, const string &fileName)
+void SchedScheduler::Sched(string bundleName)
 {
-    shared_lock lock(lock_);
-    getFileRequests_.emplace_back(make_tuple(bundleName, fileName));
-}
-
-void SchedScheduler::Sched(const string &bundName)
-{
-    shared_lock lock(lock_);
-    auto revPtrStrong = reversePtr_.promote();
-    if (!revPtrStrong) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "It's curious that the backup sa dies before the backup client");
-    }
-    if (!revPtrStrong->TryExtConnect(bundName)) {
-        HILOGI("wait for extension connect %{public}s", bundName.data());
-        return;
-    }
-    int size = static_cast<int>(getFileRequests_.size());
-    for (int i = size - 1; i >= 0; i--) {
-        auto [bundleName, fileName] = getFileRequests_[i];
-        if (bundName == bundleName) {
-            auto task = [reversePtr {reversePtr_}, bundleName {bundleName}, fileName {fileName}]() {
-                auto revPtrStrong = reversePtr.promote();
-                if (!revPtrStrong) {
-                    throw BError(BError::Codes::SA_INVAL_ARG,
-                                 "It's curious that the backup sa dies before the backup client");
-                }
-                revPtrStrong->GetFileHandle(bundleName, fileName);
-            };
-            WorkQueue([task]() {
-                try {
-                    task();
-                } catch (const BError &e) {
-                    HILOGE("%{public}s", e.what());
-                } catch (const exception &e) {
-                    HILOGE("%{public}s", e.what());
-                } catch (...) {
-                    HILOGE("");
-                }
-            });
-            getFileRequests_.erase(getFileRequests_.begin() + i);
+    if (bundleName == "") {
+        if (!sessionPtr_->GetSchedBundleName(bundleName)) {
+            return;
+        }
+        BConstants::ServiceSchedAction action = sessionPtr_->GetServiceSchedAction(bundleName);
+        if (action == BConstants::ServiceSchedAction::WAIT) {
+            sessionPtr_->SetServiceSchedAction(bundleName, BConstants::ServiceSchedAction::START);
         }
     }
-}
-
-void SchedScheduler::WorkQueue(const function<void()> &task)
-{
-    threadPool_.AddTask(task);
-}
-
-void SchedScheduler::QueueSetExtBundleName(const string &bundleName, const string &backupExtName)
-{
-    shared_lock lock(extLock_);
-    extBundleName_.emplace_back(make_tuple(bundleName, backupExtName));
-}
-
-void SchedScheduler::SchedConn()
-{
-    shared_lock lock(extLock_);
-    if (extBundleName_.empty()) {
-        return;
-    }
-    if (extStartName_.size() >= BConstants::EXT_CONNECT_MAX_COUNT) {
-        return;
-    }
-    for (auto iter = extBundleName_.begin(); iter != extBundleName_.end();) {
-        if (extStartName_.size() >= BConstants::EXT_CONNECT_MAX_COUNT) {
-            break;
-        }
-        auto it = *iter;
-        auto [bundleName, backupExtName] = it;
-        extStartName_.insert(bundleName);
-
-        auto task = [reversePtr {reversePtr_}, bundleName {bundleName}, backupExtName {backupExtName}]() {
-            HILOGE("begin start bundleName = %{public}s", bundleName.data());
-            ErrCode ret = reversePtr->LaunchBackupExtension(bundleName, backupExtName);
-            if (ret) {
-                HILOGE("bundleName Extension Died = %{public}s , ret = %{public}d", bundleName.data(), ret);
-                reversePtr->OnBackupExtensionDied(move(bundleName), ret);
-            }
-        };
-        WorkQueue([task]() {
-            try {
-                task();
-            } catch (const BError &e) {
-                HILOGE("%{public}s", e.what());
-            } catch (const exception &e) {
-                HILOGE("%{public}s", e.what());
-            } catch (...) {
-                HILOGE("");
-            }
-        });
-
-        iter = extBundleName_.erase(iter);
-    }
-}
-
-void SchedScheduler::ExtStart(string bundleName)
-{
-    HILOGE("begin");
-    auto task = [reversePtr {reversePtr_}, bundleName]() {
-        auto revPtrStrong = reversePtr.promote();
-        if (!revPtrStrong) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "It's curious that the backup sa dies before the backup client");
-        }
-        if (!revPtrStrong->TryExtConnect(bundleName)) {
-            HILOGI("wait for extension connect %{public}s", bundleName.data());
-            throw BError(BError::Codes::SA_INVAL_ARG);
-        }
-        revPtrStrong->ExtStart(bundleName);
-    };
-
-    WorkQueue([task]() {
+    HILOGE("Sched bundleName %{public}s", bundleName.data());
+    auto callStart = [schedPtr {wptr(this)}, bundleName]() {
         try {
-            task();
+            auto ptr = schedPtr.promote();
+            ptr->ExecutingQueueTasks(bundleName);
         } catch (const BError &e) {
             HILOGE("%{public}s", e.what());
         } catch (const exception &e) {
@@ -149,15 +51,59 @@ void SchedScheduler::ExtStart(string bundleName)
         } catch (...) {
             HILOGE("");
         }
-    });
+    };
+    threadPool_.AddTask(callStart);
+}
+
+void SchedScheduler::ExecutingQueueTasks(const string &bundleName)
+{
+    HILOGE("start");
+    BConstants::ServiceSchedAction action = sessionPtr_->GetServiceSchedAction(bundleName);
+    if (action == BConstants::ServiceSchedAction::START) {
+        // 注册启动定时器
+        auto callStart = [reversePtr {reversePtr_}, bundleName]() {
+            HILOGE("Extension connect failed = %{public}s", bundleName.data());
+            auto ptr = reversePtr.promote();
+            if (ptr) {
+                ptr->ExtConnectFailed(bundleName, EPERM);
+            }
+        };
+        auto iTime = extTime_.Register(callStart, BConstants::EXT_CONNECT_MAX_TIME);
+        unique_lock<shared_mutex> lock(lock_);
+        bundleTimeVec_.emplace_back(make_tuple(bundleName, iTime));
+        lock.unlock();
+        // 启动extension
+        reversePtr_->LaunchBackupExtension(bundleName);
+    } else if (action == BConstants::ServiceSchedAction::RUNNING) {
+        unique_lock<shared_mutex> lock(lock_);
+        auto iter = find_if(bundleTimeVec_.begin(), bundleTimeVec_.end(), [&bundleName](auto &obj) {
+            auto &[bName, iTime] = obj;
+            return bName == bundleName;
+        });
+        if (iter == bundleTimeVec_.end()) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to find timer");
+        }
+        auto &[bName, iTime] = *iter;
+        // 移除启动定时器 当前逻辑无启动成功后的ext心跳检测
+        extTime_.Unregister(iTime);
+        lock.unlock();
+        // 开始执行备份恢复流程
+        reversePtr_->ExtStart(bundleName);
+    }
 }
 
 void SchedScheduler::RemoveExtConn(const string &bundleName)
 {
-    shared_lock lock(extLock_);
-    extStartName_.erase(bundleName);
-    if (extStartName_.size() < BConstants::EXT_CONNECT_MAX_COUNT) {
-        SchedConn();
+    unique_lock<shared_mutex> lock(lock_);
+    auto iter = find_if(bundleTimeVec_.begin(), bundleTimeVec_.end(), [&bundleName](auto &obj) {
+        auto &[bName, iTime] = obj;
+        return bName == bundleName;
+    });
+    if (iter != bundleTimeVec_.end()) {
+        auto &[bName, iTime] = *iter;
+        HILOGE("bundleName = %{public}s , iTime = %{public}d", bName.data(), iTime);
+        extTime_.Unregister(iTime);
+        bundleTimeVec_.erase(iter);
     }
 }
 }; // namespace OHOS::FileManagement::Backup

@@ -51,13 +51,12 @@ public:
     int Dump(int fd, const std::vector<std::u16string> &args) override;
 
     /**
-     * @brief 启动 backup extension
+     * @brief 执行启动 backup extension
      *
      * @param bundleName
-     * @param backupExtName
      * @return ErrCode
      */
-    ErrCode LaunchBackupExtension(const BundleName &bundleName, const std::string &backupExtName);
+    ErrCode LaunchBackupExtension(const BundleName &bundleName);
 
     /**
      * @brief backup extension died
@@ -67,13 +66,18 @@ public:
     void OnBackupExtensionDied(const std::string &&bundleName, ErrCode ret);
 
     /**
-     * @brief 获取 ExtConnect 连接状态
+     * @brief extension启动连接成功
      *
      * @param bundleName 应用名称
-     * @return true connect ok
-     * @return false connect failed
      */
-    bool TryExtConnect(const std::string &bundleName);
+    void ExtConnectDone(std::string bundleName);
+
+    /**
+     * @brief extension启动连接失败
+     *
+     * @param bundleName 应用名称
+     */
+    void ExtConnectFailed(const std::string &bundleName, ErrCode ret);
 
     /**
      * @brief 执行backup extension 备份恢复流程
@@ -82,29 +86,35 @@ public:
      */
     void ExtStart(const std::string &bundleName);
 
-    /**
-     * @brief Get the File Handle object
-     *
-     * @param bundleName 应用名称
-     * @param fileName 文件名称
-     */
-    void GetFileHandle(const std::string &bundleName, const std::string &fileName);
-
 public:
-    explicit Service(int32_t saID, bool runOnCreate = false)
-        : SystemAbility(saID, runOnCreate), session_(wptr(this)) {};
+    explicit Service(int32_t saID, bool runOnCreate = false) : SystemAbility(saID, runOnCreate)
+    {
+        session_ = sptr<SvcSessionManager>(new SvcSessionManager(wptr(this)));
+    };
     ~Service() override = default;
 
 private:
+    /**
+     * @brief 验证调用者并返回名称
+     *
+     * @return std::string
+     */
     std::string VerifyCallerAndGetCallerName();
+
+    /**
+     * @brief 清除Session Sched相关资源
+     *
+     * @param bundleName 应用名称
+     */
+    void ClearSessionAndSchedInfo(const std::string &bundleName);
 
 private:
     static sptr<Service> instance_;
     static std::mutex instanceLock_;
     static inline std::atomic<uint32_t> seed {1};
 
-    SvcSessionManager session_;
-    std::unique_ptr<SchedScheduler> sched_;
+    sptr<SvcSessionManager> session_;
+    sptr<SchedScheduler> sched_;
 };
 } // namespace OHOS::FileManagement::Backup
 
