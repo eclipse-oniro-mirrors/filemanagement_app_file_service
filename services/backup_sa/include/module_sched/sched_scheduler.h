@@ -16,6 +16,7 @@
 #ifndef OHOS_FILEMGMT_BACKUP_SCHED_SCHEDULER_H
 #define OHOS_FILEMGMT_BACKUP_SCHED_SCHEDULER_H
 
+#include <refbase.h>
 #include <set>
 #include <shared_mutex>
 #include <string>
@@ -24,78 +25,64 @@
 #include "b_resources/b_constants.h"
 #include "iremote_broker.h"
 #include "thread_pool.h"
+#include "timer.h"
 
 namespace OHOS::FileManagement::Backup {
 class Service;
+class SvcSessionManager;
 
-class SchedScheduler final {
+class SchedScheduler final : public virtual RefBase {
 public:
     /**
-     * @brief 给workqueue下发请求任务
+     * @brief 给threadPool下发任务
      *
      */
-    void Sched(const std::string &bundleName);
+    void Sched(std::string bundleName = "");
 
     /**
-     * @brief 暂存真实文件请求
+     * @brief 执行队列任务
      *
+     * @param bundleName
      */
-    void QueueGetFileRequest(const std::string &bundleName, const std::string &fileName);
+    void ExecutingQueueTasks(const std::string &bundleName);
 
     /**
-     * @brief 激活请求
-     *
-     */
-    void WorkQueue(const std::function<void()> &task);
-
-    /**
-     * @brief 暂存启动extension请求
-     *
-     * @param bundleName 应用名称
-     * @param backupExtName
-     */
-    void QueueSetExtBundleName(const std::string &bundleName, const std::string &backupExtName);
-
-    /**
-     * @brief 给workqueue下发连接extension任务
-     *
-     */
-    void SchedConn();
-
-    /**
-     * @brief 之前extension 备份恢复流程
-     *
-     * @param bundleName 应用名称
-     */
-    void ExtStart(std::string bundleName);
-
-    /**
-     * @brief 更新当前启动中的extension表
+     * @brief 移除定时器信息
      *
      * @param bundleName 应用名称
      */
     void RemoveExtConn(const std::string &bundleName);
 
+    void StartTimer()
+    {
+        extTime_.Setup();
+    }
+
 public:
-    explicit SchedScheduler(wptr<Service> reversePtr) : reversePtr_(reversePtr)
+    explicit SchedScheduler(wptr<Service> reversePtr, wptr<SvcSessionManager> sessionPtr)
+        : reversePtr_(reversePtr), sessionPtr_(sessionPtr)
     {
         threadPool_.Start(BConstants::SA_THREAD_POOL_COUNT);
     }
-    ~SchedScheduler()
+
+    ~SchedScheduler() override
     {
-        threadPool_.Stop();
+        extTime_.Shutdown();
+        reversePtr_ = nullptr;
+        sessionPtr_ = nullptr;
+        bundleTimeVec_.clear();
     }
 
 private:
     mutable std::shared_mutex lock_;
-    mutable std::shared_mutex extLock_;
     OHOS::ThreadPool threadPool_;
 
-    std::vector<std::tuple<std::string, std::string>> getFileRequests_;
-    std::vector<std::tuple<std::string, std::string>> extBundleName_;
-    std::set<std::string> extStartName_;
+    // 注册心跳信息
+    std::vector<std::tuple<std::string, uint32_t>> bundleTimeVec_;
 
     wptr<Service> reversePtr_;
+    wptr<SvcSessionManager> sessionPtr_;
+    Utils::Timer extTime_ {"bakcupSchedTimer"};
 };
 } // namespace OHOS::FileManagement::Backup
 

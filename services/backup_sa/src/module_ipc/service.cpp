@@ -56,12 +56,15 @@ REGISTER_SYSTEM_ABILITY_BY_ID(Service, FILEMANAGEMENT_BACKUP_SERVICE_SA_ID, fals
 void Service::OnStart()
 {
     bool res = SystemAbility::Publish(sptr(this));
+    sched_ = sptr(new SchedScheduler(wptr(this), wptr(session_)));
+    sched_->StartTimer();
     HILOGI("End, res = %{public}d", res);
 }
 
 void Service::OnStop()
 {
     HILOGI("Called");
+    sched_ = nullptr;
 }
 
 UniqueFd Service::GetLocalCapabilities()
@@ -94,8 +97,7 @@ UniqueFd Service::GetLocalCapabilities()
 
 void Service::StopAll(const wptr<IRemoteObject> &obj, bool force)
 {
-    session_.Deactive(obj, force);
-    sched_ = nullptr;
+    session_->Deactive(obj, force);
 }
 
 string Service::VerifyCallerAndGetCallerName()
@@ -108,22 +110,8 @@ string Service::VerifyCallerAndGetCallerName()
             if (Security::AccessToken::AccessTokenKit::GetHapTokenInfo(tokenCaller, hapTokenInfo) != 0) {
                 throw BError(BError::Codes::SA_INVAL_ARG, "Get hap token info failed");
             }
-            session_.VerifyBundleName(hapTokenInfo.bundleName);
+            session_->VerifyBundleName(hapTokenInfo.bundleName);
             return hapTokenInfo.bundleName;
-        } else if (tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE) {
-            if (IPCSkeleton::GetCallingUid() != BConstants::SYSTEM_UID) { // REM: uid整改后调整
-                throw BError(BError::Codes::SA_BROKEN_IPC, "Calling uid is invalid");
-            }
-
-            Security::AccessToken::NativeTokenInfo tokenInfo;
-            if (Security::AccessToken::AccessTokenKit::GetNativeTokenInfo(tokenCaller, tokenInfo) != 0) {
-                throw BError(BError::Codes::SA_INVAL_ARG, "Get native token info failed");
-            }
-            if (tokenInfo.processName != "backup_tool" &&
-                tokenInfo.processName != "hdcd") { // REM: hdcd整改后删除 { // REM: backup_sa整改后删除
-                throw BError(BError::Codes::SA_INVAL_ARG, "Process name is invalid");
-            }
-            return "simulate";
         } else {
             throw BError(BError::Codes::SA_INVAL_ARG, string("Invalid token type ").append(to_string(tokenType)));
         }
@@ -148,25 +136,22 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<B
         };
         transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
                   SetbackupExtNameMap);
-        session_.Active({
+        session_->Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::RESTORE,
             .backupExtNameMap = move(backupExtNameMap),
             .clientProxy = remote,
         });
-
-        sched_ = make_unique<SchedScheduler>(wptr(this));
-
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         StopAll(nullptr, true);
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
@@ -180,7 +165,7 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
         };
         transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
                   SetbackupExtNameMap);
-        session_.Active({
+        session_->Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::BACKUP,
             .backupExtNameMap = move(backupExtNameMap),
@@ -193,9 +178,6 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
         if (size == 0) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Invalid field FreeDiskSpace or unsufficient space");
         }
-
-        sched_ = make_unique<SchedScheduler>(wptr(this));
-
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         StopAll(nullptr, true);
@@ -207,21 +189,18 @@ ErrCode Service::Start()
 {
     try {
         HILOGE("begin");
-        vector<pair<string, string>> extNameVec;
-        session_.GetBackupExtNameVec(extNameVec);
-        for (auto [bundleName, backupExtName] : extNameVec) {
-            sched_->QueueSetExtBundleName(bundleName, backupExtName);
+        for (int num = 0; num < BConstants::EXT_CONNECT_MAX_COUNT; num++) {
+            sched_->Sched();
         }
-        sched_->SchedConn();
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
@@ -229,13 +208,13 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
     try {
         HILOGE("begin");
-        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_->VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
 
-        auto backUpConnection = session_.GetExtConnection(fileInfo.owner);
+        auto backUpConnection = session_->GetExtConnection(fileInfo.owner);
 
         auto proxy = backUpConnection->GetBackupExtProxy();
         if (!proxy) {
@@ -251,29 +230,29 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
 ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
 {
     try {
-        HILOGE("begin");
+        HILOGE("begin %{public}s", fileName.data());
         string callerName = VerifyCallerAndGetCallerName();
         if (!regex_match(fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
         }
         if (fileName == BConstants::EXT_BACKUP_MANAGE) {
-            fd = session_.OnBunleExtManageInfo(callerName, move(fd));
+            fd = session_->OnBunleExtManageInfo(callerName, move(fd));
         }
 
-        session_.GetServiceReverseProxy()->BackupOnFileReady(callerName, fileName, move(fd));
+        session_->GetServiceReverseProxy()->BackupOnFileReady(callerName, fileName, move(fd));
 
-        if (session_.OnBunleFileReady(callerName, fileName)) {
-            auto backUpConnection = session_.GetExtConnection(callerName);
+        if (session_->OnBunleFileReady(callerName, fileName)) {
+            auto backUpConnection = session_->GetExtConnection(callerName);
             auto proxy = backUpConnection->GetBackupExtProxy();
             if (!proxy) {
                 throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
@@ -281,22 +260,20 @@ ErrCode Service::AppFileReady(const string &fileName, UniqueFd fd)
             // 通知extension清空缓存
             proxy->HandleClear();
             // 通知TOOL 备份完成
-            session_.GetServiceReverseProxy()->BackupOnBundleFinished(BError(BError::Codes::OK), callerName);
+            session_->GetServiceReverseProxy()->BackupOnBundleFinished(BError(BError::Codes::OK), callerName);
             // 断开extension
             backUpConnection->DisconnectBackupExtAbility();
-            session_.RemoveExtInfo(callerName);
-            // 移除调度器
-            sched_->RemoveExtConn(callerName);
+            ClearSessionAndSchedInfo(callerName);
         }
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode(); // 任意异常产生，终止监听该任务
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
@@ -305,40 +282,39 @@ ErrCode Service::AppDone(ErrCode errCode)
     try {
         HILOGE("begin");
         string callerName = VerifyCallerAndGetCallerName();
-        if (session_.OnBunleFileReady(callerName)) {
-            auto backUpConnection = session_.GetExtConnection(callerName);
+        if (session_->OnBunleFileReady(callerName)) {
+            auto backUpConnection = session_->GetExtConnection(callerName);
             auto proxy = backUpConnection->GetBackupExtProxy();
             if (!proxy) {
                 throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
             }
             proxy->HandleClear();
-            IServiceReverse::Scenario scenario = session_.GetScenario();
+            IServiceReverse::Scenario scenario = session_->GetScenario();
             if (scenario == IServiceReverse::Scenario::BACKUP) {
-                session_.GetServiceReverseProxy()->BackupOnBundleFinished(BError(BError::Codes::OK), callerName);
+                session_->GetServiceReverseProxy()->BackupOnBundleFinished(errCode, callerName);
             } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-                session_.GetServiceReverseProxy()->RestoreOnBundleFinished(BError(BError::Codes::OK), callerName);
+                session_->GetServiceReverseProxy()->RestoreOnBundleFinished(errCode, callerName);
             }
             backUpConnection->DisconnectBackupExtAbility();
-            session_.RemoveExtInfo(callerName);
-            sched_->RemoveExtConn(callerName);
+            ClearSessionAndSchedInfo(callerName);
         }
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode(); // 任意异常产生，终止监听该任务
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
-ErrCode Service::LaunchBackupExtension(const BundleName &bundleName, const string &backupExtName)
+ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
 {
     try {
         HILOGE("begin %{public}s", bundleName.data());
-        IServiceReverse::Scenario scenario = session_.GetScenario();
+        IServiceReverse::Scenario scenario = session_->GetScenario();
         BConstants::ExtensionAction action;
         if (scenario == IServiceReverse::Scenario::BACKUP) {
             action = BConstants::ExtensionAction::BACKUP;
@@ -349,20 +325,21 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName, const strin
         }
 
         AAFwk::Want want;
+        string backupExtName = session_->GetBackupExtName(bundleName);
         want.SetElementName(bundleName, backupExtName);
         want.SetParam(BConstants::EXTENSION_ACTION_PARA, static_cast<int>(action));
 
-        auto backUpConnection = session_.GetExtConnection(bundleName);
+        auto backUpConnection = session_->GetExtConnection(bundleName);
         ErrCode ret = backUpConnection->ConnectBackupExtAbility(want);
-        return BError(ret);
+        return ret;
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
@@ -370,22 +347,17 @@ ErrCode Service::GetExtFileName(string &bundleName, string &fileName)
 {
     try {
         HILOGE("begin");
-        session_.VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
-        if (!sched_) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Invalid sched scheduler");
-        }
-        sched_->QueueGetFileRequest(bundleName, fileName);
-        sched_->Sched(bundleName);
-
+        session_->VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_->SetExtFileNameRequest(bundleName, fileName);
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
         return e.GetCode();
     } catch (const exception &e) {
         HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return BError(-EPERM);
+        return EPERM;
     } catch (...) {
         HILOGE("Unexpected exception");
-        return BError(-EPERM);
+        return EPERM;
     }
 }
 
@@ -394,15 +366,18 @@ void Service::OnBackupExtensionDied(const string &&bundleName, ErrCode ret)
     try {
         HILOGI("extension died. Died bundleName = %{public}s", bundleName.data());
         string callName = move(bundleName);
-        session_.VerifyBundleName(callName);
-        auto scenario = session_.GetScenario();
+        session_->VerifyBundleName(callName);
+        auto scenario = session_->GetScenario();
         if (scenario == IServiceReverse::Scenario::BACKUP) {
-            session_.GetServiceReverseProxy()->BackupOnBundleFinished(ret, callName);
+            session_->GetServiceReverseProxy()->BackupOnBundleFinished(ret, callName);
         } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-            session_.GetServiceReverseProxy()->RestoreOnBundleFinished(ret, callName);
+            session_->GetServiceReverseProxy()->RestoreOnBundleFinished(ret, callName);
         }
-        session_.RemoveExtInfo(callName);
-        sched_->RemoveExtConn(callName);
+        auto backUpConnection = session_->GetExtConnection(callName);
+        if (backUpConnection->IsExtAbilityConnected()) {
+            backUpConnection->DisconnectBackupExtAbility();
+        }
+        ClearSessionAndSchedInfo(bundleName);
     } catch (const BError &e) {
         return;
     } catch (const exception &e) {
@@ -414,75 +389,38 @@ void Service::OnBackupExtensionDied(const string &&bundleName, ErrCode ret)
     }
 }
 
-bool Service::TryExtConnect(const string &bundleName)
+void Service::ExtStart(const string &bundleName)
 {
     try {
         HILOGE("begin %{public}s", bundleName.data());
-        auto backUpConnection = session_.GetExtConnection(bundleName);
-        bool flag = backUpConnection->IsExtAbilityConnected();
-        HILOGE("flag = %{public}d", flag);
-        if (!flag) {
-            return false;
-        }
-        return true;
-    } catch (const BError &e) {
-        return false;
-    } catch (const exception &e) {
-        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return false;
-    } catch (...) {
-        HILOGE("Unexpected exception");
-        return false;
-    }
-}
-
-void Service::ExtStart(const std::string &bundleName)
-{
-    try {
-        HILOGE("begin %{public}s", bundleName.data());
-        IServiceReverse::Scenario scenario = session_.GetScenario();
-        if (scenario == IServiceReverse::Scenario::BACKUP) {
-            auto backUpConnection = session_.GetExtConnection(bundleName);
-            auto proxy = backUpConnection->GetBackupExtProxy();
-            if (!proxy) {
-                throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
-            }
-            auto ret = proxy->HandleBackup();
-            session_.GetServiceReverseProxy()->BackupOnBundleStarted(ret, bundleName);
-        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
-            session_.GetServiceReverseProxy()->RestoreOnBundleStarted(BError(BError::Codes::OK), bundleName);
-            sched_->Sched(bundleName);
-        }
-        return;
-    } catch (const BError &e) {
-        return;
-    } catch (const exception &e) {
-        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
-        return;
-    } catch (...) {
-        HILOGE("Unexpected exception");
-        return;
-    }
-}
-
-void Service::GetFileHandle(const string &bundleName, const string &fileName)
-{
-    try {
-        HILOGE("begin");
-        IServiceReverse::Scenario scenario = session_.GetScenario();
-        if (scenario != IServiceReverse::Scenario::RESTORE) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Invalid Scenario");
-        }
-        auto backUpConnection = session_.GetExtConnection(bundleName);
+        IServiceReverse::Scenario scenario = session_->GetScenario();
+        auto backUpConnection = session_->GetExtConnection(bundleName);
         auto proxy = backUpConnection->GetBackupExtProxy();
         if (!proxy) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
         }
-        UniqueFd fd = proxy->GetFileHandle(fileName);
-        if (fd < 0) {
-            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get file handle");
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            auto ret = proxy->HandleBackup();
+            session_->GetServiceReverseProxy()->BackupOnBundleStarted(ret, bundleName);
+            if (ret) {
+                ClearSessionAndSchedInfo(bundleName);
+            }
+            return;
         }
-        session_.GetServiceReverseProxy()->RestoreOnFileReady(bundleName, fileName, move(fd));
+        if (scenario != IServiceReverse::Scenario::RESTORE) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Failed to scenario");
+        }
+        session_->GetServiceReverseProxy()->RestoreOnBundleStarted(BError(BError::Codes::OK), bundleName);
+        auto fileNameVec = session_->GetExtFileNameRequest(bundleName);
+        for (auto &fileName : fileNameVec) {
+            UniqueFd fd = proxy->GetFileHandle(fileName);
+            if (fd < 0) {
+                HILOGE("Failed to extension file handle");
+                OnBackupExtensionDied(move(bundleName), fd);
+                return;
+            }
+            session_->GetServiceReverseProxy()->RestoreOnFileReady(bundleName, fileName, move(fd));
+        }
         return;
     } catch (const BError &e) {
         return;
@@ -495,14 +433,71 @@ void Service::GetFileHandle(const string &bundleName, const string &fileName)
     }
 }
 
-int Service::Dump(int fd, const std::vector<std::u16string> &args)
+int Service::Dump(int fd, const vector<u16string> &args)
 {
     if (fd < 0) {
         HILOGI("HiDumper handle invalid");
         return -1;
     }
 
-    session_.DumpInfo(fd, args);
+    session_->DumpInfo(fd, args);
     return 0;
+}
+
+void Service::ExtConnectFailed(const string &bundleName, ErrCode ret)
+{
+    try {
+        HILOGE("begin %{public}s", bundleName.data());
+        IServiceReverse::Scenario scenario = session_->GetScenario();
+        if (scenario == IServiceReverse::Scenario::BACKUP) {
+            session_->GetServiceReverseProxy()->BackupOnBundleStarted(ret, bundleName);
+        } else if (scenario == IServiceReverse::Scenario::RESTORE) {
+            session_->GetServiceReverseProxy()->RestoreOnBundleStarted(ret, bundleName);
+        }
+        ClearSessionAndSchedInfo(bundleName);
+        return;
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
+}
+
+void Service::ExtConnectDone(string bundleName)
+{
+    try {
+        HILOGE("begin %{public}s", bundleName.data());
+        session_->SetServiceSchedAction(bundleName, BConstants::ServiceSchedAction::RUNNING);
+        sched_->Sched(bundleName);
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
+}
+
+void Service::ClearSessionAndSchedInfo(const string &bundleName)
+{
+    try {
+        session_->RemoveExtInfo(bundleName);
+        sched_->RemoveExtConn(bundleName);
+        sched_->Sched();
+    } catch (const BError &e) {
+        return;
+    } catch (const exception &e) {
+        HILOGE("Catched an unexpected low-level exception %{public}s", e.what());
+        return;
+    } catch (...) {
+        HILOGE("Unexpected exception");
+        return;
+    }
 }
 } // namespace OHOS::FileManagement::Backup

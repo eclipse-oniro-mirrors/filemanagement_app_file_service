@@ -25,7 +25,6 @@
 #include "b_error/b_error.h"
 #include "b_json/b_json_entity_ext_manage.h"
 #include "b_json/b_json_entity_usr_config.h"
-#include "b_resources/b_constants.h"
 #include "bundle_mgr_client.h"
 #include "filemgmt_libhilog.h"
 #include "module_ipc/service.h"
@@ -35,7 +34,7 @@ using namespace std;
 
 void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
-    shared_lock lock(lock_);
+    shared_lock<shared_mutex> lock(lock_);
     if (impl_.scenario != scenario) {
         throw BError(BError::Codes::SDK_MIXED_SCENARIO);
     }
@@ -47,8 +46,7 @@ void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scen
 
 void SvcSessionManager::Active(Impl newImpl)
 {
-    unique_lock lock(lock_);
-
+    unique_lock<shared_mutex> lock(lock_);
     Impl &oldImpl = impl_;
     if (oldImpl.clientToken) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Already have an active session");
@@ -71,7 +69,7 @@ void SvcSessionManager::Active(Impl newImpl)
 
 void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool force)
 {
-    unique_lock lock(lock_);
+    unique_lock<shared_mutex> lock(lock_);
     if (!force && (!impl_.clientToken || !impl_.clientProxy)) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
     }
@@ -84,11 +82,12 @@ void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool
     HILOGI("Succeed to deactive a session. Client token = %{public}u, client proxy = 0x%{private}p", impl_.clientToken,
            impl_.clientProxy.GetRefPtr());
     impl_ = {};
+    extConnectNum_ = 0;
 }
 
 void SvcSessionManager::VerifyBundleName(string &bundleName)
 {
-    shared_lock lock(lock_);
+    shared_lock<shared_mutex> lock(lock_);
     if (!impl_.clientToken) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
     }
@@ -103,7 +102,7 @@ void SvcSessionManager::VerifyBundleName(string &bundleName)
 
 sptr<IServiceReverse> SvcSessionManager::GetServiceReverseProxy()
 {
-    unique_lock lock(lock_);
+    unique_lock<shared_mutex> lock(lock_);
     if (!impl_.clientProxy) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
     }
@@ -112,7 +111,7 @@ sptr<IServiceReverse> SvcSessionManager::GetServiceReverseProxy()
 
 IServiceReverse::Scenario SvcSessionManager::GetScenario()
 {
-    shared_lock lock(lock_);
+    shared_lock<shared_mutex> lock(lock_);
     if (!impl_.clientToken) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
     }
@@ -160,12 +159,16 @@ void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backup
                 }
             }
         }
+        if (it.second.backupExtName.empty()) {
+            string pendingMsg = string("Failed to get ext name of bundle ").append(it.first);
+            throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+        }
     }
 }
 
 bool SvcSessionManager::OnBunleFileReady(const string &bundleName, const string &fileName)
 {
-    shared_lock lock(lock_);
+    unique_lock<shared_mutex> lock(lock_);
     if (!impl_.clientToken) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
     }
@@ -178,7 +181,9 @@ bool SvcSessionManager::OnBunleFileReady(const string &bundleName, const string 
     }
 
     // 判断是否结束 通知EXTENTION清理资源  TOOL应用完成备份
-    if (impl_.scenario == IServiceReverse::Scenario::BACKUP) {
+    if (impl_.scenario == IServiceReverse::Scenario::RESTORE) {
+        return true;
+    } else if (impl_.scenario == IServiceReverse::Scenario::BACKUP) {
         if (!fileName.empty() && fileName != BConstants::EXT_BACKUP_MANAGE) {
             auto ret = it->second.fileNameInfo.insert(fileName);
             if (!ret.second) {
@@ -190,8 +195,6 @@ bool SvcSessionManager::OnBunleFileReady(const string &bundleName, const string 
         if (it->second.receExtManageJson && it->second.fileNameInfo.empty() && it->second.receExtAppDone) {
             return true;
         }
-    } else if (impl_.scenario == IServiceReverse::Scenario::RESTORE) {
-        return true;
     }
     return false;
 }
@@ -214,14 +217,8 @@ UniqueFd SvcSessionManager::OnBunleExtManageInfo(const string &bundleName, Uniqu
         OnBunleFileReady(bundleName, fileName);
     }
 
-    shared_lock lock(lock_);
-    auto it = impl_.backupExtNameMap.find(bundleName);
-    if (it == impl_.backupExtNameMap.end()) {
-        stringstream ss;
-        ss << "Could not find the " << bundleName << " from current session";
-        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
-    }
-
+    unique_lock<shared_mutex> lock(lock_);
+    auto it = GetBackupExtNameMap(bundleName);
     it->second.receExtManageJson = true;
     return move(cachedEntity.GetFd());
 }
@@ -229,48 +226,24 @@ UniqueFd SvcSessionManager::OnBunleExtManageInfo(const string &bundleName, Uniqu
 void SvcSessionManager::RemoveExtInfo(const string &bundleName)
 {
     HILOGE("begin");
-    shared_lock lock(lock_);
-    if (!impl_.clientToken) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
-    }
-
+    unique_lock<shared_mutex> lock(lock_);
     auto it = impl_.backupExtNameMap.find(bundleName);
     if (it == impl_.backupExtNameMap.end()) {
-        stringstream ss;
-        ss << "Could not find the " << bundleName << " from current session";
-        BError(BError::Codes::SA_REFUSED_ACT, ss.str());
         return;
     }
     impl_.backupExtNameMap.erase(it);
-}
-
-void SvcSessionManager::GetBackupExtNameVec(std::vector<std::pair<std::string, std::string>> &extNameVec)
-{
-    HILOGE("begin");
-    shared_lock lock(lock_);
-    if (!impl_.clientToken) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
-    }
-    std::map<std::string, std::string> backupExtNameVec;
-    for (auto it : impl_.backupExtNameMap) {
-        extNameVec.emplace_back(it.first, it.second.backupExtName);
-    }
+    extConnectNum_--;
 }
 
 wptr<SvcBackupConnection> SvcSessionManager::GetExtConnection(const BundleName &bundleName)
 {
     HILOGE("begin");
-    shared_lock lock(lock_);
+    shared_lock<shared_mutex> lock(lock_);
     if (!impl_.clientToken) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
     }
 
-    auto it = impl_.backupExtNameMap.find(bundleName);
-    if (it == impl_.backupExtNameMap.end()) {
-        stringstream ss;
-        ss << "Could not find the " << bundleName << " from current session";
-        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
-    }
+    auto it = GetBackupExtNameMap(bundleName);
     if (!it->second.backUpConnection) {
         throw BError(BError::Codes::SA_INVAL_ARG, "Svc backup connection is empty");
     }
@@ -296,17 +269,17 @@ void SvcSessionManager::InitExtConn(std::map<BundleName, BackupExtInfo> &backupE
             revPtrStrong->OnBackupExtensionDied(move(bundleName), ESRCH);
         };
 
-        auto callStart = [revPtr {reversePtr_}](const string &&bundleName) {
+        auto callConnDone = [revPtr {reversePtr_}](const string &&bundleName) {
             auto revPtrStrong = revPtr.promote();
             if (!revPtrStrong) {
                 // 服务先于客户端死亡是一种异常场景，但该场景对本流程来说也没什么影响，所以只是简单记录一下
                 HILOGW("It's curious that the backup sa dies before the backup client");
                 return;
             }
-            revPtrStrong->ExtStart(move(bundleName));
+            revPtrStrong->ExtConnectDone(move(bundleName));
         };
 
-        auto backUpConnection = sptr<SvcBackupConnection>(new SvcBackupConnection(callDied, callStart));
+        auto backUpConnection = sptr<SvcBackupConnection>(new SvcBackupConnection(callDied, callConnDone));
         it.second.backUpConnection = backUpConnection;
     }
 }
@@ -344,5 +317,98 @@ void SvcSessionManager::InitClient(Impl &newImpl)
         "Succeed to active a session."
         "Client token = %{public}u, client proxy = 0x%{private}p, remote obj = 0x%{private}p",
         impl_.clientToken, impl_.clientProxy.GetRefPtr(), remoteObj.GetRefPtr());
+}
+
+void SvcSessionManager::SetExtFileNameRequest(const string &bundleName, const string &fileName)
+{
+    HILOGE("begin");
+    unique_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+
+    auto it = GetBackupExtNameMap(bundleName);
+    it->second.fileNameInfo.insert(fileName);
+}
+
+std::set<std::string> SvcSessionManager::GetExtFileNameRequest(const std::string &bundleName)
+{
+    HILOGE("start");
+    shared_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+
+    if (impl_.scenario != IServiceReverse::Scenario::RESTORE) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Invalid Scenario");
+    }
+    auto it = GetBackupExtNameMap(bundleName);
+    return it->second.fileNameInfo;
+}
+
+map<BundleName, BackupExtInfo>::iterator SvcSessionManager::GetBackupExtNameMap(const string &bundleName)
+{
+    auto it = impl_.backupExtNameMap.find(bundleName);
+    if (it == impl_.backupExtNameMap.end()) {
+        stringstream ss;
+        ss << "Could not find the " << bundleName << " from current session";
+        throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
+    }
+    return it;
+}
+
+bool SvcSessionManager::GetSchedBundleName(string &bundleName)
+{
+    HILOGE("start");
+    shared_lock<shared_mutex> lock(lock_);
+    if (extConnectNum_ >= BConstants::EXT_CONNECT_MAX_COUNT) {
+        return false;
+    }
+    HILOGE("extConnectNum_ %{public}d", extConnectNum_);
+    for (auto &&it : impl_.backupExtNameMap) {
+        HILOGE("schedAction %{public}d", it.second.schedAction);
+        if (it.second.schedAction == BConstants::ServiceSchedAction::WAIT) {
+            bundleName = it.first;
+            return true;
+        }
+    }
+    return false;
+}
+
+BConstants::ServiceSchedAction SvcSessionManager::GetServiceSchedAction(const std::string &bundleName)
+{
+    HILOGE("start");
+    shared_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    auto it = GetBackupExtNameMap(bundleName);
+    return it->second.schedAction;
+}
+
+void SvcSessionManager::SetServiceSchedAction(const string &bundleName, BConstants::ServiceSchedAction action)
+{
+    HILOGE("start");
+    unique_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+
+    auto it = GetBackupExtNameMap(bundleName);
+    it->second.schedAction = action;
+    if (it->second.schedAction == BConstants::ServiceSchedAction::START) {
+        extConnectNum_++;
+    }
+}
+
+string SvcSessionManager::GetBackupExtName(const string &bundleName)
+{
+    HILOGE("start");
+    shared_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
+    }
+    auto it = GetBackupExtNameMap(bundleName);
+    return it->second.backupExtName;
 }
 } // namespace OHOS::FileManagement::Backup
