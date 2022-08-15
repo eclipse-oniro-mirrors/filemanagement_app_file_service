@@ -81,7 +81,13 @@ bool BFile::CopyFile(const string &from, const string &to)
     }
 
     try {
-        UniqueFd fdFrom(open(from.data(), O_RDONLY));
+        auto resolvedPath = make_unique<char[]>(PATH_MAX);
+        if (!realpath(from.data(), resolvedPath.get())) {
+            HILOGI("failed to real path the file %{public}s", from.c_str());
+            return false;
+        }
+        string oldPath(resolvedPath.get());
+        UniqueFd fdFrom(open(oldPath.data(), O_RDONLY));
         if (fdFrom == -1) {
             HILOGI("failed to open the file %{public}s", from.c_str());
             throw BError(errno);
