@@ -220,15 +220,15 @@ map<string, pair<string, struct stat>> GetBigFileInfo(const vector<string> &incl
 
         hash<string> strHash;
         size_t szHash = strHash(str);
-        strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << static_cast<unsigned int>(szHash);
+        strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << szHash;
         string name = strHex.str();
         for (int i = 0; m.find(name) != m.end(); ++i, strHex.str("")) {
             szHash = strHash(str + to_string(i));
-            strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << static_cast<unsigned int>(szHash);
+            strHex << setfill('0') << setw(BConstants::BIG_FILE_NAME_SIZE) << szHash;
             name = strHex.str();
         }
 
-        return strHex.str();
+        return name;
     };
 
     map<string, pair<string, struct stat>> bigFiles;
@@ -267,8 +267,6 @@ int BackupExtExtension::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
         string pkgName = "1.tar";
         string tarName = path + pkgName;
         string root = "/";
-        struct stat sta = {};
-        bigFileInfo.emplace(pkgName, make_pair(tarName, sta));
 
         // 打包
         auto tarballTar = BTarballFactory::Create("cmdline", tarName);
@@ -276,6 +274,11 @@ int BackupExtExtension::HandleBackup(const BJsonEntityUsrConfig &usrConfig)
         if (chmod(tarName.data(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) < 0) {
             throw BError(errno);
         }
+        struct stat sta = {};
+        if (stat(tarName.data(), &sta) == -1) {
+            HILOGE("failed to invoke the system function stat, %{public}s", tarName.c_str());
+        }
+        bigFileInfo.emplace(pkgName, make_pair(tarName, sta));
 
         auto proxy = ServiceProxy::GetInstance();
         if (proxy == nullptr) {
@@ -438,13 +441,11 @@ void RestoreBigFiles()
         set<string> lks = cache.GetHardLinkInfo(item.first);
         for (const auto &item : lks) {
             if (link(filePath.data(), item.data())) {
-                HILOGI("failed to create hard link file %{public}s  errno : %{public}d", item.c_str(), errno);
+                HILOGE("failed to create hard link file %{public}s  errno : %{public}d", item.c_str(), errno);
             }
         }
 
-        struct timespec tv[2] = {};
-        tv[0] = sta.st_atim;
-        tv[1] = sta.st_mtim;
+        struct timespec tv[2] = {sta.st_atim, sta.st_mtim};
         UniqueFd fd(open(filePath.data(), O_RDONLY));
         if (futimens(fd.Get(), tv) != 0) {
             HILOGI("failed to change the file time. %{public}s , %{public}d", filePath.c_str(), errno);
