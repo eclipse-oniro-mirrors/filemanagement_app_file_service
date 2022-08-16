@@ -83,24 +83,33 @@ bool BFile::CopyFile(const string &from, const string &to)
     try {
         auto resolvedPath = make_unique<char[]>(PATH_MAX);
         if (!realpath(from.data(), resolvedPath.get())) {
-            HILOGI("failed to real path the file %{public}s", from.c_str());
+            HILOGI("failed to real path for the file %{public}s", from.c_str());
             return false;
         }
         string oldPath(resolvedPath.get());
         UniqueFd fdFrom(open(oldPath.data(), O_RDONLY));
         if (fdFrom == -1) {
-            HILOGI("failed to open the file %{public}s", from.c_str());
+            HILOGE("failed to open the file %{public}s", from.c_str());
             throw BError(errno);
         }
 
-        string dir = to;
-        if (mkdir(dirname(dir.data()), S_IRWXU) && errno != EEXIST) {
-            HILOGI("failed to access or make directory %{public}s", dir.c_str());
+        unique_ptr<char, function<void(void *p)>> dir {strdup(to.data()), free};
+        if (!dir) {
             throw BError(errno);
         }
-        UniqueFd fdTo(open(to.data(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR));
+        if (!realpath(dirname(dir.get()), resolvedPath.get())) {
+            HILOGI("failed to real path for %{public}s", to.c_str());
+            return false;
+        }
+        string newPath(resolvedPath.get());
+        unique_ptr<char, function<void(void *p)>> name {strdup(to.data()), free};
+        if (!name) {
+            throw BError(errno);
+        }
+        newPath.append("/").append(basename(name.get()));
+        UniqueFd fdTo(open(newPath.data(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR));
         if (fdTo == -1) {
-            HILOGI("failed to open the file %{public}s", to.c_str());
+            HILOGE("failed to open the file %{public}s", to.c_str());
             throw BError(errno);
         }
 

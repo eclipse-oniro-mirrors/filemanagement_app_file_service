@@ -33,14 +33,14 @@ struct stat JsonValue2Stat(const Json::Value &value)
 {
     struct stat sta = {};
 
-    sta.st_size = value.isMember("st_size") ? value["st_size"].asUInt64() : 0ul;
+    sta.st_size = value.isMember("st_size") ? value["st_size"].asInt64() : 0;
     if (value.isMember("st_atim")) {
-        sta.st_atim.tv_sec = value["st_atim"].isMember("tv_sec") ? value["st_atim"]["tv_sec"].asUInt64() : 0ul;
-        sta.st_atim.tv_nsec = value["st_atim"].isMember("tv_nsec") ? value["st_atim"]["tv_nsec"].asUInt64() : 0ul;
+        sta.st_atim.tv_sec = value["st_atim"].isMember("tv_sec") ? value["st_atim"]["tv_sec"].asInt64() : 0;
+        sta.st_atim.tv_nsec = value["st_atim"].isMember("tv_nsec") ? value["st_atim"]["tv_nsec"].asInt64() : 0;
     }
     if (value.isMember("st_mtim")) {
-        sta.st_mtim.tv_sec = value["st_mtim"].isMember("tv_sec") ? value["st_mtim"]["tv_sec"].asUInt64() : 0ul;
-        sta.st_mtim.tv_nsec = value["st_mtim"].isMember("tv_nsec") ? value["st_mtim"]["tv_nsec"].asUInt64() : 0ul;
+        sta.st_mtim.tv_sec = value["st_mtim"].isMember("tv_sec") ? value["st_mtim"]["tv_sec"].asInt64() : 0;
+        sta.st_mtim.tv_nsec = value["st_mtim"].isMember("tv_nsec") ? value["st_mtim"]["tv_nsec"].asInt64() : 0;
     }
 
     return sta;
@@ -54,6 +54,10 @@ void BJsonEntityExtManage::SetExtManage(const map<string, pair<string, struct st
 
     auto FindLinks = [&vec](map<string, pair<string, struct stat>>::const_iterator it,
                             unsigned long index) -> set<string> {
+        if (it->second.second.st_dev == 0 || it->second.second.st_ino == 0) {
+            return {};
+        }
+
         set<string> lks;
         auto item = it;
         item++;

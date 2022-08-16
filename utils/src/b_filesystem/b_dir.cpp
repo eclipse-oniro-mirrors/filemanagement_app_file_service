@@ -49,6 +49,8 @@ pair<ErrCode, map<string, struct stat>> GetDirFilesDetail(const string &path, bo
                 return {errCode, files};
             }
             files.merge(subfiles);
+        } else if (ptr->d_type == DT_LNK) {
+            continue;
         } else {
             struct stat sta = {};
             string fileName = IncludeTrailingPathDelimiter(path) + string(ptr->d_name);
@@ -103,12 +105,24 @@ set<string> ExpandPathWildcard(const vector<string> &vec)
         }
     }
 
-    set<string> expandPath;
+    set<string> expandPath, filteredPath;
     for (size_t i = 0; i < gl->gl_pathc; ++i) {
         expandPath.emplace(gl->gl_pathv[i]);
     }
 
-    return expandPath;
+    for (auto it = expandPath.begin(); it != expandPath.end(); ++it) {
+        filteredPath.insert(*it);
+        if (*it->rbegin() != '/') {
+            continue;
+        }
+        auto jt = it;
+        for (++jt; jt != expandPath.end() && (jt->find(*it) == 0); ++jt) {
+        }
+
+        it = --jt;
+    }
+
+    return filteredPath;
 }
 
 pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &includes,
