@@ -54,32 +54,8 @@ void SvcSessionManager::Active(Impl newImpl)
 
     InitExtConn(newImpl.backupExtNameMap);
 
-    if (!newImpl.clientProxy) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Invalid client");
-    }
-    auto remoteObj = newImpl.clientProxy->AsObject();
-    if (!remoteObj) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Proxy's remote object can't be nullptr");
-    }
-
+    InitClient(newImpl);
     impl_ = newImpl;
-    auto callback = [revPtr {reversePtr_}](const wptr<IRemoteObject> &obj) {
-        HILOGI("Client died. Died remote obj = %{private}p", obj.GetRefPtr());
-
-        auto revPtrStrong = revPtr.promote();
-        if (!revPtrStrong) {
-            // 服务先于客户端死亡是一种异常场景，但该场景对本流程来说也没什么影响，所以只是简单记录一下
-            HILOGW("It's curious that the backup sa dies before the backup client");
-            return;
-        }
-        (void)revPtrStrong->StopAll(obj);
-    };
-    deathRecipient_ = sptr(new SvcDeathRecipient(callback));
-    remoteObj->AddDeathRecipient(deathRecipient_);
-    HILOGI(
-        "Succeed to active a session."
-        "Client token = %{public}u, client proxy = 0x%{private}p, remote obj = 0x%{private}p",
-        impl_.clientToken, impl_.clientProxy.GetRefPtr(), remoteObj.GetRefPtr());
 }
 
 void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool force)
@@ -182,23 +158,12 @@ bool SvcSessionManager::OnBunleFileReady(const string &bundleName, const string 
     if (!impl_.clientToken) {
         throw BError(BError::Codes::SA_INVAL_ARG, "No caller token was specified");
     }
-    if (!impl_.clientProxy) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Invalid client");
-    }
 
     auto it = impl_.backupExtNameMap.find(bundleName);
     if (it == impl_.backupExtNameMap.end()) {
         stringstream ss;
         ss << "Could not find the " << bundleName << " from current session";
         throw BError(BError::Codes::SA_REFUSED_ACT, ss.str());
-    }
-
-    if (!it->second.backUpConnection) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Svc backup connection is empty");
-    }
-    auto proxy = it->second.backUpConnection->GetBackupExtProxy();
-    if (!proxy) {
-        throw BError(BError::Codes::SA_INVAL_ARG, "Extension backup Proxy is empty");
     }
 
     // 判断是否结束 通知EXTENTION清理资源  TOOL应用完成备份
@@ -339,5 +304,34 @@ void SvcSessionManager::DumpInfo(const int fd, const std::vector<std::u16string>
 {
     dprintf(fd, "---------------------backup info--------------------\n");
     dprintf(fd, "Scenario: %d\n", impl_.scenario);
+}
+
+void SvcSessionManager::InitClient(Impl &newImpl)
+{
+    if (!newImpl.clientProxy) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Invalid client");
+    }
+    auto remoteObj = newImpl.clientProxy->AsObject();
+    if (!remoteObj) {
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Proxy's remote object can't be nullptr");
+    }
+
+    auto callback = [revPtr {reversePtr_}](const wptr<IRemoteObject> &obj) {
+        HILOGI("Client died. Died remote obj = %{private}p", obj.GetRefPtr());
+
+        auto revPtrStrong = revPtr.promote();
+        if (!revPtrStrong) {
+            // 服务先于客户端死亡是一种异常场景，但该场景对本流程来说也没什么影响，所以只是简单记录一下
+            HILOGW("It's curious that the backup sa dies before the backup client");
+            return;
+        }
+        (void)revPtrStrong->StopAll(obj);
+    };
+    deathRecipient_ = sptr(new SvcDeathRecipient(callback));
+    remoteObj->AddDeathRecipient(deathRecipient_);
+    HILOGI(
+        "Succeed to active a session."
+        "Client token = %{public}u, client proxy = 0x%{private}p, remote obj = 0x%{private}p",
+        impl_.clientToken, impl_.clientProxy.GetRefPtr(), remoteObj.GetRefPtr());
 }
 } // namespace OHOS::FileManagement::Backup

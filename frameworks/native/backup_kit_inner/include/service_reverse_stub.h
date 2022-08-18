@@ -11,7 +11,7 @@
 #include "iremote_stub.h"
 
 namespace OHOS::FileManagement::Backup {
-class ServiceReverseStub : public IRemoteStub<IServiceReverse>, protected NoCopyable {
+class ServiceReverseStub : public IRemoteStub<IServiceReverse> {
 public:
     int32_t OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
 

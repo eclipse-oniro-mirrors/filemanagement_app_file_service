@@ -1,0 +1,42 @@
+# 版权所有 (c) 华为技术有限公司 2022
+
+import("//build/test.gni")
+import("//foundation/filemanagement/backup/backup.gni")
+
+ohos_unittest("module_ipc_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "service_stub_test.cpp",
+    "svc_session_manager_test.cpp",
+  ]
+
+  include_dirs = [
+    "${path_backup}/services/backup_sa/include",
+    "${path_base}/include",
+    "${path_backup}/tests/unittests/backup_api/backup_impl/include",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+  ]
+
+  deps = [
+    "${path_ability_runtime}/interfaces/inner_api/ability_manager:ability_manager",
+    "${path_backup}/services/backup_sa:backup_sa",
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils:backup_utils",
+    "${path_base}:utils",
+    "//third_party/googletest:gmock_main",
+  ]
+
+  external_deps = [
+    "backup:backup_kit_inner",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  use_exceptions = true
+}
+
+group("backup_sa_ipc_test") {
+  testonly = true
+  deps = [ ":module_ipc_test" ]
+}

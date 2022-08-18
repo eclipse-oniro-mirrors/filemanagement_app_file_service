@@ -3,12 +3,8 @@
 import("//build/ohos.gni")
 import("//foundation/filemanagement/backup/backup.gni")
 
-group("unittests") {
+group("backup_api_test") {
   testonly = true
 
-  deps = [
-    "backup_api:backup_api_test",
-    "backup_sa:backup_sa_test",
-    "backup_utils:backup_test",
-  ]
+  deps = [ "backup_impl:backup_impl_test" ]
 }

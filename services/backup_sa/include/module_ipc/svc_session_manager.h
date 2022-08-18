@@ -28,7 +28,7 @@ struct BackupExtInfo {
 };
 
 class Service;
-class SvcSessionManager final {
+class SvcSessionManager {
 public:
     struct Impl {
         uint32_t clientToken {0};
@@ -146,14 +146,16 @@ private:
      * @throw BError::Codes::SA_INVAL_ARG 客户端信息异常
      * @throw BError::Codes::SA_BROKEN_IPC
      */
-    void GetBundleExtNames(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
+    virtual void GetBundleExtNames(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
 
     /**
      * @brief 初始化 extension backUpConnection
      *
      * @param backupExtNameMap
      */
-    void InitExtConn(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
+    virtual void InitExtConn(std::map<BundleName, BackupExtInfo> &backupExtNameMap);
+
+    virtual void InitClient(Impl &newImpl);
 
 public:
     /**
