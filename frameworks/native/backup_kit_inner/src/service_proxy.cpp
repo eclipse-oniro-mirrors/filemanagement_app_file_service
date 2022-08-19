@@ -4,11 +4,14 @@
 
 #include "service_proxy.h"
 
+#include <cstddef>
 #include <sstream>
 
 #include "b_error/b_error.h"
+#include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
 #include "iservice_registry.h"
+#include "service_proxy_load_callback.h"
 #include "system_ability_definition.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -214,25 +217,53 @@ ErrCode ServiceProxy::GetExtFileName(string &bundleName, string &fileName)
 
 sptr<IService> ServiceProxy::GetInstance()
 {
+    unique_lock<mutex> lock(proxyMutex_);
+    if (serviceProxy_ != nullptr) {
+        return serviceProxy_;
+    }
+
     auto samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (!samgr) {
         HILOGE("Get an empty samgr");
         return nullptr;
     }
-
-    auto remote = samgr->GetSystemAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID);
-    if (!remote) {
-        HILOGE("Get an empty backup sa");
+    sptr<ServiceProxyLoadCallback> loadCallback = new ServiceProxyLoadCallback();
+    if (loadCallback == nullptr) {
+        HILOGE("loadCallback is nullptr.");
+        return nullptr;
+    }
+    int32_t ret = samgr->LoadSystemAbility(FILEMANAGEMENT_BACKUP_SERVICE_SA_ID, loadCallback);
+    if (ret != ERR_OK) {
+        HILOGE("Failed to Load systemAbility, systemAbilityId:%d, ret code:%d", FILEMANAGEMENT_BACKUP_SERVICE_SA_ID,
+               ret);
         return nullptr;
     }
 
-    auto proxy = iface_cast<Backup::IService>(remote);
-    if (!proxy) {
-        HILOGE("Get an empty backup sa proxy");
+    auto waitStatus = proxyConVar_.wait_for(lock, std::chrono::milliseconds(BConstants::BACKUP_LOADSA_TIMEOUT_MS),
+                                            []() { return serviceProxy_ != nullptr; });
+    if (!waitStatus) {
+        HILOGE("srrvice load sa timeout");
         return nullptr;
     }
+    return serviceProxy_;
+}
 
-    // 无需缓存 Proxy，因为 SAMgr 可能因为服务死亡等原因返回不同指针
-    return proxy;
+void ServiceProxy::FinishStartSA(const sptr<IRemoteObject> &remoteObject)
+{
+    HILOGI("start");
+    unique_lock<mutex> lock(proxyMutex_);
+    serviceProxy_ = iface_cast<IService>(remoteObject);
+    if ((!serviceProxy_) || (!serviceProxy_->AsObject())) {
+        HILOGE("Failed to get backup srevice proxy.");
+        return;
+    }
+    proxyConVar_.notify_one();
+}
+
+void ServiceProxy::FinishStartSAFailed()
+{
+    HILOGI("start");
+    unique_lock<mutex> lock(proxyMutex_);
+    serviceProxy_ = nullptr;
 }
 } // namespace OHOS::FileManagement::Backup
