@@ -5,6 +5,11 @@
 #ifndef OHOS_FILEMGMT_BACKUP_SERVICE_PROXY_H
 #define OHOS_FILEMGMT_BACKUP_SERVICE_PROXY_H
 
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+
 #include "i_service.h"
 #include "iremote_proxy.h"
 
@@ -28,8 +33,13 @@ public:
 
 public:
     static sptr<IService> GetInstance();
+    static void FinishStartSA(const sptr<IRemoteObject> &remoteObject);
+    static void FinishStartSAFailed();
 
 private:
+    static inline std::mutex proxyMutex_;
+    static inline sptr<IService> serviceProxy_ = nullptr;
+    static inline std::condition_variable proxyConVar_;
     static inline BrokerDelegator<ServiceProxy> delegator_;
 };
 } // namespace OHOS::FileManagement::Backup
