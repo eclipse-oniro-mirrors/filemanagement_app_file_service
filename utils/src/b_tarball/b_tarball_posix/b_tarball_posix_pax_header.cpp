@@ -27,7 +27,8 @@ static inline unsigned int CalculateChksum(const char *byteBlock, int blockSize)
 
 BTarballPosixPaxHeader::BTarballPosixPaxHeader(const string &pathName, const struct stat &statInfo)
 {
-    strncpy_s(header_.pathName, BConstants::PATHNAME_MAX_SIZE, pathName.c_str(), BConstants::PATHNAME_MAX_SIZE - 1);
+    string tmpPathName = pathName.front() == '/' ? pathName.substr(1) : pathName;
+    strncpy_s(header_.pathName, BConstants::PATHNAME_MAX_SIZE, tmpPathName.c_str(), BConstants::PATHNAME_MAX_SIZE - 1);
     (void)snprintf_s(header_.mode, BConstants::MODE_MAX_SIZE, BConstants::MODE_MAX_SIZE - 1, "%o", statInfo.st_mode);
     (void)snprintf_s(header_.uid, BConstants::UGID_MAX_SIZE, BConstants::UGID_MAX_SIZE - 1, "%o", statInfo.st_uid);
     (void)snprintf_s(header_.gid, BConstants::UGID_MAX_SIZE, BConstants::UGID_MAX_SIZE - 1, "%o", statInfo.st_gid);

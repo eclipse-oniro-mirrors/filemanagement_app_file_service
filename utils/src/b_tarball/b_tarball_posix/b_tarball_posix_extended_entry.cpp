@@ -18,12 +18,14 @@ optional<BTarballPosixExtendedEntry> BTarballPosixExtendedEntry::TryToGetEntry(B
                                                                                const struct stat &statInfo)
 {
     switch (entryKey) {
-        case BConstants::SUPER_LONG_PATH:
-            if (pathName.size() > BConstants::PATHNAME_MAX_SIZE - 1) {
-                return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_PATH, pathName);
+        case BConstants::SUPER_LONG_PATH: {
+            string tmpPathName = pathName.front() == '/' ? pathName.substr(1) : pathName;
+            if (tmpPathName.size() > BConstants::PATHNAME_MAX_SIZE - 1) {
+                return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_PATH, tmpPathName);
             }
             break;
-        case BConstants::SUPER_LONG_LINK_PATH:
+        }
+        case BConstants::SUPER_LONG_LINK_PATH: {
             switch (statInfo.st_mode & S_IFMT) {
                 case S_IFLNK: {
                     char linkName[PATH_MAX] {};
@@ -38,11 +40,13 @@ optional<BTarballPosixExtendedEntry> BTarballPosixExtendedEntry::TryToGetEntry(B
                     break;
             }
             break;
-        case BConstants::SUPER_LONG_SIZE:
+        }
+        case BConstants::SUPER_LONG_SIZE: {
             if (statInfo.st_size > BConstants::FILESIZE_MAX) {
                 return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_SIZE, to_string(statInfo.st_size));
             }
             break;
+        }
     }
     return {};
 }

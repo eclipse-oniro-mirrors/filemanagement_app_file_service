@@ -52,6 +52,21 @@ ohos_unittest("b_json_test") {
   use_exceptions = true
 }
 
+ohos_unittest("b_tarball_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [ "b_tarball/b_tarball_posix_tarball_test.cpp" ]
+
+  include_dirs = [ "${path_base}/include" ]
+
+  deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils/:backup_utils",
+  ]
+
+  use_exceptions = true
+}
+
 group("backup_test") {
   testonly = true
 
@@ -59,5 +74,6 @@ group("backup_test") {
     ":b_error_test",
     ":b_file_test",
     ":b_json_test",
+    ":b_tarball_test",
   ]
 }
