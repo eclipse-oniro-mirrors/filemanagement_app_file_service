@@ -11,7 +11,6 @@
 #include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
 #include "iservice_registry.h"
-#include "service_proxy_load_callback.h"
 #include "system_ability_definition.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -239,31 +238,33 @@ sptr<IService> ServiceProxy::GetInstance()
         return nullptr;
     }
 
-    auto waitStatus = proxyConVar_.wait_for(lock, std::chrono::milliseconds(BConstants::BACKUP_LOADSA_TIMEOUT_MS),
-                                            []() { return serviceProxy_ != nullptr; });
+    auto waitStatus =
+        loadCallback->proxyConVar_.wait_for(lock, std::chrono::milliseconds(BConstants::BACKUP_LOADSA_TIMEOUT_MS),
+                                            [loadCallback]() { return loadCallback->isLoadSuccess_.load(); });
     if (!waitStatus) {
-        HILOGE("srrvice load sa timeout");
+        HILOGE("Load backup sa timeout");
         return nullptr;
     }
     return serviceProxy_;
 }
 
-void ServiceProxy::FinishStartSA(const sptr<IRemoteObject> &remoteObject)
+void ServiceProxy::ServiceProxyLoadCallback::OnLoadSystemAbilitySuccess(int32_t systemAbilityId,
+                                                                        const OHOS::sptr<IRemoteObject> &remoteObject)
 {
-    HILOGI("start");
+    HILOGI("Load backup sa success, systemAbilityId:%d, remoteObject result:%s", systemAbilityId,
+           (remoteObject != nullptr) ? "true" : "false");
     unique_lock<mutex> lock(proxyMutex_);
     serviceProxy_ = iface_cast<IService>(remoteObject);
-    if ((!serviceProxy_) || (!serviceProxy_->AsObject())) {
-        HILOGE("Failed to get backup srevice proxy.");
-        return;
-    }
+    isLoadSuccess_.store(true);
     proxyConVar_.notify_one();
 }
 
-void ServiceProxy::FinishStartSAFailed()
+void ServiceProxy::ServiceProxyLoadCallback::OnLoadSystemAbilityFail(int32_t systemAbilityId)
 {
-    HILOGI("start");
+    HILOGE("Load backup sa failed, systemAbilityId:%d", systemAbilityId);
     unique_lock<mutex> lock(proxyMutex_);
     serviceProxy_ = nullptr;
+    isLoadSuccess_.store(false);
+    proxyConVar_.notify_one();
 }
 } // namespace OHOS::FileManagement::Backup

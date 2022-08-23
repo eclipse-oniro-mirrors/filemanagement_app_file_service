@@ -26,7 +26,6 @@ BSessionRestore::~BSessionRestore()
         remoteObject->RemoveDeathRecipient(deathRecipient_);
     }
     deathRecipient_ = nullptr;
-    ServiceProxy::FinishStartSAFailed();
 }
 
 unique_ptr<BSessionRestore> BSessionRestore::Init(std::vector<BundleName> bundlesToRestore, Callbacks callbacks)
