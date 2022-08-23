@@ -12,6 +12,7 @@
 
 #include "i_service.h"
 #include "iremote_proxy.h"
+#include "system_ability_load_callback_stub.h"
 
 namespace OHOS::FileManagement::Backup {
 class ServiceProxy : public IRemoteProxy<IService> {
@@ -33,13 +34,21 @@ public:
 
 public:
     static sptr<IService> GetInstance();
-    static void FinishStartSA(const sptr<IRemoteObject> &remoteObject);
-    static void FinishStartSAFailed();
+
+public:
+    class ServiceProxyLoadCallback : public SystemAbilityLoadCallbackStub {
+    public:
+        void OnLoadSystemAbilitySuccess(int32_t systemAbilityId, const sptr<IRemoteObject> &remoteObject) override;
+        void OnLoadSystemAbilityFail(int32_t systemAbilityId) override;
+
+    public:
+        std::condition_variable proxyConVar_;
+        std::atomic<bool> isLoadSuccess_ = {false};
+    };
 
 private:
     static inline std::mutex proxyMutex_;
     static inline sptr<IService> serviceProxy_ = nullptr;
-    static inline std::condition_variable proxyConVar_;
     static inline BrokerDelegator<ServiceProxy> delegator_;
 };
 } // namespace OHOS::FileManagement::Backup

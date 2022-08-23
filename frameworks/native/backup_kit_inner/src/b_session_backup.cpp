@@ -26,7 +26,6 @@ BSessionBackup::~BSessionBackup()
         remoteObject->RemoveDeathRecipient(deathRecipient_);
     }
     deathRecipient_ = nullptr;
-    ServiceProxy::FinishStartSAFailed();
 }
 
 unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,

@@ -17,7 +17,6 @@
 #include "ext_extension.h"
 #include "filemgmt_libhilog.h"
 #include "js_runtime_utils.h"
-#include "service_proxy.h"
 #include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
