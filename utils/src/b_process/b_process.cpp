@@ -5,12 +5,19 @@
 #include "b_process/b_process.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <functional>
+#include <memory>
 #include <regex>
+#include <string_view>
 #include <sys/wait.h>
+#include <tuple>
 #include <unistd.h>
 
 #include "b_error/b_error.h"
 #include "b_process/b_guard_signal.h"
+#include "errors.h"
 #include "filemgmt_libhilog.h"
 #include "securec.h"
 #include "unique_fd.h"
@@ -18,7 +25,44 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-int BProcess::ExecuteCmd(vector<string_view> argvSv)
+static tuple<bool, ErrCode> WaitForChild(pid_t pid,
+                                         unique_ptr<FILE, function<void(FILE *)>> pipeStream,
+                                         function<bool(string_view)> DetectFatalLog)
+{
+    const int BUF_LEN = 1024;
+    auto buf = make_unique<char[]>(BUF_LEN);
+    int status = 0;
+
+    do {
+        regex reg("^\\W*$");
+        while ((void)memset_s(buf.get(), BUF_LEN, 0, BUF_LEN),
+               fgets(buf.get(), BUF_LEN - 1, pipeStream.get()) != nullptr) {
+            if (regex_match(buf.get(), reg)) {
+                continue;
+            }
+            HILOGE("child process output error: %{public}s", buf.get());
+            if (DetectFatalLog && DetectFatalLog(string_view(buf.get()))) {
+                return {true, EPERM};
+            }
+        }
+
+        if (waitpid(pid, &status, 0) == -1) {
+            throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
+        } else if (WIFEXITED(status)) {
+            return {false, WEXITSTATUS(status)};
+        } else if (WIFSIGNALED(status)) {
+            // bionic
+            // libc++的异常机制存在问题，导致应用在正常的错误下Crash。为确保测试顺利展开，此处暂时屏蔽崩溃错误。
+            HILOGE("some fatal errors occurred, child process is killed by a signal.");
+            return {true, EPERM};
+        }
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
+    HILOGE("If you look at me, there are some fatal errors occurred!!!");
+    return {true, EPERM};
+}
+
+tuple<bool, ErrCode> BProcess::ExecuteCmd(vector<string_view> argvSv, function<bool(string_view)> DetectFatalLog)
 {
     vector<const char *> argv;
     auto getStringViewData = [](const auto &arg) { return arg.data(); };
@@ -47,31 +91,15 @@ int BProcess::ExecuteCmd(vector<string_view> argvSv)
 
     UniqueFd fd(pipe_fd[0]);
     close(pipe_fd[1]);
-
     if (pid == -1) {
         throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
     }
+    unique_ptr<FILE, function<void(FILE *)>> pipeStream {fdopen(pipe_fd[0], "r"), fclose};
+    if (!pipeStream) {
+        throw BError(errno);
+    }
+    fd.Release();
 
-    const int BUF_LEN = 1024;
-    auto buf = make_unique<char[]>(BUF_LEN);
-    int status = 0;
-    do {
-        while ((void)memset_s(buf.get(), BUF_LEN, 0, BUF_LEN), read(pipe_fd[0], buf.get(), BUF_LEN - 1) > 0) {
-            if (!regex_match(buf.get(), regex("^\\W*$"))) {
-                HILOGE("child process output error: %{public}s", buf.get());
-            }
-        }
-
-        if (waitpid(pid, &status, 0) == -1) {
-            throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
-        } else if (WIFEXITED(status)) {
-            return WEXITSTATUS(status);
-        } else if (WIFSIGNALED(status)) {
-            // bionic libc++的异常机制存在问题，导致应用在正常的错误下Crash。为确保测试顺利展开，此处暂时屏蔽崩溃错误。
-            return EPERM;
-        }
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-
-    return 0;
+    return WaitForChild(pid, std::move(pipeStream), DetectFatalLog);
 }
 } // namespace OHOS::FileManagement::Backup

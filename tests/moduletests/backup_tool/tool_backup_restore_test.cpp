@@ -43,42 +43,42 @@ HWTEST_F(ToolsTest, tool_backup_restore_0100, testing::ext::TestSize.Level0)
         string testFile1Path = testFileDir + "file1";
         string testFile2Path = testFileDir + "file2";
         // 创建测试文件file1和file2，并执行backup命令
-        int ret = BProcess::ExecuteCmd({"touch", testFile1Path});
+        auto [bFatalError, ret] = BProcess::ExecuteCmd({"touch", testFile1Path});
         EXPECT_EQ(ret, 0);
-        ret = BProcess::ExecuteCmd({"touch", testFile2Path});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"touch", testFile2Path});
         EXPECT_EQ(ret, 0);
-        ret = BProcess::ExecuteCmd({"backup_tool", "backup", "--isLocal=true", "--bundle", bundleName.c_str(),
-                                    "--pathCapFile", tmpFilePath.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"backup_tool", "backup", "--isLocal=true", "--bundle",
+                                                      bundleName.c_str(), "--pathCapFile", tmpFilePath.c_str()});
         EXPECT_EQ(ret, 0);
 
         string allFilesInTestFileDir = testFileDir + "*";
         string beforeBackupDir = backupRootDir + "beforebackup";
-        ret = BProcess::ExecuteCmd({"mkdir", "-p", beforeBackupDir.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"mkdir", "-p", beforeBackupDir.c_str()});
         EXPECT_EQ(ret, 0);
         // 利用toybox执行cp命令
-        ret = BProcess::ExecuteCmd({"chmod", "+x", toyBox.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"chmod", "+x", toyBox.c_str()});
         EXPECT_EQ(ret, 0);
         string toyBoxCmdBeforeBackup = toyBox + " cp -r --parents " + allFilesInTestFileDir + " " + beforeBackupDir;
         system(toyBoxCmdBeforeBackup.c_str());
 
         // 删除beforebackup目录下的file1
         string file1PathInBeforeBackupDir = beforeBackupDir + testFile1Path;
-        ret = BProcess::ExecuteCmd({"rm", "-fr", file1PathInBeforeBackupDir.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"rm", "-fr", file1PathInBeforeBackupDir.c_str()});
         EXPECT_EQ(ret, 0);
 
         // 删除应用，重装应用
-        ret = BProcess::ExecuteCmd({"bm", "uninstall", "-n", bundleName.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"bm", "uninstall", "-n", bundleName.c_str()});
         EXPECT_EQ(ret, 0);
-        ret = BProcess::ExecuteCmd({"bm", "install", "-p", signedHapPath.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"bm", "install", "-p", signedHapPath.c_str()});
         EXPECT_EQ(ret, 0);
 
         // 执行restore命令
-        ret = BProcess::ExecuteCmd(
+        tie(bFatalError, ret) = BProcess::ExecuteCmd(
             {"backup_tool", "restore", "--bundle", bundleName.c_str(), "--pathCapFile", tmpFilePath.c_str()});
         EXPECT_EQ(ret, 0);
 
         string afterRestoreDir = backupRootDir + "afterrestore";
-        ret = BProcess::ExecuteCmd({"mkdir", "-p", afterRestoreDir.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"mkdir", "-p", afterRestoreDir.c_str()});
         EXPECT_EQ(ret, 0);
         // 利用toybox执行cp命令
         string toyBoxCmdAfterRestore = toyBox + " cp -r --parents " + allFilesInTestFileDir + " " + afterRestoreDir;
@@ -86,11 +86,11 @@ HWTEST_F(ToolsTest, tool_backup_restore_0100, testing::ext::TestSize.Level0)
 
         // 删除afterrestore目录下的file1
         string file1PathInAfterRestoreDir = afterRestoreDir + testFile1Path;
-        ret = BProcess::ExecuteCmd({"rm", "-fr", file1PathInAfterRestoreDir.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"rm", "-fr", file1PathInAfterRestoreDir.c_str()});
         EXPECT_EQ(ret, 0);
 
         // 比较beforebackup目录和afterrestore目录
-        ret = BProcess::ExecuteCmd({"diff", "-r", beforeBackupDir.c_str(), afterRestoreDir.c_str()});
+        tie(bFatalError, ret) = BProcess::ExecuteCmd({"diff", "-r", beforeBackupDir.c_str(), afterRestoreDir.c_str()});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);

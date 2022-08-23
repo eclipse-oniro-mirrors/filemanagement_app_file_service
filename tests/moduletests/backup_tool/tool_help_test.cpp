@@ -28,7 +28,7 @@ HWTEST_F(ToolsTest, tool_help_0100, testing::ext::TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ToolsTest-begin tool_help_0100";
     try {
-        int ret = BProcess::ExecuteCmd({
+        auto [bFatalError, ret] = BProcess::ExecuteCmd({
             "/system/bin/backup_tool",
             "help",
         });
