@@ -22,7 +22,7 @@ public:
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H0377
  */
 HWTEST_F(ToolsTest, tool_help_0100, testing::ext::TestSize.Level0)
 {

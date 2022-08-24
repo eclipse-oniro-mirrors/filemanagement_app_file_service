@@ -29,7 +29,7 @@ string signedHapPath = "/data/signed.hap";
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H0382
  */
 HWTEST_F(ToolsTest, tool_backup_restore_0100, testing::ext::TestSize.Level0)
 {

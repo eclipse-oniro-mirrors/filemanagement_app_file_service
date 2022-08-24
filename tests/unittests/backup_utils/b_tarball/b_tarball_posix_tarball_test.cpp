@@ -28,7 +28,7 @@ public:
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyFile_0100, testing::ext::TestSize.Level0)
 {
@@ -73,7 +73,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyFile_0100, testi
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_RegularFile_0100, testing::ext::TestSize.Level0)
 {
@@ -118,7 +118,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_RegularFile_0100, tes
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyDir_0100, testing::ext::TestSize.Level0)
 {
@@ -163,7 +163,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyDir_0100, testin
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SymbolicLink_0100, testing::ext::TestSize.Level0)
 {
@@ -214,7 +214,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SymbolicLink_0100, te
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLongPathFile_0100, testing::ext::TestSize.Level0)
 {
@@ -259,7 +259,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLongPathFile_010
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLongSymbolicLink_0100, testing::ext::TestSize.Level0)
 {
@@ -308,7 +308,7 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLongSymbolicLink
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09N0
+ * @tc.require: SR000H0378
  */
 HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLargeFile_0100, testing::ext::TestSize.Level0)
 {
