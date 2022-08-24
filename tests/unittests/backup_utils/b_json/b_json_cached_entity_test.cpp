@@ -30,7 +30,7 @@ public:
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonCachedEntityTest, b_json_construction_0100, testing::ext::TestSize.Level0)
 {
@@ -55,7 +55,7 @@ HWTEST_F(BJsonCachedEntityTest, b_json_construction_0100, testing::ext::TestSize
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonCachedEntityTest, b_json_Structuralize_0100, testing::ext::TestSize.Level0)
 {
@@ -81,7 +81,7 @@ HWTEST_F(BJsonCachedEntityTest, b_json_Structuralize_0100, testing::ext::TestSiz
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonCachedEntityTest, b_json_Persist_0100, testing::ext::TestSize.Level0)
 {
@@ -112,7 +112,7 @@ HWTEST_F(BJsonCachedEntityTest, b_json_Persist_0100, testing::ext::TestSize.Leve
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonCachedEntityTest, b_json_ReloadFromFile_0100, testing::ext::TestSize.Level0)
 {
@@ -148,7 +148,7 @@ HWTEST_F(BJsonCachedEntityTest, b_json_ReloadFromFile_0100, testing::ext::TestSi
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonCachedEntityTest, b_json_GetFd_0100, testing::ext::TestSize.Level0)
 {

@@ -52,7 +52,7 @@ void PrepareSmallDataSet(const TestManager &tm)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0100, testing::ext::TestSize.Level0)
 {
@@ -92,7 +92,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0110, testing::ext::TestSize.Level0)
 {
@@ -125,7 +125,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0110, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0120, testing::ext::TestSize.Level0)
 {
@@ -165,7 +165,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0120, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0130, testing::ext::TestSize.Level0)
 {
@@ -205,7 +205,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0130, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0140, testing::ext::TestSize.Level0)
 {
@@ -245,7 +245,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0140, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0150, testing::ext::TestSize.Level0)
 {
@@ -285,7 +285,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0150, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0160, testing::ext::TestSize.Level0)
 {
@@ -318,7 +318,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0160, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0170, testing::ext::TestSize.Level0)
 {
@@ -358,7 +358,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0170, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0180, testing::ext::TestSize.Level0)
 {
@@ -391,7 +391,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0180, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0190, testing::ext::TestSize.Level0)
 {
@@ -431,7 +431,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0190, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0200, testing::ext::TestSize.Level0)
 {
@@ -471,7 +471,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0200, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0210, testing::ext::TestSize.Level0)
 {
@@ -513,7 +513,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0210, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0220, testing::ext::TestSize.Level0)
 {
@@ -553,7 +553,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0220, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0230, testing::ext::TestSize.Level0)
 {
@@ -595,7 +595,7 @@ HWTEST_F(ToolsTest, tool_simulate_app_0230, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(ToolsTest, tool_simulate_app_0240, testing::ext::TestSize.Level0)
 {

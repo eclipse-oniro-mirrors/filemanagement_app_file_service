@@ -43,7 +43,7 @@ static vector<string> DEFAULT_EXCLUDE_DIR = {};
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0100, testing::ext::TestSize.Level0)
 {
@@ -75,7 +75,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0100, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0200, testing::ext::TestSize.Level0)
 {
@@ -106,7 +106,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0200, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0300, testing::ext::TestSize.Level0)
 {
@@ -137,7 +137,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0300, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0400, testing::ext::TestSize.Level0)
 {
@@ -171,7 +171,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0400, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 2
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0500, testing::ext::TestSize.Level2)
 {
@@ -205,7 +205,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0500, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 2
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0600, testing::ext::TestSize.Level2)
 {
@@ -237,7 +237,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0600, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 2
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0700, testing::ext::TestSize.Level2)
 {
@@ -269,7 +269,7 @@ HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0700, testing::ext::
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 2
- * @tc.require: AR000H09VQ
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BJsonEntityUsrConfigTest, b_json_entity_usr_config_0800, testing::ext::TestSize.Level2)
 {

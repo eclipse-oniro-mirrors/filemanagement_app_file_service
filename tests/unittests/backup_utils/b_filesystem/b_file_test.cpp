@@ -43,7 +43,7 @@ std::tuple<std::string, std::string> GetTestFile(const TestManager &tm)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BFileTest, b_file_ReadFile_0100, testing::ext::TestSize.Level0)
 {

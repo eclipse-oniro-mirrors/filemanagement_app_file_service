@@ -23,7 +23,7 @@ public:
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_construction_0100, testing::ext::TestSize.Level0)
 {
@@ -44,7 +44,7 @@ HWTEST_F(BErrorTest, b_error_construction_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_construction_0200, testing::ext::TestSize.Level0)
 {
@@ -65,7 +65,7 @@ HWTEST_F(BErrorTest, b_error_construction_0200, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_construction_0300, testing::ext::TestSize.Level0)
 {
@@ -86,7 +86,7 @@ HWTEST_F(BErrorTest, b_error_construction_0300, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 2
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_construction_0400, testing::ext::TestSize.Level2)
 {
@@ -109,7 +109,7 @@ HWTEST_F(BErrorTest, b_error_construction_0400, testing::ext::TestSize.Level2)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_construction_0500, testing::ext::TestSize.Level0)
 {
@@ -131,7 +131,7 @@ HWTEST_F(BErrorTest, b_error_construction_0500, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_GetCode_0100, testing::ext::TestSize.Level0)
 {
@@ -149,7 +149,7 @@ HWTEST_F(BErrorTest, b_error_GetCode_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_GetRawCode_0100, testing::ext::TestSize.Level0)
 {
@@ -167,7 +167,7 @@ HWTEST_F(BErrorTest, b_error_GetRawCode_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_what_0100, testing::ext::TestSize.Level0)
 {
@@ -185,7 +185,7 @@ HWTEST_F(BErrorTest, b_error_what_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_bool_0100, testing::ext::TestSize.Level0)
 {
@@ -202,7 +202,7 @@ HWTEST_F(BErrorTest, b_error_bool_0100, testing::ext::TestSize.Level0)
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 0
- * @tc.require: AR000H0A04
+ * @tc.require: SR000H037V
  */
 HWTEST_F(BErrorTest, b_error_int_0100, testing::ext::TestSize.Level0)
 {
