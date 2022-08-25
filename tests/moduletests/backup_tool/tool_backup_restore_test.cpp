@@ -37,26 +37,18 @@ HWTEST_F(ToolsTest, tool_backup_restore_0100, testing::ext::TestSize.Level0)
     try {
         TestManager testManager("tool_backup_restore_0100");
         string backupRootDir = testManager.GetRootDirCurTest();
-
         string outputDir = "/data/service/el2/100/backup/bundles/" + bundleName + "/";
-
         string tmpFilePath = backupRootDir + "tmp";
-        // 执行restore命令，生成tmp文件
-        BProcess::ExecuteCmd(
-            {"backup_tool", "restore", "--bundle", bundleName.c_str(), "--pathCapFile", tmpFilePath.c_str()});
-        int ret = BProcess::ExecuteCmd({"cat", tmpFilePath.c_str()});
-        EXPECT_EQ(ret, 0);
-
         string testFileDir = "/data/app/el2/100/base/" + bundleName + "/files/";
         string testFile1Path = testFileDir + "file1";
         string testFile2Path = testFileDir + "file2";
         // 创建测试文件file1和file2，并执行backup命令
-        ret = BProcess::ExecuteCmd({"touch", testFile1Path});
+        int ret = BProcess::ExecuteCmd({"touch", testFile1Path});
         EXPECT_EQ(ret, 0);
         ret = BProcess::ExecuteCmd({"touch", testFile2Path});
         EXPECT_EQ(ret, 0);
-        ret = BProcess::ExecuteCmd(
-            {"backup_tool", "backup", "--bundle", bundleName.c_str(), "--pathCapFile", tmpFilePath.c_str()});
+        ret = BProcess::ExecuteCmd({"backup_tool", "backup", "--isLocal=true", "--bundle", bundleName.c_str(),
+                                    "--pathCapFile", tmpFilePath.c_str()});
         EXPECT_EQ(ret, 0);
 
         string allFilesInTestFileDir = testFileDir + "*";
