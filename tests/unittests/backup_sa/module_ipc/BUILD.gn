@@ -7,6 +7,7 @@ ohos_unittest("module_ipc_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
+    "service_reverse_proxy_test.cpp",
     "service_stub_test.cpp",
     "svc_session_manager_test.cpp",
   ]

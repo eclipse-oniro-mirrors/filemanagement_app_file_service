@@ -17,15 +17,17 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 using namespace testing;
 
-const string FILE_NAME = "temp.json";
+namespace {
+const string FILE_NAME = "1.tar";
+} // namespace
 
 class ServiceProxyTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
     static void TearDownTestCase() {};
     void SetUp();
-    void TearDown() {};
-    std::shared_ptr<ServiceProxy> proxy_ = nullptr;
+    void TearDown();
+    shared_ptr<ServiceProxy> proxy_ = nullptr;
     sptr<ServiceMock> mock_ = nullptr;
     sptr<ServiceReverseMock> remote_ = nullptr;
 };
@@ -33,8 +35,15 @@ public:
 void ServiceProxyTest::SetUp()
 {
     mock_ = sptr(new ServiceMock());
-    proxy_ = std::make_shared<ServiceProxy>(mock_);
+    proxy_ = make_shared<ServiceProxy>(mock_);
     remote_ = sptr(new ServiceReverseMock());
+}
+
+void ServiceProxyTest::TearDown()
+{
+    proxy_ = nullptr;
+    mock_ = nullptr;
+    remote_ = nullptr;
 }
 
 /**
