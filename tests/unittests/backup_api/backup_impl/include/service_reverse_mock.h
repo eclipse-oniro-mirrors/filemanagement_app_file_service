@@ -24,15 +24,15 @@ public:
         code_ = code;
         return BError(BError::Codes::OK);
     }
-    virtual void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override {}
-    virtual void BackupOnBundleStarted(int32_t errCode, std::string bundleName) override {}
-    virtual void BackupOnBundleFinished(int32_t errCode, std::string bundleName) override {}
-    virtual void BackupOnAllBundlesFinished(int32_t errCode) override {}
+    void BackupOnFileReady(std::string bundleName, std::string fileName, int fd) override {}
+    void BackupOnBundleStarted(int32_t errCode, std::string bundleName) override {}
+    void BackupOnBundleFinished(int32_t errCode, std::string bundleName) override {}
+    void BackupOnAllBundlesFinished(int32_t errCode) override {}
 
-    virtual void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) override {}
-    virtual void RestoreOnBundleFinished(int32_t errCode, std::string bundleName) override {}
-    virtual void RestoreOnAllBundlesFinished(int32_t errCode) override {}
-    virtual void RestoreOnFileReady(std::string bundleName, std::string fileName, int fd) override {}
+    void RestoreOnBundleStarted(int32_t errCode, std::string bundleName) override {}
+    void RestoreOnBundleFinished(int32_t errCode, std::string bundleName) override {}
+    void RestoreOnAllBundlesFinished(int32_t errCode) override {}
+    void RestoreOnFileReady(std::string bundleName, std::string fileName, int fd) override {}
 };
 } // namespace OHOS::FileManagement::Backup
 #endif // MOCK_SERVICE_MOCK_H

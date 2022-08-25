@@ -40,45 +40,44 @@ public:
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode InitRestoreSession(sptr<IServiceReverse> remote,
-                                       const std::vector<BundleName> &bundleNames) override
+    ErrCode InitRestoreSession(sptr<IServiceReverse> remote, const std::vector<BundleName> &bundleNames) override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode InitBackupSession(sptr<IServiceReverse> remote,
-                                      UniqueFd fd,
-                                      const std::vector<BundleName> &bundleNames) override
+    ErrCode InitBackupSession(sptr<IServiceReverse> remote,
+                              UniqueFd fd,
+                              const std::vector<BundleName> &bundleNames) override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode Start() override
+    ErrCode Start() override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual UniqueFd GetLocalCapabilities() override
+    UniqueFd GetLocalCapabilities() override
     {
         return UniqueFd(-1);
     }
 
-    virtual ErrCode PublishFile(const BFileInfo &fileInfo) override
+    ErrCode PublishFile(const BFileInfo &fileInfo) override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override
+    ErrCode AppFileReady(const std::string &fileName, UniqueFd fd) override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode AppDone(ErrCode errCode) override
+    ErrCode AppDone(ErrCode errCode) override
     {
         return BError(BError::Codes::OK);
     }
 
-    virtual ErrCode GetExtFileName(std::string &bundleName, std::string &fileName) override
+    ErrCode GetExtFileName(std::string &bundleName, std::string &fileName) override
     {
         return BError(BError::Codes::OK);
     }
