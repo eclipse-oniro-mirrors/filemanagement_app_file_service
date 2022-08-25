@@ -9,7 +9,6 @@ ohos_unittest("tools_op_test") {
   sources = [
     "tool_backup_restore_test.cpp",
     "tool_help_test.cpp",
-    "tool_simulate_app_test.cpp",
   ]
 
   deps = [
