@@ -26,6 +26,7 @@ public:
     int32_t InvokeSendRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option)
     {
         code_ = code;
+        reply.WriteInt32(BError(BError::Codes::OK));
         return BError(BError::Codes::OK);
     }
 

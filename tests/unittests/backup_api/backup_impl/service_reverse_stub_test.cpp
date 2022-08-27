@@ -41,8 +41,8 @@ class ServiceReverseStubTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
     static void TearDownTestCase() {};
-    void SetUp() {};
-    void TearDown() {};
+    void SetUp() override {};
+    void TearDown() override {};
 };
 
 /**
@@ -51,10 +51,10 @@ public:
  * @tc.desc: Test function of BackupOnFileReady interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H0378
  */
-HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_BackupOnFileReady_0100, testing::ext::TestSize.Level0)
+HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_BackupOnFileReady_0100, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_BackupOnFileReady_0100";
     try {
@@ -87,12 +87,12 @@ HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_BackupOnFileReady
  * @tc.desc: Test function of BackupOnBundleStarted interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H0378
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_BackupOnBundleStarted_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_BackupOnBundleStarted_0100";
     try {
@@ -121,12 +121,12 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of BackupOnBundleFinished interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H0378
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_BackupOnBundleFinished_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_BackupOnBundleFinished_0100";
     try {
@@ -155,12 +155,12 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of BackupOnAllBundlesFinished interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H0378
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_BackupOnAllBundlesFinished_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_BackupOnAllBundlesFinished_0100";
     try {
@@ -188,12 +188,12 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of RestoreOnBundleStarted interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H037V
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_RestoreOnBundleStarted_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_RestoreOnBundleStarted_0100";
     try {
@@ -222,12 +222,12 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of RestoreOnBundleFinished interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H037V
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_RestoreOnBundleFinished_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_RestoreOnBundleFinished_0100";
     try {
@@ -256,12 +256,12 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of RestoreOnBundleStarted interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H037V
  */
 HWTEST_F(ServiceReverseStubTest,
          SUB_backup_ServiceReverseStub_RestoreOnAllBundlesFinished_0100,
-         testing::ext::TestSize.Level0)
+         testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_RestoreOnAllBundlesFinished_0100";
     try {
@@ -289,10 +289,10 @@ HWTEST_F(ServiceReverseStubTest,
  * @tc.desc: Test function of RestoreOnFileReady interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H037V
  */
-HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_RestoreOnFileReady_0100, testing::ext::TestSize.Level0)
+HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_RestoreOnFileReady_0100, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_RestoreOnFileReady_0100";
     try {
