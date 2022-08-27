@@ -9,6 +9,8 @@ ohos_unittest("module_ipc_test") {
   sources = [
     "service_reverse_proxy_test.cpp",
     "service_stub_test.cpp",
+    "svc_backup_connection_test.cpp",
+    "svc_extension_proxy_test.cpp",
     "svc_session_manager_test.cpp",
   ]
 
@@ -29,6 +31,7 @@ ohos_unittest("module_ipc_test") {
   ]
 
   external_deps = [
+    "ability_base:want",
     "backup:backup_kit_inner",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",

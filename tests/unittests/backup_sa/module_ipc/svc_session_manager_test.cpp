@@ -42,8 +42,8 @@ class SvcSessionManagerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    void SetUp() override;
+    void TearDown() override {};
 };
 
 void SvcSessionManagerTest::SetUpTestCase(void)
@@ -71,8 +71,6 @@ void SvcSessionManagerTest::SetUp(void)
     transform(bundleNames.begin(), bundleNames.end(), inserter(g_backupExtNameMap, g_backupExtNameMap.end()),
               setBackupExtNameMap);
 }
-
-void SvcSessionManagerTest::TearDown(void) {}
 
 /**
  * @tc.number: SUB_backup_sa_session_verifycaller_0100
