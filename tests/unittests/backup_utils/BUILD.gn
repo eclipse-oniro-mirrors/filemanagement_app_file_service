@@ -37,8 +37,8 @@ ohos_unittest("b_json_test") {
 
   sources = [
     "b_json/b_json_cached_entity_test.cpp",
-    "b_json/b_json_entity_usr_config_test.cpp",
     "b_json/b_json_entity_ext_manage_test.cpp",
+    "b_json/b_json_entity_usr_config_test.cpp",
   ]
 
   include_dirs = [ "${path_base}/include" ]
@@ -55,13 +55,23 @@ ohos_unittest("b_json_test") {
 ohos_unittest("b_tarball_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [ "b_tarball/b_tarball_posix_tarball_test.cpp" ]
+  sources = [
+    "b_tarball/b_tarball_cmdline_test.cpp",
+    "b_tarball/b_tarball_factory_test.cpp",
+    "b_tarball/b_tarball_posix_tarball_test.cpp",
+  ]
 
-  include_dirs = [ "${path_base}/include" ]
+  include_dirs = [
+    "${path_base}/include",
+    "${path_backup}/utils/include/b_error",
+    "${path_backup}/utils/include/b_process",
+    "${path_backup}/utils/include/b_tarball",
+  ]
 
   deps = [
     "${path_backup}/tests/utils:backup_test_utils",
     "${path_backup}/utils/:backup_utils",
+    "${path_base}:utils",
   ]
 
   use_exceptions = true
