@@ -21,11 +21,14 @@
 namespace OHOS {
 namespace AppFileService {
 namespace ModuleRemoteFileShare {
+namespace {
+    const std::string SHARE_ALL_DEVICE = "0";
+}
 class RemoteFileShare {
 public:
     RemoteFileShare() {}
-    int CreateSharePath(const int &fd, std::string &sharePath,
-                        const int &userId, const std::string &deviceId = "");
+    static int CreateSharePath(const int &fd, std::string &sharePath,
+                        const int &userId, const std::string &deviceId = SHARE_ALL_DEVICE);
     ~RemoteFileShare() {}
 };
 } // namespace ModuleRemoteFileShare
