@@ -13,15 +13,20 @@
 
 import("//build/ohos.gni")
 
-ohos_shared_library("remote_file_share_native") {
+config("remote_file_share_config") {
+  visibility = [ ":*" ]
   include_dirs = [
     "include",
     "//utils/system/safwk/native/include",
     "//commonlibrary/c_utils/base/include",
     "//foundation/filemanagement/app_file_service/interfaces/innerkits/remote_file_share/native",
   ]
+}
 
+ohos_shared_library("remote_file_share_native") {
   sources = [ "//foundation/filemanagement/app_file_service/services/remote_file_share/src/remote_file_share.cpp" ]
+
+  public_configs = [ ":remote_file_share_config" ]
 
   external_deps = [
     "c_utils:utils",
