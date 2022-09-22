@@ -96,6 +96,7 @@ set<string> ExpandPathWildcard(const vector<string> &vec)
 {
     unique_ptr<glob_t, function<void(glob_t *)>> gl {new glob_t, [](glob_t *ptr) { globfree(ptr); }};
     gl->gl_offs = 0;
+    gl->gl_pathc = 0;
 
     int flags = GLOB_DOOFFS | GLOB_MARK;
     for (const string &pattern : vec) {
