@@ -38,27 +38,6 @@ HWTEST_F(BErrorTest, b_error_construction_0100, testing::ext::TestSize.Level0)
 }
 
 /**
- * @tc.number: SUB_backup_b_error_construction_0200
- * @tc.name: b_error_construction_0200
- * @tc.desc: Test function of construction interface for ERROR which Codes < 0.
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 0
- * @tc.require: SR000H037V
- */
-HWTEST_F(BErrorTest, b_error_construction_0200, testing::ext::TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "BErrorTest-begin b_error_construction_0200";
-    try {
-        BError be((BError::Codes)(-1));
-    } catch (...) {
-        EXPECT_TRUE(true);
-        GTEST_LOG_(INFO) << "BErrorTest-an exception occurred by construction.";
-    }
-    GTEST_LOG_(INFO) << "BErrorTest-end b_error_construction_0200";
-}
-
-/**
  * @tc.number: SUB_backup_b_error_construction_0300
  * @tc.name: b_error_construction_0300
  * @tc.desc: Test function of construction interface for SUCCESS.
@@ -74,33 +53,11 @@ HWTEST_F(BErrorTest, b_error_construction_0300, testing::ext::TestSize.Level0)
         std::string_view extraMsg;
         BError be(BError::Codes::OK, extraMsg);
     } catch (...) {
+        EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BErrorTest-an exception occurred by construction.";
     }
     GTEST_LOG_(INFO) << "BErrorTest-end b_error_construction_0300";
 }
-
-/**
- * @tc.number: SUB_backup_b_error_construction_0400
- * @tc.name: b_error_construction_0400
- * @tc.desc: Test function of construction interface for ERROR which Codes < 0.
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 2
- * @tc.require: SR000H037V
- */
-HWTEST_F(BErrorTest, b_error_construction_0400, testing::ext::TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BErrorTest-begin b_error_construction_0400";
-    try {
-        std::string_view extraMsg = std::string_view("test");
-        BError be((BError::Codes)(-1), extraMsg);
-    } catch (...) {
-        EXPECT_TRUE(true);
-        GTEST_LOG_(INFO) << "BErrorTest-an exception occurred by construction.";
-    }
-    GTEST_LOG_(INFO) << "BErrorTest-end b_error_construction_0400";
-}
-
 
 /**
  * @tc.number: SUB_backup_b_error_construction_0500
