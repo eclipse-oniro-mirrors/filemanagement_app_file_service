@@ -47,4 +47,4 @@ public:
     void RestoreOnFileReady(std::string bundleName, std::string fileName, int fd) override {}
 };
 } // namespace OHOS::FileManagement::Backup
-#endif // MOCK_SERVICE_MOCK_H
+#endif // MOCK_SERVICE_REVERSE_MOCK_H

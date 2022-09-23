@@ -53,7 +53,13 @@ public:
 
     UniqueFd GetFileHandle(const std::string &fileName) override
     {
-        return UniqueFd(-1);
+        if (fileName.empty()) {
+            return UniqueFd(-1);
+        }
+        TestManager tm("GetFileHand_GetFd_0200");
+        std::string filePath = tm.GetRootDirCurTest().append(fileName);
+        UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+        return fd;
     };
     ErrCode HandleClear() override
     {

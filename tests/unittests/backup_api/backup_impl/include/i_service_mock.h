@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_SERVICE_MOCK_H
-#define MOCK_SERVICE_MOCK_H
+#ifndef MOCK_I_SERVICE_MOCK_H
+#define MOCK_I_SERVICE_MOCK_H
 
 #include <fcntl.h>
 #include <gmock/gmock.h>
@@ -27,11 +27,11 @@
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
-class ServiceMock : public IRemoteStub<IService> {
+class IServiceMock : public IRemoteStub<IService> {
 public:
     int code_ = 0;
-    ServiceMock() : code_(0) {}
-    virtual ~ServiceMock() {}
+    IServiceMock() : code_(0) {}
+    virtual ~IServiceMock() {}
 
     MOCK_METHOD4(SendRequest, int(uint32_t, MessageParcel &, MessageParcel &, MessageOption &));
 
@@ -96,4 +96,4 @@ public:
     }
 };
 } // namespace OHOS::FileManagement::Backup
-#endif // MOCK_SERVICE_MOCK_H
+#endif // MOCK_I_SERVICE_MOCK_H

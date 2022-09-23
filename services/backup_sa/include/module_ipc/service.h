@@ -27,7 +27,7 @@
 #include "system_ability.h"
 
 namespace OHOS::FileManagement::Backup {
-class Service final : public SystemAbility, public ServiceStub, protected NoCopyable {
+class Service : public SystemAbility, public ServiceStub, protected NoCopyable {
     DECLARE_SYSTEM_ABILITY(Service);
 
     // 以下都是IPC接口
@@ -56,7 +56,7 @@ public:
      * @param bundleName
      * @return ErrCode
      */
-    ErrCode LaunchBackupExtension(const BundleName &bundleName);
+    virtual ErrCode LaunchBackupExtension(const BundleName &bundleName);
 
     /**
      * @brief backup extension died
@@ -84,7 +84,7 @@ public:
      *
      * @param bundleName 应用名称
      */
-    void ExtStart(const std::string &bundleName);
+    virtual void ExtStart(const std::string &bundleName);
 
 public:
     explicit Service(int32_t saID, bool runOnCreate = false) : SystemAbility(saID, runOnCreate)
@@ -115,6 +115,8 @@ private:
 
     sptr<SvcSessionManager> session_;
     sptr<SchedScheduler> sched_;
+
+    friend class ServiceTest;
 };
 } // namespace OHOS::FileManagement::Backup
 

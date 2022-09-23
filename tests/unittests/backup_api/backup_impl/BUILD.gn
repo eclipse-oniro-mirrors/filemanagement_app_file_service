@@ -40,6 +40,7 @@ ohos_unittest("backup_sa_impl_test") {
   sources = [
     "service_proxy_test.cpp",
     "service_reverse_stub_test.cpp",
+    "service_reverse_test.cpp",
     "svc_death_recipient_test.cpp",
   ]
 
