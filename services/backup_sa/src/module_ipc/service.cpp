@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
@@ -65,6 +66,7 @@ void Service::OnStop()
 {
     HILOGI("Called");
     sched_ = nullptr;
+    session_ = nullptr;
 }
 
 UniqueFd Service::GetLocalCapabilities()

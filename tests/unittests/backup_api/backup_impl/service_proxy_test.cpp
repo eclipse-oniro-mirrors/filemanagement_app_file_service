@@ -19,8 +19,8 @@
 #include <gtest/gtest.h>
 
 #include "b_file_info.h"
+#include "i_service_mock.h"
 #include "iservice_registry.h"
-#include "service_mock.h"
 #include "service_proxy.h"
 #include "service_reverse_mock.h"
 #include "unique_fd.h"
@@ -31,6 +31,7 @@ using namespace testing;
 
 namespace {
 const string FILE_NAME = "1.tar";
+constexpr int32_t SERVICE_ID = 5203;
 } // namespace
 
 class ServiceProxyTest : public testing::Test {
@@ -39,14 +40,15 @@ public:
     static void TearDownTestCase() {};
     void SetUp() override;
     void TearDown() override;
+
     shared_ptr<ServiceProxy> proxy_ = nullptr;
-    sptr<ServiceMock> mock_ = nullptr;
+    sptr<IServiceMock> mock_ = nullptr;
     sptr<ServiceReverseMock> remote_ = nullptr;
 };
 
 void ServiceProxyTest::SetUp()
 {
-    mock_ = sptr(new ServiceMock());
+    mock_ = sptr(new IServiceMock());
     proxy_ = make_shared<ServiceProxy>(mock_);
     remote_ = sptr(new ServiceReverseMock());
 }
@@ -71,13 +73,13 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_InitRestoreSession_0100, testing::e
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_InitRestoreSession_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     std::vector<string> bundleNames;
     int32_t result = proxy_->InitRestoreSession(remote_, bundleNames);
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->InitRestoreSession(remote_, bundleNames);
     EXPECT_NE(result, BError(BError::Codes::OK));
     result = proxy_->InitRestoreSession(nullptr, bundleNames);
@@ -98,8 +100,9 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_InitBackupSession_0100, testing::ex
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_InitBackupSession_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     std::vector<string> bundleNames;
 
     TestManager tm("BackupSession_GetFd_0100");
@@ -108,7 +111,6 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_InitBackupSession_0100, testing::ex
     int32_t result = proxy_->InitBackupSession(remote_, move(fd), bundleNames);
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->InitRestoreSession(remote_, bundleNames);
     EXPECT_NE(result, BError(BError::Codes::OK));
     result = proxy_->InitBackupSession(nullptr, move(fd), bundleNames);
@@ -131,12 +133,12 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_Start_0100, testing::ext::TestSize.
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_Start_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     int32_t result = proxy_->Start();
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->Start();
     EXPECT_NE(result, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_Start_0100";
@@ -155,12 +157,12 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_GetLocalCapabilities_0100, testing:
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_GetLocalCapabilities_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeGetLocalSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeGetLocalSendRequest))
+        .WillOnce(Return(EPERM));
     UniqueFd fd = proxy_->GetLocalCapabilities();
     EXPECT_GT(fd, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     UniqueFd fdErr = proxy_->GetLocalCapabilities();
     EXPECT_LT(fdErr, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_GetLocalCapabilities_0100";
@@ -179,15 +181,15 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_PublishFile_0100, testing::ext::Tes
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_PublishFile_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     string bundleName = "com.example.app2backup";
     string fileName = "1.tar";
     BFileInfo fileInfo(bundleName, fileName, -1);
     int32_t result = proxy_->PublishFile(fileInfo);
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->PublishFile(fileInfo);
     EXPECT_NE(result, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_PublishFile_0100";
@@ -206,8 +208,9 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_AppFileReady_0100, testing::ext::Te
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_AppFileReady_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
 
     string bundleName = "com.example.app2backup";
     TestManager tm("AppFileReady_GetFd_0100");
@@ -217,7 +220,6 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_AppFileReady_0100, testing::ext::Te
     int32_t result = proxy_->AppFileReady(bundleName, move(fd));
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     TestManager tmErr("AppFileReady_GetFd_0200");
     UniqueFd fdErr(open(tmErr.GetRootDirCurTest().append(FILE_NAME).data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
     result = proxy_->AppFileReady(bundleName, move(fdErr));
@@ -240,12 +242,12 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_AppDone_0100, testing::ext::TestSiz
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_AppDone_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     int32_t result = proxy_->AppDone(BError(BError::Codes::OK));
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->AppDone(BError(BError::Codes::OK));
     EXPECT_NE(result, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_AppDone_0100";
@@ -264,16 +266,54 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_GetExtFileName_0100, testing::ext::
 {
     GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_GetExtFileName_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &ServiceMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &IServiceMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     string bundleName = "com.example.app2backup";
     string fileName = "1.tar";
     int32_t result = proxy_->GetExtFileName(bundleName, fileName);
     EXPECT_EQ(result, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     result = proxy_->GetExtFileName(bundleName, fileName);
     EXPECT_NE(result, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_GetExtFileName_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_proxy_OnLoadSystemAbilitySuccess_0100
+ * @tc.name: SUB_Service_proxy_OnLoadSystemAbilitySuccess_0100
+ * @tc.desc: 测试 OnLoadSystemAbilitySuccess 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(ServiceProxyTest, SUB_Service_proxy_OnLoadSystemAbilitySuccess_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_OnLoadSystemAbilitySuccess_0100";
+    sptr<ServiceProxy::ServiceProxyLoadCallback> loadCallback = new ServiceProxy::ServiceProxyLoadCallback();
+    EXPECT_NE(loadCallback, nullptr);
+    loadCallback->OnLoadSystemAbilitySuccess(SERVICE_ID, nullptr);
+    loadCallback = nullptr;
+    GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_OnLoadSystemAbilitySuccess_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_proxy_OnLoadSystemAbilityFail_0100
+ * @tc.name: SUB_Service_proxy_OnLoadSystemAbilityFail_0100
+ * @tc.desc: 测试 OnLoadSystemAbilityFail 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(ServiceProxyTest, SUB_Service_proxy_OnLoadSystemAbilityFail_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_OnLoadSystemAbilityFail_0100";
+    sptr<ServiceProxy::ServiceProxyLoadCallback> loadCallback = new ServiceProxy::ServiceProxyLoadCallback();
+    EXPECT_NE(loadCallback, nullptr);
+    loadCallback->OnLoadSystemAbilityFail(SERVICE_ID);
+    loadCallback = nullptr;
+    GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_OnLoadSystemAbilityFail_0100";
 }
 } // namespace OHOS::FileManagement::Backup

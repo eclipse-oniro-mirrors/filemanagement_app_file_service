@@ -60,13 +60,13 @@ HWTEST_F(SvcExtensionProxyTest, SUB_Ext_Extension_proxy_GetFileHandle_0100, test
 {
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-begin SUB_Ext_Extension_proxy_GetFileHandle_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeGetFileHandleRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeGetFileHandleRequest))
+        .WillOnce(Return(EPERM));
     string fileName = "1.tar";
     UniqueFd fd = proxy_->GetFileHandle(fileName);
     EXPECT_GT(fd, BError(BError::Codes::OK));
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     UniqueFd fdErr = proxy_->GetFileHandle(fileName);
     EXPECT_LT(fdErr, BError(BError::Codes::OK));
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-end SUB_Ext_Extension_proxy_GetFileHandle_0100";
@@ -85,12 +85,12 @@ HWTEST_F(SvcExtensionProxyTest, SUB_Ext_Extension_proxy_HandleClear_0100, testin
 {
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-begin SUB_Ext_Extension_proxy_HandleClear_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     ErrCode ret = proxy_->HandleClear();
     EXPECT_EQ(BError(BError::Codes::OK), ret);
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     ret = proxy_->HandleClear();
     EXPECT_NE(BError(BError::Codes::OK), ret);
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-end SUB_Ext_Extension_proxy_HandleClear_0100";
@@ -109,12 +109,12 @@ HWTEST_F(SvcExtensionProxyTest, SUB_Ext_Extension_proxy_HandleBackup_0100, testi
 {
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-begin SUB_Ext_Extension_proxy_HandleBackup_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     ErrCode ret = proxy_->HandleBackup();
     EXPECT_EQ(BError(BError::Codes::OK), ret);
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     ret = proxy_->HandleBackup();
     EXPECT_NE(BError(BError::Codes::OK), ret);
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-end SUB_Ext_Extension_proxy_HandleBackup_0100";
@@ -133,13 +133,13 @@ HWTEST_F(SvcExtensionProxyTest, SUB_Ext_Extension_proxy_PublishFile_0100, testin
 {
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-begin SUB_Ext_Extension_proxy_PublishFile_0100";
     EXPECT_CALL(*mock_, SendRequest(_, _, _, _))
-        .Times(1)
-        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest));
+        .Times(2)
+        .WillOnce(Invoke(mock_.GetRefPtr(), &BackupExtExtensionMock::InvokeSendRequest))
+        .WillOnce(Return(EPERM));
     string fileName = "1.tar";
     ErrCode ret = proxy_->PublishFile(fileName);
     EXPECT_EQ(BError(BError::Codes::OK), ret);
 
-    EXPECT_CALL(*mock_, SendRequest(_, _, _, _)).Times(1).WillOnce(Return(EPERM));
     ret = proxy_->PublishFile(fileName);
     EXPECT_NE(BError(BError::Codes::OK), ret);
     GTEST_LOG_(INFO) << "SvcExtensionProxyTest-end SUB_Ext_Extension_proxy_PublishFile_0100";

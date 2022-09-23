@@ -14,14 +14,15 @@
  */
 
 #include <cstdio>
-#include <gmock/gmock.h>
+#include <fcntl.h>
 #include <gtest/gtest.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "b_error/b_error.h"
 #include "b_file_info.h"
 #include "iservice_registry.h"
 #include "module_ipc/service_reverse_proxy.h"
-#include "service_mock.h"
 #include "service_reverse_mock.h"
 #include "test_manager.h"
 #include "unique_fd.h"
