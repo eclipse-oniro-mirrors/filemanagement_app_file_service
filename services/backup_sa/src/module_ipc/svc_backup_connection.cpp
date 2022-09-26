@@ -29,7 +29,7 @@ void SvcBackupConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &el
     }
     isConnected_.store(true);
     string bundleName = element.GetBundleName();
-    callStart_(move(bundleName));
+    callConnDone_(move(bundleName));
     HILOGI("called end");
 }
 
@@ -63,7 +63,15 @@ ErrCode SvcBackupConnection::DisconnectBackupExtAbility()
     isConnectedDone_.store(true);
     std::unique_lock<std::mutex> lock(mutex_);
     ErrCode ret = AppExecFwk::AbilityManagerClient::GetInstance()->DisconnectAbility(this);
-    if (condition_.wait_for(lock, std::chrono::seconds(WAIT_TIME), [this] { return backupProxy_ == nullptr; })) {
+    auto callback = [extConn {wptr(this)}] {
+        auto extPtr = extConn.promote();
+        if (!extPtr) {
+            HILOGE("Dis connect failed");
+            return false;
+        }
+        return extPtr->GetBackupExtProxy() == nullptr;
+    };
+    if (condition_.wait_for(lock, std::chrono::seconds(WAIT_TIME), callback)) {
         HILOGI("Wait until the connection ends");
     }
     HILOGI("called end, ret=%{public}d", ret);

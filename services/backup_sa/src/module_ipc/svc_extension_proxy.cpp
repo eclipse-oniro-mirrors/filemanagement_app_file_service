@@ -46,7 +46,7 @@ ErrCode SvcExtensionProxy::HandleClear()
     int32_t ret = Remote()->SendRequest(IExtension::CMD_HANDLE_CLAER, data, reply, option);
     if (ret != NO_ERROR) {
         HILOGE("Received error %{public}d when doing IPC", ret);
-        return ErrCode(-ret);
+        return ErrCode(ret);
     }
 
     HILOGI("Successful");
@@ -64,7 +64,7 @@ ErrCode SvcExtensionProxy::HandleBackup()
     int32_t ret = Remote()->SendRequest(IExtension::CMD_HANDLE_BACKUP, data, reply, option);
     if (ret != NO_ERROR) {
         HILOGE("Received error %{public}d when doing IPC", ret);
-        return ErrCode(-ret);
+        return ErrCode(ret);
     }
 
     HILOGI("Successful");
@@ -79,7 +79,7 @@ ErrCode SvcExtensionProxy::PublishFile(const string &fileName)
 
     if (!data.WriteString(fileName)) {
         BError(BError::Codes::SDK_INVAL_ARG, "Failed to send the fileName");
-        return ErrCode(-EPERM);
+        return ErrCode(EPERM);
     }
 
     MessageParcel reply;
@@ -87,7 +87,7 @@ ErrCode SvcExtensionProxy::PublishFile(const string &fileName)
     int32_t ret = Remote()->SendRequest(IExtension::CMD_PUBLISH_FILE, data, reply, option);
     if (ret != NO_ERROR) {
         HILOGE("Received error %{public}d when doing IPC", ret);
-        return ErrCode(-ret);
+        return ErrCode(ret);
     }
 
     HILOGI("Successful");
