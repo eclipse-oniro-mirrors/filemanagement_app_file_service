@@ -65,8 +65,10 @@ void BTarballCmdline::Untar(string_view root)
         "tar", "-xf", tarballPath_, "-C", root,
     };
     auto [bFatalError, errCode] = BProcess::ExecuteCmd(argv, IsTarFatalErrorOccur);
-    if (bFatalError || errCode) {
-        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, "fatal error occurred in untar process");
+    if (bFatalError) {
+        stringstream ss;
+        ss << "Is a fatal error occurred in untar process: " << bFatalError << ", error code : " << errCode;
+        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, ss.str());
     }
 }
 
