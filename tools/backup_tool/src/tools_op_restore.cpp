@@ -48,6 +48,12 @@ public:
         TryClearBundleOfMap(bundleName);
     }
 
+    void ClearBundleOfMap(const BundleName &bundleName)
+    {
+        lock_guard<mutex> lk(lock_);
+        bundleStatusMap_.erase(bundleName);
+    }
+
     void TryNotify(bool flag = false)
     {
         if (flag == true) {
@@ -129,15 +135,23 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
     ctx->TryNotify();
 }
 
-static void OnBundleStarted(ErrCode err, const BundleName name)
+static void OnBundleStarted(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
     printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
+    if (err != 0) {
+        ctx->UpdateBundleFinishedCount();
+        ctx->ClearBundleOfMap(name);
+        ctx->TryNotify();
+    }
 }
 
 static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
     printf("BundleFinished errCode = %d, BundleName = %s\n", err, name.c_str());
     ctx->UpdateBundleFinishedCount();
+    if (err != 0) {
+        ctx->ClearBundleOfMap(name);
+    }
     ctx->TryNotify();
 }
 
@@ -192,13 +206,12 @@ static int32_t Init(string pathCapFile, std::vector<string> bundles)
     }
     auto ctx = make_shared<Session>();
     ctx->session_ = BSessionRestore::Init(
-        bundleNames, BSessionRestore::Callbacks {
-                        .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
-                        .onBundleStarted = OnBundleStarted,
-                        .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
-                        .onAllBundlesFinished = OnAllBundlesFinished,
-                        .onBackupServiceDied = bind(OnBackupServiceDied, ctx)
-                    });
+        bundleNames,
+        BSessionRestore::Callbacks {.onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
+                                    .onBundleStarted = bind(OnBundleStarted, ctx, placeholders::_1, placeholders::_2),
+                                    .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
+                                    .onAllBundlesFinished = OnAllBundlesFinished,
+                                    .onBackupServiceDied = bind(OnBackupServiceDied, ctx)});
     if (ctx->session_ == nullptr) {
         printf("Failed to init restore");
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);

@@ -44,6 +44,7 @@ public:
     {
         BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(move(fd));
         auto cache = cachedEntity.Structuralize();
+        lock_guard<mutex> lk(lock_);
         bundleStatusMap_[bundleName].indexFile = cache.GetExtManage();
     }
 
@@ -129,9 +130,13 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
     ctx->TryNotify();
 }
 
-static void OnBundleStarted(ErrCode err, const BundleName name)
+static void OnBundleStarted(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
 {
     printf("BundleStarted errCode = %d, BundleName = %s\n", err, name.c_str());
+    if (err != 0) {
+        ctx->UpdateBundleFinishedCount();
+        ctx->TryNotify();
+    }
 }
 
 static void OnBundleFinished(shared_ptr<Session> ctx, ErrCode err, const BundleName name)
@@ -190,7 +195,7 @@ static int32_t InitPathCapFile(string isLocal, string pathCapFile, std::vector<s
         move(fd), bundleNames,
         BSessionBackup::Callbacks {
             .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
-            .onBundleStarted = OnBundleStarted,
+            .onBundleStarted = bind(OnBundleStarted, ctx, placeholders::_1, placeholders::_2),
             .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
             .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
             .onBackupServiceDied = bind(OnBackupServiceDied, ctx)

@@ -61,8 +61,8 @@ public:
 
 public:
     SvcBackupConnection(std::function<void(const std::string &&)> callDied,
-                        std::function<void(const std::string &&)> callStart)
-        : callDied_(callDied), callStart_(callStart)
+                        std::function<void(const std::string &&)> callConnDone)
+        : callDied_(callDied), callConnDone_(callConnDone)
     {
     }
     virtual ~SvcBackupConnection() override {};
@@ -75,7 +75,7 @@ private:
     sptr<IExtension> backupProxy_;
 
     std::function<void(const std::string &&)> callDied_;
-    std::function<void(const std::string &&)> callStart_;
+    std::function<void(const std::string &&)> callConnDone_;
 };
 } // namespace OHOS::FileManagement::Backup
 
