@@ -247,7 +247,7 @@ HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0300, testing::ext::
  * @tc.name: b_json_entity_ext_manage_0400
  * @tc.desc: 通过向接口SetExtManage传入包含三条信息的map参数，测试对索引文件的操作是否正确。
  *           0：通过向索引文件写入3条有效数据模拟覆盖对索引文件的(无穷)内容的测试覆盖
- *           0：通过向索引文件的第一个记录写入0条、第二个记录写入1条、第三个记录写入2条有效硬链接数据模拟对索引文件含
+ *           0：通过向索引文件的记录一写入0条、记录二写入1条、记录三写入2条有效硬链接数据模拟对索引文件含
  *              有硬链接(空、有、无穷)个的测试覆盖
  *           0：通过调用接口SetHardLinkInfo向索引文件中对应记录添加硬链接
  *           1：调用接口SetExtManage，向索引文件写入数据
@@ -329,7 +329,7 @@ HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0400, testing::ext::
  * @tc.name: b_json_entity_ext_manage_0500
  * @tc.desc: 通过向接口SetExtManage传入包含三条信息的map参数，测试对索引文件的操作是否正确。
  *           0：通过向索引文件写入3条有效数据模拟覆盖对索引文件的(无穷)内容的测试覆盖
- *           0：通过向索引文件的第一个记录写入0条、第二个记录写入1条、第三个记录写入2条有效硬链接数据模拟对索引文件含
+ *           0：通过向索引文件的记录一写入0条、记录二写入1条、记录三写入2条有效硬链接数据模拟对索引文件含
  *              有硬链接(空、有、无穷)个的测试覆盖
  *           0：通过传入和源文件相同stat信息向索引文件中对应记录添加硬链接
  *           1：调用接口SetExtManage，向索引文件写入数据

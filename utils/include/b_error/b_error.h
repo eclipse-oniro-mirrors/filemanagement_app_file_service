@@ -30,10 +30,6 @@
 
 #include "errors.h"
 
-/**
- * @brief 黄区编译器升级CLANG-10后即支持
- *
- */
 #if __has_builtin(__builtin_FILE) && __has_builtin(__builtin_LINE) && __has_builtin(__builtin_FUNCTION)
 #define DEFINE_SOURCE_LOCATION                                              \
     int lineNo = __builtin_LINE(), const char *fileName = __builtin_FILE(), \

@@ -34,10 +34,10 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 /**
- * @brief 检验Untar输入参数
+ * @brief Verifying untar input parameters
  *
- * @param root 用于存储解包文件的根目录
- * 要求输入绝对路径
+ * @param root Root directory for storing unpacked files
+ * An absolute path is required.
  */
 static void UntarFort(string_view root)
 {
@@ -48,15 +48,15 @@ static void UntarFort(string_view root)
 }
 
 /**
- * @brief 过滤Tar输入参数
+ * @brief Filtering tar input parameters
  *
- * @param tarballDir 打包文件所在目录
- * @param root 文件待打包的根目录
- * 要求输入绝对路径
- * @param includes root中需要打包的路径
- * 要求输入相对路径，不填默认全部打包
- * @param excludes 待打包路径中无需打包的部分
- * 要求输入相对路径。可用于排除部分子目录
+ * @param tarballDir Directory where the package file is stored
+ * @param root Root directory of the file to be packed
+ * An absolute path is required.
+ * @param includes Path to be packed in the root directory.
+ * The relative path is required. If this parameter is not specified, all packages are packed by default.
+ * @param excludes The part that does not need to be packed in the path to be packed
+ * Requires a relative path. Can be used to exclude some subdirectories
  * @return std::tuple<vector<string>, vector<string>> 返回合法的includes, excludes
  */
 static tuple<vector<string>, vector<string>> TarFilter(string_view tarballDir,

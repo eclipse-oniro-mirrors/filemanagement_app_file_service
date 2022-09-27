@@ -62,8 +62,8 @@ static tuple<bool, ErrCode> WaitForChild(pid_t pid,
         } else if (WIFEXITED(status)) {
             return {false, WEXITSTATUS(status)};
         } else if (WIFSIGNALED(status)) {
-            // bionic
-            // libc++的异常机制存在问题，导致应用在正常的错误下Crash。为确保测试顺利展开，此处暂时屏蔽崩溃错误。
+            // 因某种信号中断获取状态
+            // 异常机制存在问题，导致应用在正常的错误下Crash。为确保测试顺利展开，此处暂时屏蔽崩溃错误。
             HILOGE("some fatal errors occurred, child process is killed by a signal.");
             return {true, EPERM};
         }
