@@ -30,7 +30,8 @@ optional<BTarballPosixExtendedEntry> BTarballPosixExtendedEntry::TryToGetEntry(B
 {
     switch (entryKey) {
         case BConstants::SUPER_LONG_PATH: {
-            string tmpPathName = pathName.front() == '/' ? pathName.substr(1) : pathName;
+            string::size_type firstNotSlashIndex = pathName.find_first_not_of('/');
+            string tmpPathName = pathName.substr(firstNotSlashIndex);
             if (tmpPathName.size() > BConstants::PATHNAME_MAX_SIZE - 1) {
                 return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_PATH, tmpPathName);
             }
