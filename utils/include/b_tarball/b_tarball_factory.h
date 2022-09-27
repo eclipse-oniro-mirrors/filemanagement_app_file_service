@@ -42,7 +42,7 @@ public:
          * @brief 打包
          *
          * @param _1 进入该参数指定路径打包文件。
-         * 要求输入绝对路径
+         * An absolute path is required.
          * @param _2 _1中需要打包的路径。
          * 要求输入相对路径，除禁止路径穿越外无其余要求，不填默认全部打包
          * @param _3 待打包路径中无需打包的部分。
@@ -54,7 +54,7 @@ public:
          * @brief 解包
          *
          * @param _1 用于存储解包文件的根目录
-         * 要求输入绝对路径
+         * An absolute path is required.
          */
         std::function<void(std::string_view)> untar;
     };
@@ -64,7 +64,7 @@ public:
      * @brief 打包器工厂方法
      *
      * @param implType 打包器实现方式，可选择'cmdline'
-     * @param tarballPath 文件包的绝对路径。不得包含冗余斜线，且必须以.tar为后缀
+     * @param tarballPath Absolute path of the file package。Cannot contain extra slashes, must be suffixed with .tar
      * @return std::unique_ptr<Impl> 打包器仿函数集合
      */
     static std::unique_ptr<Impl> Create(std::string_view implType, std::string_view tarballPath);

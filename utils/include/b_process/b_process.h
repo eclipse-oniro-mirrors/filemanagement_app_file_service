@@ -31,9 +31,9 @@ public:
      * @brief 执行一个命令并同步等待执行结果
      *
      * @param argv 命令参数表
-     * 向量第一项是绝对路径表示的命令名
-     * 向量后续参数表示相应命令参数
-     * 向量最后无需追加nullptr
+     * Parameter one is the command name represented by the absolute path.
+     * After that, parameter indicates the corresponding command parameter.
+     * Finally,nullptr does not need to be appended.
      *
      * @param DetectFatalLog 回调函数，用来对命令的stderr输出错误信息做进一步处理，检测是否发生了严重错误等。
      *
