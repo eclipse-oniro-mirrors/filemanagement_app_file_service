@@ -48,7 +48,7 @@ bool ShareFilePathIoctlFdAndCidFuzzTest(const uint8_t* data, size_t size)
     int32_t ret = 0;
     int32_t dirFd;
 
-    if (size <= 0) {
+    if (size == 0) {
         return false;
     }
 
@@ -91,7 +91,7 @@ bool ShareFilePathIoctlCidFuzzTest(const uint8_t* data, size_t size)
     int32_t dirFd;
     int32_t srcFd;
 
-    if (size <= 0) {
+    if (size == 0) {
         return false;
     }
 
@@ -142,7 +142,7 @@ bool ShareFilePathIoctlFdFuzzTest(const uint8_t* data, size_t size)
     int32_t ret = 0;
     int32_t dirFd;
 
-    if (size <= 0) {
+    if (size == 0) {
         return false;
     }
 
