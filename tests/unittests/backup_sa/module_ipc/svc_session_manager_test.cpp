@@ -266,39 +266,4 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_removeextinfo_0100, testin
     }
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_removeextinfo_0100";
 }
-
-/**
- * @tc.number: SUB_backup_sa_session_getbackupextnamevec_0100
- * @tc.name: SUB_backup_sa_session_getbackupextnamevec_0100
- * @tc.desc: Test function of GetBackupExtNameVec interface for SUCCESS.
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 0
- * @tc.require: 0
- */
-HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_getbackupextnamevec_0100, testing::ext::TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_getbackupextnamevec_0100";
-    try {
-        SvcSessionManagerMock sessionManager(g_serviceMock);
-        EXPECT_CALL(sessionManager, GetBundleExtNames(_)).WillOnce(Return());
-        EXPECT_CALL(sessionManager, InitExtConn(_)).WillOnce(Return());
-        EXPECT_CALL(sessionManager, InitClient(_)).WillOnce(Return());
-        sessionManager.Active(
-            {.clientToken = CLIENT_TOKEN_ID,
-            .scenario = IServiceReverse::Scenario::BACKUP,
-            .backupExtNameMap = move(g_backupExtNameMap),
-        });
-        vector<pair<string, string>> extNameVec;
-        sessionManager.GetBackupExtNameVec(extNameVec);
-        for (auto [bundleName, backupExtName] : extNameVec) {
-            EXPECT_EQ(bundleName, BUNDLE_NAME);
-            EXPECT_EQ(backupExtName, BUNDLE_NAME);
-        }
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by GetBackupExtNameVec.";
-    }
-    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_getbackupextnamevec_0100";
-}
 } // namespace OHOS::FileManagement::Backup
