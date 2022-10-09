@@ -47,7 +47,7 @@ ohos_shared_library("backup_sa") {
     "ipc:ipc_core",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "startup_l2:syspara",
+    "init:libbegetutil",
   ]
 
   use_exceptions = true
