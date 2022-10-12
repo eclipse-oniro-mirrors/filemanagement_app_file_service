@@ -7,8 +7,9 @@
 ## **目录**
 ```
 /foundation/filemanagement/app_file_service
-├── interfaces                      // 对外接口
-│   └── kits                        // 对外接口代码
+│── interfaces                        // 接口声明
+│  ├── innerkits                      // 对内接口声明
+│  └── kits                           // 对外接口声明
 ```
 
 ## **说明**
@@ -32,3 +33,8 @@ remotefileshare.createSharePath(fd, cid).then(function(path) {
     // promise
 });
 ```
+
+## **相关仓**
+
+- [Linux内核5.10](https://gitee.com/openharmony/kernel_linux_5.10)
+- [文件访问接口](https://gitee.com/zkx48/filemanagement_file_api)
