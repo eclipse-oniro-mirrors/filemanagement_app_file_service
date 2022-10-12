@@ -11,16 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-path_backup = "//foundation/filemanagement/backup"
+import("//build/ohos.gni")
 
-path_ability_runtime = "//foundation/ability/ability_runtime"
-path_access_token = "//base/security/access_token"
-path_base = "//commonlibrary/c_utils/base"
-path_distributedfile = "//foundation/distributeddatamgr/distributedfile"
-path_faultloggerd = "//base/hiviewdfx/faultloggerd"
-path_googletest = "//third_party/googletest"
-path_ipc = "//foundation/communication/ipc"
-path_jsoncpp = "//third_party/jsoncpp"
-path_napi = "//foundation/arkui/napi"
-path_samgr = "//foundation/systemabilitymgr/samgr"
-path_init = "//base/startup/init"
+group("backup_ext_etc") {
+  deps = [ ":backup.para" ]
+}
+
+ohos_prebuilt_etc("backup.para") {
+  source = "backup.para"
+  install_images = [ "system" ]
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+  module_install_dir = "etc/param"
+}

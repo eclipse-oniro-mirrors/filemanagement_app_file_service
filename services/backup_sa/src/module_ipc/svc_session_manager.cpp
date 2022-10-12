@@ -25,6 +25,8 @@
 #include "b_error/b_error.h"
 #include "b_json/b_json_entity_ext_manage.h"
 #include "b_json/b_json_entity_usr_config.h"
+#include "b_json/b_json_handle_config.h"
+#include "b_resources/b_constants.h"
 #include "bundle_mgr_client.h"
 #include "filemgmt_libhilog.h"
 #include "module_ipc/service.h"
@@ -133,35 +135,41 @@ void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backup
         AppExecFwk::BundleInfo installedBundle;
         if (!bms->GetBundleInfo(it.first, AppExecFwk::GET_BUNDLE_WITH_EXTENSION_INFO, installedBundle,
                                 AppExecFwk::Constants::START_USERID)) {
-            string pendingMsg = string("Failed to get the info of bundle ").append(it.first);
-            throw BError(BError::Codes::SA_BROKEN_IPC, pendingMsg);
+            throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get the info of bundle " + it.first);
         }
         for (auto &&ext : installedBundle.extensionInfos) {
             if (ext.type == AppExecFwk::ExtensionAbilityType::BACKUP) {
-                vector<string> out;
-                AppExecFwk::BundleMgrClient client;
-                if (!client.GetResConfigFile(ext, "ohos.extension.backup", out)) {
-                    string pendingMsg = string("Failed to get resconfigfile of bundle ").append(it.first);
-                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                if (ext.name.empty()) {
+                    throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get ext name of bundle " + it.first);
                 }
-                if (!out.size()) {
-                    string pendingMsg = string("ResConfigFile size is empty of bundle ").append(it.first);
-                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                auto [getCfgParaValSucc, value] = BJsonHandleConfig::GetConfigParameterValue(
+                    BConstants::BACKUP_JSONCONFIG_READ_ON_KEY, BConstants::BACKUP_PARA_VALUE_MAX);
+                if (!getCfgParaValSucc) {
+                    throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get configuration parameter value");
+                }
+                vector<string> out;
+                if (value == "false") {
+                    AppExecFwk::BundleMgrClient client;
+                    if (!client.GetResConfigFile(ext, "ohos.extension.backup", out) || out.size() == 0) {
+                        throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get resconfigfile of bundle " + it.first);
+                    }
+                } else {
+                    string bkpCfgPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + it.first + "/" +
+                                        string(BConstants::BACKUP_CONFIG_JSON);
+                    out.push_back(BJsonHandleConfig::GetJsonConfig(bkpCfgPath));
+                    if (out[0].empty()) {
+                        throw BError(BError::Codes::SA_INVAL_ARG, "File " + bkpCfgPath + " has no configuration item");
+                    }
                 }
                 BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
                 auto cache = cachedEntity.Structuralize();
                 if (cache.GetAllowToBackupRestore()) {
                     it.second.backupExtName = ext.name;
                 } else {
-                    string pendingMsg =
-                        string("Permission denied to get allowToBackupRestore of bundle ").append(it.first);
-                    throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
+                    throw BError(BError::Codes::SA_INVAL_ARG,
+                                 "Permission denied to get allowToBackupRestore of bundle " + it.first);
                 }
             }
-        }
-        if (it.second.backupExtName.empty()) {
-            string pendingMsg = string("Failed to get ext name of bundle ").append(it.first);
-            throw BError(BError::Codes::SA_INVAL_ARG, pendingMsg);
         }
     }
 }

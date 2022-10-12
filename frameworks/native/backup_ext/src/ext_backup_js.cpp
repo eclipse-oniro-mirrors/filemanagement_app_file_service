@@ -23,6 +23,7 @@
 #include "b_error/b_error.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_usr_config.h"
+#include "b_json/b_json_handle_config.h"
 #include "b_resources/b_constants.h"
 #include "bundle_mgr_client.h"
 #include "ext_extension.h"
@@ -151,7 +152,20 @@ string ExtBackupJs::GetUsrConfig() const
 
 bool ExtBackupJs::AllowToBackupRestore() const
 {
-    string usrConfig = GetUsrConfig();
+    auto [getCfgParaValSucc, value] = BJsonHandleConfig::GetConfigParameterValue(
+        BConstants::BACKUP_JSONCONFIG_READ_ON_KEY, BConstants::BACKUP_PARA_VALUE_MAX);
+    if (!getCfgParaValSucc) {
+        HILOGI("Fail to get configuration parameter value.");
+        return BError(-EPERM);
+    }
+    string usrConfig;
+    if (value == "false") {
+        usrConfig = GetUsrConfig();
+    } else {
+        string bkpCfgPath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH) + string(BConstants::BACKUP_CONFIG_JSON);
+        usrConfig = BJsonHandleConfig::GetJsonConfig(bkpCfgPath);
+    }
+
     if (usrConfig.empty()) {
         HILOGI("Application has no user configuration.");
         return false;
