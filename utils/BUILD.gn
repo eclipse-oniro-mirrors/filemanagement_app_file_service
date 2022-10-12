@@ -36,6 +36,7 @@ ohos_shared_library("backup_utils") {
     "src/b_filesystem/b_file.cpp",
     "src/b_json/b_json_entity_ext_manage.cpp",
     "src/b_json/b_json_entity_usr_config.cpp",
+    "src/b_json/b_json_handle_config.cpp",
     "src/b_process/b_guard_cwd.cpp",
     "src/b_process/b_guard_signal.cpp",
     "src/b_process/b_process.cpp",
@@ -44,8 +45,8 @@ ohos_shared_library("backup_utils") {
     "src/b_tarball/b_tarball_posix/b_tarball_posix_extended_data.cpp",
     "src/b_tarball/b_tarball_posix/b_tarball_posix_extended_entry.cpp",
     "src/b_tarball/b_tarball_posix/b_tarball_posix_extended_header.cpp",
-    "src/b_tarball/b_tarball_posix/b_tarball_posix_file_data.cpp",
     "src/b_tarball/b_tarball_posix/b_tarball_posix_file.cpp",
+    "src/b_tarball/b_tarball_posix/b_tarball_posix_file_data.cpp",
     "src/b_tarball/b_tarball_posix/b_tarball_posix_pax_header.cpp",
     "src/b_tarball/b_tarball_posix/b_tarball_posix_tarball.cpp",
   ]
@@ -60,6 +61,10 @@ ohos_shared_library("backup_utils") {
     "${path_distributedfile}/utils/filemgmt_libhilog:filemgmt_libhilog",
     "${path_jsoncpp}:jsoncpp",
   ]
+
+  include_dirs = [ "${path_init}/interfaces/innerkits/include/syspara" ]
+
+  deps = [ "${path_init}/interfaces/innerkits:libbegetutil" ]
 
   use_exceptions = true
   part_name = "backup"

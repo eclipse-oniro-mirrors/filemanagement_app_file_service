@@ -30,6 +30,7 @@
 #include "b_filesystem/b_file.h"
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_ext_manage.h"
+#include "b_json/b_json_handle_config.h"
 #include "b_resources/b_constants.h"
 #include "b_tarball/b_tarball_factory.h"
 #include "bundle_mgr_client.h"
@@ -206,7 +207,20 @@ ErrCode BackupExtExtension::PublishFile(const string &fileName)
 
 ErrCode BackupExtExtension::HandleBackup()
 {
-    string usrConfig = extension_->GetUsrConfig();
+    auto [getCfgParaValSucc, value] = BJsonHandleConfig::GetConfigParameterValue(
+        BConstants::BACKUP_JSONCONFIG_READ_ON_KEY, BConstants::BACKUP_PARA_VALUE_MAX);
+    if (!getCfgParaValSucc) {
+        HILOGI("Fail to get configuration parameter value.");
+        return BError(-EPERM);
+    }
+    string usrConfig;
+    if (value == "false") {
+        usrConfig = extension_->GetUsrConfig();
+    } else {
+        string bkpCfgPath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH) + string(BConstants::BACKUP_CONFIG_JSON);
+        usrConfig = BJsonHandleConfig::GetJsonConfig(bkpCfgPath);
+    }
+
     if (!usrConfig.empty()) {
         AsyncTaskBackup(usrConfig);
         return 0;
