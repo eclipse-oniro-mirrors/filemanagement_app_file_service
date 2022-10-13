@@ -55,7 +55,7 @@ pair<ErrCode, map<string, struct stat>> GetDirFilesDetail(const string &path, bo
             }
 
             auto [errCode, subfiles] =
-                GetDirFilesDetail(IncludeTrailingPathDelimiter(path) + string(ptr->d_name), recursion);
+                GetDirFilesDetail(IncludeTrailingPathDelimiter(path) + string(ptr->d_name), recursion, size);
             if (errCode != 0) {
                 return {errCode, files};
             }
