@@ -65,10 +65,6 @@ UniqueFd BackupExtExtension::GetFileHandle(const string &fileName)
 
     HILOGI("fileName is %{public}s", fileName.data());
     VerifyCaller();
-    if (extension_ == nullptr) {
-        HILOGE("%{public}s end failed.", __func__);
-        return UniqueFd(-1);
-    }
 
     string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
     if (mkdir(path.data(), S_IRWXU) && errno != EEXIST) {
