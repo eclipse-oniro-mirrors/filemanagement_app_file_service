@@ -77,7 +77,7 @@ static std::string GetFileName(const int &fd)
     }
 
     std::string fileName = filePath;
-    int firstSlash = fileName.rfind("/");
+    std::size_t firstSlash = fileName.rfind("/");
     if (firstSlash == fileName.npos) {
         LOGE("RemoteFileShare::GetFileName, get error path with %{public}s", fileName.c_str());
         return "";
@@ -108,7 +108,7 @@ static std::string GetLowerSharePath(const int &userId, const std::string &packa
     return LOWER_SHARE_PATH_HEAD + std::to_string(userId) + LOWER_SHARE_PATH_MID + packageName;
 }
 
-static bool DeleteShareDir(const std::string PACKAGE_PATH, const std::string SHARE_PATH)
+static bool DeleteShareDir(const std::string &PACKAGE_PATH, const std::string &SHARE_PATH)
 {
     bool result = true;
     if (access(SHARE_PATH.c_str(), F_OK) == 0) {
