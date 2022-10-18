@@ -27,7 +27,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-optional<map<string, vector<string>>> GetArgsMap(int argc, char *const argv[], const vector<ToolsOp::CmdInfo> argList)
+optional<map<string, vector<string>>> GetArgsMap(int argc, char *const argv[], const vector<ToolsOp::CmdInfo> &argList)
 {
     int i = 0;
     map<int, string> mapOptToName;
@@ -69,7 +69,7 @@ int ParseOpAndExecute(int argc, char *const argv[])
     int flag = -1;
     for (int i = 1; i < argc; i++) {
         // 暂存 {argv[1]...argv[i]};
-        std::vector<string_view> curOp;
+        vector<string_view> curOp;
         for (int j = 1; j <= i; ++j) {
             curOp.emplace_back(argv[j]);
         }
@@ -77,7 +77,7 @@ int ParseOpAndExecute(int argc, char *const argv[])
         // 尝试匹配当前命令，成功后执行
         auto tryOpSucceed = [&curOp](const ToolsOp &op) { return op.TryMatch(curOp); };
         auto &&opeartions = ToolsOp::GetAllOperations();
-        auto matchedOp = std::find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
+        auto matchedOp = find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
         if (matchedOp != opeartions.end()) {
             vector<ToolsOp::CmdInfo> argList = matchedOp->GetParams();
             optional<map<string, vector<string>>> mapNameToArgs = GetArgsMap(argc, argv, argList);

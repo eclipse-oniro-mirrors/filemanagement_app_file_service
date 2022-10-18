@@ -21,16 +21,16 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-static std::string GenHelpMsg()
+static string GenHelpMsg()
 {
     return "\t\tThis operation helps to dump the help messages.";
 }
 
-static int Exec(map<string, vector<string>> mapArgToVal)
+static int Exec(map<string, vector<string>> &mapArgToVal)
 {
     stringstream ss;
     auto &&allOps = ToolsOp::GetAllOperations();
-    ss << "Usage: backup_tool <SubCommand> [OPTION]... [ARG]..." << std::endl;
+    ss << "Usage: backup_tool <SubCommand> [OPTION]... [ARG]..." << endl;
     for (size_t i = 0; i < allOps.size(); ++i) {
         auto desc = allOps[i].GetDescriptor();
 
@@ -39,10 +39,10 @@ static int Exec(map<string, vector<string>> mapArgToVal)
 
         // echo: help msgs\n\n
         if (desc.funcGenHelpMsg) {
-            ss << desc.funcGenHelpMsg() << std::endl;
+            ss << desc.funcGenHelpMsg() << endl;
         }
         if (i != allOps.size() - 1) {
-            ss << std::endl;
+            ss << endl;
         }
     }
     printf("%s", ss.str().c_str());

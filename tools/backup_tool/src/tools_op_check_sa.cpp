@@ -23,12 +23,12 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-static std::string GenHelpMsg()
+static string GenHelpMsg()
 {
     return "\tThis operation helps to check if the backup sa is available.";
 }
 
-static int Exec(map<string, vector<string>> mapArgToVal)
+static int Exec(map<string, vector<string>> &mapArgToVal)
 {
     auto proxy = ServiceProxy::GetInstance();
     if (!proxy) {

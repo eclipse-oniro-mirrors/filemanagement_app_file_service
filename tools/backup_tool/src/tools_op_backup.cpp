@@ -44,7 +44,7 @@ using namespace std;
 
 class Session {
 public:
-    void UpdateBundleReceivedFiles(const BundleName &bundleName, const std::string &fileName)
+    void UpdateBundleReceivedFiles(const BundleName &bundleName, const string &fileName)
     {
         lock_guard<mutex> lk(lock_);
         bundleStatusMap_[bundleName].receivedFile.insert(fileName);
@@ -106,7 +106,7 @@ private:
     mutable condition_variable cv_;
     mutex lock_;
     bool ready_ = false;
-    uint32_t cnt_;
+    uint32_t cnt_ {0};
 };
 
 static string GenHelpMsg()
@@ -123,14 +123,14 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
            fileInfo.sn, fd.Get());
     string tmpPath = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + fileInfo.owner;
     if (access(tmpPath.data(), F_OK) != 0 && mkdir(tmpPath.data(), S_IRWXU) != 0) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
         throw BError(BError::Codes::TOOL_INVAL_ARG, "Filename is not alphanumeric");
     }
     UniqueFd fdLocal(open((tmpPath + "/" + fileInfo.fileName).data(), O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU));
     if (fdLocal < 0) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     BFile::SendFile(fdLocal, fd);
     if (fileInfo.fileName == BConstants::EXT_BACKUP_MANAGE) {
@@ -175,13 +175,9 @@ static void OnBackupServiceDied(shared_ptr<Session> ctx)
     ctx->TryNotify(true);
 }
 
-static int32_t InitPathCapFile(string isLocal, string pathCapFile, std::vector<string> bundles)
+static int32_t InitPathCapFile(const string &isLocal, const string &pathCapFile, vector<string> bundleNames)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InitPathCapFile");
-    std::vector<BundleName> bundleNames;
-    for (auto &&bundleName : bundles) {
-        bundleNames.emplace_back(bundleName.data());
-    }
     UniqueFd fd(open(pathCapFile.data(), O_RDWR | O_CREAT, S_IRWXU));
     if (fd < 0) {
         fprintf(stderr, "Failed to open file error: %d %s\n", errno, strerror(errno));
@@ -199,18 +195,16 @@ static int32_t InitPathCapFile(string isLocal, string pathCapFile, std::vector<s
 
     if (access((BConstants::BACKUP_TOOL_RECEIVE_DIR).data(), F_OK) != 0 &&
         mkdir((BConstants::BACKUP_TOOL_RECEIVE_DIR).data(), S_IRWXU) != 0) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     auto ctx = make_shared<Session>();
     ctx->session_ = BSessionBackup::Init(
         move(fd), bundleNames,
-        BSessionBackup::Callbacks {
-            .onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
-            .onBundleStarted = bind(OnBundleStarted, ctx, placeholders::_1, placeholders::_2),
-            .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
-            .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
-            .onBackupServiceDied = bind(OnBackupServiceDied, ctx)
-        });
+        BSessionBackup::Callbacks {.onFileReady = bind(OnFileReady, ctx, placeholders::_1, placeholders::_2),
+                                   .onBundleStarted = bind(OnBundleStarted, ctx, placeholders::_1, placeholders::_2),
+                                   .onBundleFinished = bind(OnBundleFinished, ctx, placeholders::_1, placeholders::_2),
+                                   .onAllBundlesFinished = bind(OnAllBundlesFinished, ctx, placeholders::_1),
+                                   .onBackupServiceDied = bind(OnBackupServiceDied, ctx)});
     if (ctx->session_ == nullptr) {
         printf("Failed to init backup");
         FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
@@ -226,7 +220,7 @@ static int32_t InitPathCapFile(string isLocal, string pathCapFile, std::vector<s
     return 0;
 }
 
-static int Exec(map<string, vector<string>> mapArgToVal)
+static int Exec(map<string, vector<string>> &mapArgToVal)
 {
     if (mapArgToVal.find("pathCapFile") == mapArgToVal.end() || mapArgToVal.find("bundles") == mapArgToVal.end() ||
         mapArgToVal.find("isLocal") == mapArgToVal.end()) {

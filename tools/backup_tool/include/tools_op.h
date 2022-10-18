@@ -39,7 +39,7 @@ public:
         // 命令帮助语句，选填
         std::function<std::string()> funcGenHelpMsg;
         // 命令执行主体，必填
-        std::function<int(std::map<std::string, std::vector<std::string>> args)> funcExec;
+        std::function<int(std::map<std::string, std::vector<std::string>> &args)> funcExec;
     };
 
     /**

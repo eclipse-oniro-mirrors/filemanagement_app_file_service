@@ -47,7 +47,7 @@ BFileInfo *BFileInfo::Unmarshalling(Parcel &parcel)
             return nullptr;
         }
         return result.release();
-    } catch (const bad_alloc e) {
+    } catch (const bad_alloc &e) {
         HILOGE("Failed to unmarshall BFileInfo because of %{public}s", e.what());
     }
     return nullptr;
