@@ -215,7 +215,8 @@ ErrCode BackupExtExtension::HandleBackup()
     return BError(-EPERM);
 }
 
-map<string, pair<string, struct stat>> GetBigFileInfo(const vector<string> &includes, const vector<string> &excludes)
+static map<string, pair<string, struct stat>> GetBigFileInfo(const vector<string> &includes,
+                                                             const vector<string> &excludes)
 {
     auto [errCode, files] = BDir::GetBigFiles(includes, excludes);
     if (errCode != 0) {
@@ -383,7 +384,7 @@ void BackupExtExtension::AsyncTaskBackup(const string config)
     });
 }
 
-bool IsAllFileReceived(vector<string> tars)
+static bool IsAllFileReceived(vector<string> tars)
 {
     // 是否已收到索引文件
     auto it = find(tars.begin(), tars.end(), string(BConstants::EXT_BACKUP_MANAGE));
@@ -411,7 +412,7 @@ bool IsAllFileReceived(vector<string> tars)
     return false;
 }
 
-void RestoreBigFiles()
+static void RestoreBigFiles()
 {
     // 获取索引文件内容
     string path = string(BConstants::PATH_BUNDLE_BACKUP_HOME).append(BConstants::SA_BUNDLE_BACKUP_RESTORE);
@@ -447,9 +448,9 @@ void RestoreBigFiles()
                    filePath.c_str());
         }
         set<string> lks = cache.GetHardLinkInfo(item.first);
-        for (const auto &item : lks) {
-            if (link(filePath.data(), item.data())) {
-                HILOGE("failed to create hard link file %{public}s  errno : %{public}d", item.c_str(), errno);
+        for (const auto &lksPath : lks) {
+            if (link(filePath.data(), lksPath.data())) {
+                HILOGE("failed to create hard link file %{public}s  errno : %{public}d", lksPath.c_str(), errno);
             }
         }
 

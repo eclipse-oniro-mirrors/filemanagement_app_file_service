@@ -55,7 +55,7 @@ unique_ptr<BSessionRestore> BSessionRestore::Init(std::vector<BundleName> bundle
 
         restore->RegisterBackupServiceDied(callbacks.onBackupServiceDied);
         return restore;
-    } catch (const exception e) {
+    } catch (const exception &e) {
         HILOGE("Failed to Restore because of %{public}s", e.what());
     }
     return nullptr;

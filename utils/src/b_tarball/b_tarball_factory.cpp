@@ -61,8 +61,8 @@ static void UntarFort(string_view root)
  */
 static tuple<vector<string>, vector<string>> TarFilter(string_view tarballDir,
                                                        string_view root,
-                                                       vector<string_view> includes,
-                                                       vector<string_view> excludes)
+                                                       const vector<string_view> &includes,
+                                                       const vector<string_view> &excludes)
 {
     auto resolvedPath = make_unique<char[]>(PATH_MAX);
     if (!realpath(root.data(), resolvedPath.get()) || (string_view(resolvedPath.get()) != root)) {

@@ -46,13 +46,13 @@ using namespace std;
 
 class Session {
 public:
-    void UpdateBundleSendFiles(const BundleName &bundleName, const std::string &fileName)
+    void UpdateBundleSendFiles(const BundleName &bundleName, const string &fileName)
     {
         lock_guard<mutex> lk(lock_);
         bundleStatusMap_[bundleName].sendFile.insert(fileName);
     }
 
-    void UpdateBundleSentFiles(const BundleName &bundleName, const std::string &fileName)
+    void UpdateBundleSentFiles(const BundleName &bundleName, const string &fileName)
     {
         lock_guard<mutex> lk(lock_);
         bundleStatusMap_[bundleName].sentFile.insert(fileName);
@@ -112,7 +112,7 @@ private:
     mutable condition_variable cv_;
     mutex lock_;
     bool ready_ = false;
-    uint32_t cnt_;
+    uint32_t cnt_ {0};
 };
 
 static string GenHelpMsg()
@@ -131,11 +131,11 @@ static void OnFileReady(shared_ptr<Session> ctx, const BFileInfo &fileInfo, Uniq
     }
     string tmpPath = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + fileInfo.owner + "/" + fileInfo.fileName;
     if (access(tmpPath.data(), F_OK) != 0) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     UniqueFd fdLocal(open(tmpPath.data(), O_RDONLY));
     if (fdLocal < 0) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     BFile::SendFile(fd, fdLocal);
     int ret = ctx->session_->PublishFile(fileInfo);
@@ -185,7 +185,7 @@ static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNa
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "RestoreApp");
     if (!restore || !restore->session_) {
-        throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
     }
     for (auto &bundleName : bundleNames) {
         if (!regex_match(bundleName, regex("^[0-9a-zA-Z_.]+$"))) {
@@ -193,7 +193,7 @@ static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNa
         }
         string path = string(BConstants::BACKUP_TOOL_RECEIVE_DIR) + bundleName;
         if (access(path.data(), F_OK) != 0) {
-            throw BError(BError::Codes::TOOL_INVAL_ARG, std::generic_category().message(errno));
+            throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
         }
         const auto [err, filePaths] = BDir::GetDirFiles(path);
         if (err != 0) {
@@ -208,13 +208,9 @@ static void RestoreApp(shared_ptr<Session> restore, vector<BundleName> &bundleNa
     FinishTrace(HITRACE_TAG_FILEMANAGEMENT);
 }
 
-static int32_t Init(string pathCapFile, std::vector<string> bundles)
+static int32_t Init(const string &pathCapFile, vector<string> bundleNames)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "Init");
-    std::vector<BundleName> bundleNames;
-    for (auto &&bundleName : bundles) {
-        bundleNames.emplace_back(bundleName.data());
-    }
     auto ctx = make_shared<Session>();
     ctx->session_ = BSessionRestore::Init(
         bundleNames,
@@ -266,7 +262,7 @@ static int32_t Init(string pathCapFile, std::vector<string> bundles)
     return 0;
 }
 
-static int Exec(map<string, vector<string>> mapArgToVal)
+static int Exec(map<string, vector<string>> &mapArgToVal)
 {
     if (mapArgToVal.find("pathCapFile") == mapArgToVal.end() || mapArgToVal.find("bundles") == mapArgToVal.end()) {
         return -EPERM;

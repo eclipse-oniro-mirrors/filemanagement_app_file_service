@@ -148,11 +148,11 @@ pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &
             OHOS::FileManagement::Backup::GetDirFilesDetail(item, true, BConstants::BIG_FILE_BOUNDARY);
         if (errCode == 0) {
             HILOGI("found big files. total number is : %{public}ld", files.size());
-            incFiles.merge(std::move(files));
+            incFiles.merge(move(files));
         }
     }
 
-    auto IsMatch = [](const vector<string> &s, const string str) -> bool {
+    auto IsMatch = [](const vector<string> &s, const string &str) -> bool {
         if (str.empty()) {
             return false;
         }
@@ -174,6 +174,6 @@ pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &
     }
 
     HILOGI("total number of big files is %{public}ld", bigFiles.size());
-    return {ERR_OK, std::move(bigFiles)};
+    return {ERR_OK, move(bigFiles)};
 }
 } // namespace OHOS::FileManagement::Backup

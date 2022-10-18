@@ -58,7 +58,7 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
 
         backup->RegisterBackupServiceDied(callbacks.onBackupServiceDied);
         return backup;
-    } catch (const exception e) {
+    } catch (const exception &e) {
         HILOGE("Failed to Backup because of %{public}s", e.what());
     }
     return nullptr;
