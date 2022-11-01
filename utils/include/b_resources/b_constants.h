@@ -97,7 +97,7 @@ static inline std::string ENTRY_NAME_PATH = "path";
 static inline std::string ENTRY_NAME_SIZE = "size";
 
 // backup.para内配置项的名称，改配置项值为true时可在不更新hap包的情况下，可以读取包管理元数据配置文件的内容
-static inline std::string BACKUP_JSONCONFIG_READ_ON_KEY = "backup.jsonconfig.read.on";
+static inline std::string BACKUP_JSONCONFIG_READ_ON_KEY = "backup.debug.overrideExtensionConfig";
 
 // 应用备份数据暂存路径。
 static inline std::string_view SA_BUNDLE_BACKUP_DIR = "/data/service/el2/100/backup/bundles/";

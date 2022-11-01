@@ -14,6 +14,10 @@
 import("//build/ohos.gni")
 import("//build/ohos/sa_profile/sa_profile.gni")
 
+group("backup_para_etc") {
+  deps = [ ":backup.para" ]
+}
+
 ohos_sa_profile("backup_sa_profile") {
   sources = [ "5203.xml" ]
   part_name = "backup"
@@ -24,4 +28,12 @@ ohos_prebuilt_etc("backup_sa_etc") {
   relative_install_dir = "init"
   part_name = "backup"
   subsystem_name = "filemanagement"
+}
+
+ohos_prebuilt_etc("backup.para") {
+  source = "backup.para"
+  install_images = [ "system" ]
+  part_name = "backup"
+  subsystem_name = "filemanagement"
+  relative_install_dir = "param"
 }
