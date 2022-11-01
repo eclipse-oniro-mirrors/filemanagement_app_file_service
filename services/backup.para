@@ -11,4 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-backup.jsonconfig.read.on=false
+backup.debug.overrideExtensionConfig=false

@@ -16,7 +16,6 @@ import("//build/ohos.gni")
 group("tgt_backup_extension") {
   deps = [
     "frameworks/native/backup_ext:backup_extension_ability_native",
-    "frameworks/native/backup_ext/etc:backup_ext_etc",
     "interfaces/api/js/napi/backup_ext:backupextensionability_napi",
   ]
 }
@@ -27,6 +26,7 @@ group("tgt_backup_kit_inner") {
 
 group("tgt_backup_sa") {
   deps = [
+    "services:backup_para_etc",
     "services:backup_sa_etc",
     "services:backup_sa_profile",
     "services/backup_sa",
