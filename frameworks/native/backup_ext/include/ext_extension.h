@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "b_json/b_json_entity_usr_config.h"
+#include "b_json/b_json_entity_extension_config.h"
 #include "b_resources/b_constants.h"
 #include "ext_backup_js.h"
 #include "ext_extension_stub.h"
@@ -55,7 +55,7 @@ private:
      *
      * @param usrConfig user configure
      */
-    int HandleBackup(const BJsonEntityUsrConfig &usrConfig);
+    int HandleBackup(const BJsonEntityExtensionConfig &usrConfig);
 
     /**
      * @brief restore

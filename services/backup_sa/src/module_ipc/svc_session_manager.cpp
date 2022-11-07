@@ -24,8 +24,7 @@
 #include "ability_util.h"
 #include "b_error/b_error.h"
 #include "b_json/b_json_entity_ext_manage.h"
-#include "b_json/b_json_entity_usr_config.h"
-#include "b_json/b_json_handle_config.h"
+#include "b_json/b_json_entity_extension_config.h"
 #include "b_resources/b_constants.h"
 #include "bundle_mgr_client.h"
 #include "filemgmt_libhilog.h"
@@ -142,26 +141,12 @@ void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backup
                 if (ext.name.empty()) {
                     throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get ext name of bundle " + it.first);
                 }
-                auto [getCfgParaValSucc, value] = BJsonHandleConfig::GetConfigParameterValue(
-                    BConstants::BACKUP_JSONCONFIG_READ_ON_KEY, BConstants::BACKUP_PARA_VALUE_MAX);
-                if (!getCfgParaValSucc) {
-                    throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get configuration parameter value");
-                }
                 vector<string> out;
-                if (value == "false") {
-                    AppExecFwk::BundleMgrClient client;
-                    if (!client.GetResConfigFile(ext, "ohos.extension.backup", out) || out.size() == 0) {
-                        throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get resconfigfile of bundle " + it.first);
-                    }
-                } else {
-                    string bkpCfgPath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR) + it.first + "/" +
-                                        string(BConstants::BACKUP_CONFIG_JSON);
-                    out.push_back(BJsonHandleConfig::GetJsonConfig(bkpCfgPath));
-                    if (out[0].empty()) {
-                        throw BError(BError::Codes::SA_INVAL_ARG, "File " + bkpCfgPath + " has no configuration item");
-                    }
+                AppExecFwk::BundleMgrClient client;
+                if (!client.GetResConfigFile(ext, "ohos.extension.backup", out) || out.size() == 0) {
+                    throw BError(BError::Codes::SA_INVAL_ARG, "Failed to get resconfigfile of bundle " + it.first);
                 }
-                BJsonCachedEntity<BJsonEntityUsrConfig> cachedEntity(out[0]);
+                BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(out[0], it.first);
                 auto cache = cachedEntity.Structuralize();
                 if (cache.GetAllowToBackupRestore()) {
                     it.second.backupExtName = ext.name;

@@ -25,15 +25,8 @@
 #include "json/json.h"
 
 namespace OHOS::FileManagement::Backup {
-class BJsonEntityExtManage {
+class BJsonEntityExtManage : public BJsonEntity {
 public:
-    /**
-     * @brief 构造方法，具备T(Json::Value&)能力的构造函数
-     *
-     * @param Json对象引用
-     */
-    BJsonEntityExtManage(Json::Value &obj);
-
     /**
      * @brief 设置索引文件
      *
@@ -73,8 +66,14 @@ public:
      */
     const std::set<std::string> GetHardLinkInfo(const string origin);
 
-private:
-    Json::Value &obj_;
+public:
+    /**
+     * @brief 构造方法，具备T(Json::Value&, std::any)能力的构造函数
+     *
+     * @param obj Json对象引用
+     * @param option 任意类型对象
+     */
+    BJsonEntityExtManage(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option) {}
 };
 } // namespace OHOS::FileManagement::Backup
 

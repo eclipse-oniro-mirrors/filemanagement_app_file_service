@@ -13,22 +13,29 @@
  * limitations under the License.
  */
 
-#include "b_json/b_json_handle_config.h"
+#include "b_ohos/startup/backup_para.h"
 
-#include <fcntl.h>
+#include <cstdint>
 #include <memory>
-#include <new>
+#include <string>
+#include <tuple>
 
 #include "b_error/b_error.h"
-#include "b_filesystem/b_file.h"
+#include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
 #include "parameter.h"
-#include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-tuple<bool, string> BJsonHandleConfig::GetConfigParameterValue(const string &key, uint32_t len)
+/**
+ * @brief 获取配置参数的值
+ *
+ * @param key 配置参数的参数名
+ * @param len 配置参数值的最大长度
+ * @return 成功获取配置参数的值则返回true，失败则返回false；以及表示配置参数值的字符串
+ */
+static tuple<bool, string> GetConfigParameterValue(const string &key, uint32_t len)
 {
     int handle = static_cast<int>(FindParameter(key.c_str()));
     if (handle == -1) {
@@ -49,22 +56,13 @@ tuple<bool, string> BJsonHandleConfig::GetConfigParameterValue(const string &key
     }
 }
 
-string BJsonHandleConfig::GetJsonConfig(const string &jsonCfgFilePath)
+bool BackupPara::GetBackupDebugOverrideExtensionConfig()
 {
-    UniqueFd bkupCfgFd = UniqueFd(open(jsonCfgFilePath.c_str(), O_RDONLY));
-    if (bkupCfgFd.Get() < 0) {
-        HILOGI("Fail to open file %{public}s. errno = %{public}d.", jsonCfgFilePath.c_str(), errno);
-        return "";
+    auto [getCfgParaValSucc, value] = GetConfigParameterValue(BConstants::BACKUP_DEBUG_OVERRIDE_EXTENSION_CONFIG_KEY,
+                                                              BConstants::BACKUP_PARA_VALUE_MAX);
+    if (!getCfgParaValSucc) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Fail to get configuration parameter value of backup.para");
     }
-    try {
-        unique_ptr<char[]> bkupCfgBuf = BFile::ReadFile(bkupCfgFd);
-        return bkupCfgBuf.get();
-    } catch (const bad_alloc &e) {
-        HILOGI("Fail to read json configuration file: %{public}s.", e.what());
-        return "";
-    } catch (const BError &e) {
-        HILOGI("Fail to read json configuration file: %{public}s.", e.what());
-        return "";
-    }
+    return value == "true";
 }
 } // namespace OHOS::FileManagement::Backup

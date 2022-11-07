@@ -20,13 +20,8 @@
 #include "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
-class BJsonEntityCaps {
+class BJsonEntityCaps : public BJsonEntity {
 public:
-    BJsonEntityCaps(Json::Value &obj) : obj_(obj)
-    {
-        SetFreeDiskSpace(GetFreeDiskSpace());
-    }
-
     uint64_t GetFreeDiskSpace()
     {
         if (!obj_ || !obj_.isMember("freeDiskSpace") || !obj_["freeDiskSpace"].isUInt64()) {
@@ -72,8 +67,20 @@ public:
         return obj_["deviceType"].asString();
     }
 
-private:
-    Json::Value &obj_;
+public:
+    /**
+     * @brief 构造方法，具备T(Json::Value&, std::any)能力的构造函数
+     *
+     * @param obj Json对象引用
+     * @param option 任意类型对象
+     */
+    BJsonEntityCaps(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option)
+    {
+        SetFreeDiskSpace(GetFreeDiskSpace());
+    }
+
+    BJsonEntityCaps() = delete;
+    ~BJsonEntityCaps() override = default;
 };
 } // namespace OHOS::FileManagement::Backup
 
