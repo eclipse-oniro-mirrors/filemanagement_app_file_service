@@ -49,7 +49,7 @@ ohos_unittest("b_json_test") {
   sources = [
     "b_json/b_json_cached_entity_test.cpp",
     "b_json/b_json_entity_ext_manage_test.cpp",
-    "b_json/b_json_entity_usr_config_test.cpp",
+    "b_json/b_json_entity_extension_config_test.cpp",
   ]
 
   include_dirs = [ "${path_base}/include" ]

@@ -25,8 +25,6 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-BJsonEntityExtManage::BJsonEntityExtManage(Json::Value &obj) : obj_(obj) {}
-
 Json::Value Stat2JsonValue(struct stat sta)
 {
     Json::Value value;

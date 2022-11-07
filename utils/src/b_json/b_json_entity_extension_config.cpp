@@ -13,16 +13,24 @@
  * limitations under the License.
  */
 
-#include "b_json/b_json_entity_usr_config.h"
+#include "b_json/b_json_entity_extension_config.h"
+
+#include <any>
+#include <fcntl.h>
+#include <string_view>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "b_error/b_error.h"
+#include "b_filesystem/b_file.h"
+#include "b_ohos/startup/backup_para.h"
 #include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-BJsonEntityUsrConfig::BJsonEntityUsrConfig(Json::Value &obj) : obj_(obj) {}
-
-vector<string> BJsonEntityUsrConfig::GetIncludes() const
+vector<string> BJsonEntityExtensionConfig::GetIncludes() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
@@ -52,7 +60,7 @@ vector<string> BJsonEntityUsrConfig::GetIncludes() const
     return dirs;
 }
 
-vector<string> BJsonEntityUsrConfig::GetExcludes() const
+vector<string> BJsonEntityExtensionConfig::GetExcludes() const
 {
     if (!obj_) {
         HILOGE("Uninitialized JSon Object reference");
@@ -78,7 +86,7 @@ vector<string> BJsonEntityUsrConfig::GetExcludes() const
     return dirs;
 }
 
-bool BJsonEntityUsrConfig::GetAllowToBackupRestore() const
+bool BJsonEntityExtensionConfig::GetAllowToBackupRestore() const
 {
     if (!obj_ || !obj_.isMember("allowToBackupRestore") || !obj_["allowToBackupRestore"].isBool()) {
         HILOGE("Failed to init field allowToBackupRestore");
@@ -86,5 +94,35 @@ bool BJsonEntityUsrConfig::GetAllowToBackupRestore() const
     }
 
     return obj_["allowToBackupRestore"].asBool();
+}
+
+string BJsonEntityExtensionConfig::GetJSonSource(string_view jsonFromRealWorld, any option)
+{
+    if (!BackupPara().GetBackupDebugOverrideExtensionConfig()) {
+        return string(jsonFromRealWorld);
+    }
+
+    if (!option.has_value()) {
+        if (getuid() == static_cast<uid_t>(BConstants::BACKUP_UID)) {
+            throw BError(BError::Codes::SA_INVAL_ARG, "Current process is not extension process");
+        }
+        string jsonFilePath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH).append(BConstants::BACKUP_CONFIG_JSON);
+        return BFile::ReadFile(UniqueFd(open(jsonFilePath.c_str(), O_RDONLY))).get();
+    }
+
+    if (getuid() != static_cast<uid_t>(BConstants::BACKUP_UID)) {
+        throw BError(BError::Codes::SA_INVAL_ARG, "Current process is not service process");
+    }
+    string bundleName;
+    try {
+        bundleName = any_cast<string>(option);
+    } catch (const bad_any_cast &e) {
+        throw BError(BError::Codes::SA_INVAL_ARG, e.what());
+    }
+    string jsonFilePath = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR)
+                              .append(bundleName)
+                              .append("/")
+                              .append(BConstants::BACKUP_CONFIG_JSON);
+    return BFile::ReadFile(UniqueFd(open(jsonFilePath.c_str(), O_RDONLY))).get();
 }
 } // namespace OHOS::FileManagement::Backup

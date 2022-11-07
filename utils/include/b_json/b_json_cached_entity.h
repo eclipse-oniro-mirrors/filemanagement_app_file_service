@@ -16,6 +16,7 @@
 #ifndef OHOS_FILEMGMT_BACKUP_B_JSON_CACHED_ENTITY_H
 #define OHOS_FILEMGMT_BACKUP_B_JSON_CACHED_ENTITY_H
 
+#include <any>
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -27,6 +28,7 @@
 
 #include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
+#include "b_json/b_json_entity.h"
 #include "filemgmt_libhilog.h"
 #include "unique_fd.h"
 #include "json/json.h"
@@ -43,6 +45,7 @@ public:
     T Structuralize()
     {
         static_assert(!std::is_default_constructible_v<T>);
+        static_assert(!std::is_base_of_v<T, BJsonEntity>);
         return {obj_};
     }
 
@@ -138,13 +141,14 @@ public:
     }
 
     /**
-     * @brief 构造方法，要求T必须具备T(Json::Value&)构造函数
+     * @brief 构造方法，要求T必须具备T(Json::Value&, std::any)构造函数
      *
-     * @param str 用于加载/持久化JSon对象的字符串
+     * @param sv 用于加载/持久化JSon对象的字符串
+     * @param option 任意类型对象
      */
-    BJsonCachedEntity(std::string_view sv) : entity_(std::ref(obj_))
+    BJsonCachedEntity(std::string_view sv, std::any option = std::any()) : entity_(std::ref(obj_))
     {
-        ReloadFromString(sv);
+        ReloadFromString(entity_.GetJSonSource(sv, option));
     }
 
 private:

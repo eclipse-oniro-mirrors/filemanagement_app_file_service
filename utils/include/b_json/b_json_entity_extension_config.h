@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_USR_CONFIG_H
-#define OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_USR_CONFIG_H
+#ifndef OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_EXTENSION_CONFIG_H
+#define OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_EXTENSION_CONFIG_H
 
 #include <string>
 #include <vector>
@@ -23,15 +23,8 @@
 #include "json/json.h"
 
 namespace OHOS::FileManagement::Backup {
-class BJsonEntityUsrConfig {
+class BJsonEntityExtensionConfig : public BJsonEntity {
 public:
-    /**
-     * @brief 构造方法，具备T(Json::Value&)能力的构造函数
-     *
-     * @param Json对象引用
-     */
-    BJsonEntityUsrConfig(Json::Value &obj);
-
     /**
      * @brief 从JSon对象中通过includes字段获取待备份目录模式串清单
      *
@@ -55,9 +48,18 @@ public:
      */
     bool GetAllowToBackupRestore() const;
 
-private:
-    Json::Value &obj_;
+public:
+    std::string GetJSonSource(std::string_view jsonFromRealWorld, std::any option);
+
+public:
+    /**
+     * @brief 构造方法，具备T(Json::Value&, std::any)能力的构造函数
+     *
+     * @param obj Json对象引用
+     * @param option 任意类型对象
+     */
+    BJsonEntityExtensionConfig(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option) {}
 };
 } // namespace OHOS::FileManagement::Backup
 
-#endif // OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_USR_CONFIG_H
+#endif // OHOS_FILEMGMT_BACKUP_B_JSON_ENTITY_EXTENSION_CONFIG_H
