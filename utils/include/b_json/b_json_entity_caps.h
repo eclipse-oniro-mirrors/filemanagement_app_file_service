@@ -32,9 +32,9 @@ public:
         return obj_["freeDiskSpace"].asUInt64();
     }
 
-    void SetFreeDiskSpace(uint64_t FreeDiskSpace)
+    void SetFreeDiskSpace(uint64_t freeDiskSpace)
     {
-        obj_["freeDiskSpace"] = FreeDiskSpace;
+        obj_["freeDiskSpace"] = freeDiskSpace;
     }
 
     void SetOSFullName(std::string osFullName)

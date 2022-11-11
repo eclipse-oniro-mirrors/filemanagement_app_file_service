@@ -127,7 +127,7 @@ public:
      *
      * @param fd 用于加载/持久化JSon对象的文件
      */
-    BJsonCachedEntity(UniqueFd fd) : srcFile_(std::move(fd)), entity_(std::ref(obj_))
+    explicit BJsonCachedEntity(UniqueFd fd) : srcFile_(std::move(fd)), entity_(std::ref(obj_))
     {
         struct stat stat = {};
         if (fstat(srcFile_, &stat) == -1) {

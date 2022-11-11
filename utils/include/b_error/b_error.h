@@ -145,7 +145,7 @@ public:
      * @param fileName 构造错误对象的文件（不要自己填写）
      * @param functionName 构造错误对象的函数（不要自己填写）
      */
-    BError(Codes code = Codes::OK, DEFINE_SOURCE_LOCATION) : code_(code)
+    explicit BError(Codes code = Codes::OK, DEFINE_SOURCE_LOCATION) : code_(code)
     {
         msg_ = WrapMessageWithExtraInfos(fileName, lineNo, functionName, code_, {mpErrToMsg_.at(code_)});
     }
@@ -172,7 +172,7 @@ public:
      * @param fileName 构造错误对象的文件（不要自己填写）
      * @param functionName 构造错误对象的函数（不要自己填写）
      */
-    BError(int stdErrno, DEFINE_SOURCE_LOCATION) : code_ {stdErrno}
+    explicit BError(int stdErrno, DEFINE_SOURCE_LOCATION) : code_ {stdErrno}
     {
         std::string rawMsg = std::generic_category().message(stdErrno);
         msg_ = WrapMessageWithExtraInfos(fileName, lineNo, functionName, code_, {rawMsg});

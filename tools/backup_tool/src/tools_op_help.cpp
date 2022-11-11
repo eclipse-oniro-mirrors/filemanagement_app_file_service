@@ -54,9 +54,9 @@ static int Exec(map<string, vector<string>> &mapArgToVal)
  * effects; it shall not be eliminated even if it appears to be unused" -- point 2.[basic.stc.static].c++ draft
  *
  */
-static bool g_autoRegHack = ToolsOp::Register(ToolsOp::Descriptor {
+static bool g_autoRegHack = ToolsOp::Register(ToolsOp {ToolsOp::Descriptor {
     .opName = {"help"},
     .funcGenHelpMsg = GenHelpMsg,
     .funcExec = Exec,
-});
+}});
 } // namespace OHOS::FileManagement::Backup

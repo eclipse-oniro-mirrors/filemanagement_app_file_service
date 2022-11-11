@@ -132,12 +132,12 @@ ErrCode Service::InitRestoreSession(sptr<IServiceReverse> remote, const vector<B
 {
     try {
         map<BundleName, BackupExtInfo> backupExtNameMap;
-        auto SetbackupExtNameMap = [](const BundleName &bundleName) {
+        auto setbackupExtNameMap = [](const BundleName &bundleName) {
             BackupExtInfo info {};
             return make_pair(bundleName, info);
         };
         transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
-                  SetbackupExtNameMap);
+                  setbackupExtNameMap);
         session_->Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::RESTORE,
@@ -161,12 +161,12 @@ ErrCode Service::InitBackupSession(sptr<IServiceReverse> remote, UniqueFd fd, co
 {
     try {
         map<BundleName, BackupExtInfo> backupExtNameMap;
-        auto SetbackupExtNameMap = [](const BundleName &bundleName) {
+        auto setbackupExtNameMap = [](const BundleName &bundleName) {
             BackupExtInfo info {};
             return make_pair(bundleName, info);
         };
         transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
-                  SetbackupExtNameMap);
+                  setbackupExtNameMap);
         session_->Active({
             .clientToken = IPCSkeleton::GetCallingTokenID(),
             .scenario = IServiceReverse::Scenario::BACKUP,
@@ -210,7 +210,7 @@ ErrCode Service::PublishFile(const BFileInfo &fileInfo)
 {
     try {
         HILOGE("begin");
-        session_->VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_->VerifyCallerAndScenario(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
 
         if (!regex_match(fileInfo.fileName, regex("^[0-9a-zA-Z_.]+$"))) {
             throw BError(BError::Codes::SA_INVAL_ARG, "Filename is not alphanumeric");
@@ -349,7 +349,7 @@ ErrCode Service::GetExtFileName(string &bundleName, string &fileName)
 {
     try {
         HILOGE("begin");
-        session_->VerifyCaller(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
+        session_->VerifyCallerAndScenario(IPCSkeleton::GetCallingTokenID(), IServiceReverse::Scenario::RESTORE);
         session_->SetExtFileNameRequest(bundleName, fileName);
         return BError(BError::Codes::OK);
     } catch (const BError &e) {

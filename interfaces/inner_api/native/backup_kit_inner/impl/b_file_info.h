@@ -33,10 +33,10 @@ struct BFileInfo : public Parcelable {
     BFileInfo() = default;
     BFileInfo(std::string bundleName, std::string strFileNanme, TmpFileSN id)
         : owner(bundleName), fileName(strFileNanme), sn(id) {}
-    ~BFileInfo() = default;
+    ~BFileInfo() override = default;
 
     bool ReadFromParcel(Parcel &parcel);
-    virtual bool Marshalling(Parcel &parcel) const override;
+    bool Marshalling(Parcel &parcel) const override;
     static BFileInfo *Unmarshalling(Parcel &parcel);
 };
 } // namespace OHOS::FileManagement::Backup

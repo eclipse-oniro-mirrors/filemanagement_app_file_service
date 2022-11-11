@@ -58,7 +58,7 @@ static tuple<bool, ErrCode> WaitForChild(pid_t pid,
         }
 
         if (waitpid(pid, &status, 0) == -1) {
-            throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
+            throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, generic_category().message(errno));
         } else if (WIFEXITED(status)) {
             return {false, WEXITSTATUS(status)};
         } else if (WIFSIGNALED(status)) {
@@ -83,34 +83,34 @@ tuple<bool, ErrCode> BProcess::ExecuteCmd(vector<string_view> argvSv, function<b
     // 临时将SIGCHLD恢复成默认值，从而能够从作为僵尸进程的子进程中获得返回值
     BGuardSignal guard(SIGCHLD);
 
-    int pipe_fd[2];
-    if (pipe(pipe_fd) < 0) {
-        throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+    int pipeFd[2];
+    if (pipe(pipeFd) < 0) {
+        throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, generic_category().message(errno));
     }
 
     pid_t pid = 0;
     if ((pid = fork()) == 0) {
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
-        close(pipe_fd[0]);
-        UniqueFd fd(pipe_fd[1]);
-        if (dup2(pipe_fd[1], STDERR_FILENO) == -1) {
-            throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, std::generic_category().message(errno));
+        close(pipeFd[0]);
+        UniqueFd fd(pipeFd[1]);
+        if (dup2(pipeFd[1], STDERR_FILENO) == -1) {
+            throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, generic_category().message(errno));
         }
         exit((execvp(argv[0], const_cast<char **>(argv.data())) == -1) ? errno : 0);
     }
 
-    UniqueFd fd(pipe_fd[0]);
-    close(pipe_fd[1]);
+    UniqueFd fd(pipeFd[0]);
+    close(pipeFd[1]);
     if (pid == -1) {
-        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, std::generic_category().message(errno));
+        throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, generic_category().message(errno));
     }
-    unique_ptr<FILE, function<void(FILE *)>> pipeStream {fdopen(pipe_fd[0], "r"), fclose};
+    unique_ptr<FILE, function<void(FILE *)>> pipeStream {fdopen(pipeFd[0], "r"), fclose};
     if (!pipeStream) {
         throw BError(errno);
     }
     fd.Release();
 
-    return WaitForChild(pid, std::move(pipeStream), DetectFatalLog);
+    return WaitForChild(pid, move(pipeStream), DetectFatalLog);
 }
 } // namespace OHOS::FileManagement::Backup

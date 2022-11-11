@@ -22,7 +22,7 @@
  *
  */
 
-#include <signal.h>
+#include <csignal>
 
 #include "nocopyable.h"
 
@@ -34,13 +34,13 @@ public:
      *
      * @param sig 给定信号
      */
-    BGuardSignal(int sig);
+    explicit BGuardSignal(int sig);
 
     /**
      * @brief 析构器，其中会还原给定信号的处理程序
      *
      */
-    ~BGuardSignal();
+    ~BGuardSignal() final;
 
 private:
     BGuardSignal() = delete;

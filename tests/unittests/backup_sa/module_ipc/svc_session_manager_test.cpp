@@ -105,25 +105,25 @@ void SvcSessionManagerTest::Init(IServiceReverse::Scenario scenario)
 }
 
 /**
- * @tc.number: SUB_backup_sa_session_verifycaller_0100
- * @tc.name: SUB_backup_sa_session_verifycaller_0100
- * @tc.desc: 测试 VerifyCaller 是否是有效的
+ * @tc.number: SUB_backup_sa_session_VerifyCallerAndScenario_0100
+ * @tc.name: SUB_backup_sa_session_VerifyCallerAndScenario_0100
+ * @tc.desc: 测试 VerifyCallerAndScenario 是否是有效的
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
  * @tc.require: SR000H0378
  */
-HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_verifycaller_0100, testing::ext::TestSize.Level1)
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_VerifyCallerAndScenario_0100, testing::ext::TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_verifycaller_0100";
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_VerifyCallerAndScenario_0100";
     try {
         Init(IServiceReverse::Scenario::RESTORE);
-        sessionManagerPtr_->VerifyCaller(CLIENT_TOKEN_ID, IServiceReverse::Scenario::RESTORE);
+        sessionManagerPtr_->VerifyCallerAndScenario(CLIENT_TOKEN_ID, IServiceReverse::Scenario::RESTORE);
     } catch (...) {
         EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by verifycaller.";
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by VerifyCallerAndScenario.";
     }
-    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_verifycaller_0100";
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_VerifyCallerAndScenario_0100";
 }
 
 /**
