@@ -33,7 +33,7 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-void SvcSessionManager::VerifyCaller(uint32_t clientToken, IServiceReverse::Scenario scenario) const
+void SvcSessionManager::VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
     shared_lock<shared_mutex> lock(lock_);
     if (impl_.scenario != scenario) {

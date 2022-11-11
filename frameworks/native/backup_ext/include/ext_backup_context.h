@@ -22,7 +22,7 @@ namespace OHOS::FileManagement::Backup {
 class ExtBackupContext : public AbilityRuntime::ExtensionContext {
 public:
     ExtBackupContext() {};
-    virtual ~ExtBackupContext() = default;
+    ~ExtBackupContext() override = default;
 
     static inline size_t CONTEXT_TYPE_ID = std::hash<const char *> {}("extBackupContext");
 

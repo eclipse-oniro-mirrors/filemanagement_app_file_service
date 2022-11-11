@@ -63,7 +63,7 @@ public:
      * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
      * @throw BError::Codes::SDK_MIXED_SCENARIO 调用者在备份/恢复场景使用了不匹配的函数
      */
-    void VerifyCaller(uint32_t clientToken, IServiceReverse::Scenario scen) const;
+    void VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scen) const;
 
     /**
      * @brief 激活会话
@@ -234,8 +234,8 @@ public:
      *
      * @param reversePtr 指向Service的反向指针，使用wptr避免循环引用
      */
-    SvcSessionManager(wptr<Service> reversePtr) : reversePtr_(reversePtr) {}
-    ~SvcSessionManager() = default;
+    explicit SvcSessionManager(wptr<Service> reversePtr) : reversePtr_(reversePtr) {}
+    ~SvcSessionManager() override = default;
 
 private:
     mutable std::shared_mutex lock_;

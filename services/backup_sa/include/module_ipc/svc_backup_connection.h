@@ -76,7 +76,7 @@ public:
         : callDied_(callDied), callConnDone_(callConnDone)
     {
     }
-    virtual ~SvcBackupConnection() override {};
+    ~SvcBackupConnection() override {};
 
 private:
     std::mutex mutex_;

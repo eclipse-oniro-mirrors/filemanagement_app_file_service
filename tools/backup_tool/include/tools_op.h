@@ -47,7 +47,7 @@ public:
      *
      * @param desc 操作具体信息
      */
-    ToolsOp(Descriptor &&desc) : desc_(std::move(desc)) {}
+    explicit ToolsOp(Descriptor &&desc) : desc_(std::move(desc)) {}
 
     /**
      * @brief 获取当前操作的名称。操作由多条字符串构成时，之间由空格隔开

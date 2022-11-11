@@ -40,7 +40,7 @@ public:
      * @brief 析构器，其中会把目标目录恢复为当前目录
      *
      */
-    ~BGuardCwd();
+    ~BGuardCwd() final;
 
 private:
     BGuardCwd() = delete;

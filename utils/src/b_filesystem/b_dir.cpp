@@ -151,7 +151,7 @@ pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &
         }
     }
 
-    auto IsMatch = [](const vector<string> &s, const string &str) -> bool {
+    auto isMatch = [](const vector<string> &s, const string &str) -> bool {
         if (str.empty()) {
             return false;
         }
@@ -166,7 +166,7 @@ pair<ErrCode, map<string, struct stat>> BDir::GetBigFiles(const vector<string> &
 
     map<string, struct stat> bigFiles;
     for (const auto &item : incFiles) {
-        if (!IsMatch(excludes, item.first)) {
+        if (!isMatch(excludes, item.first)) {
             HILOGI("file %{public}s matchs include condition and unmatchs exclude condition", item.first.c_str());
             bigFiles[item.first] = item.second;
         }

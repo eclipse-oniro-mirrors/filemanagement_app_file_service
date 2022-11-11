@@ -29,7 +29,7 @@ public:
 
 public:
     BTarballPosixFile() = default;
-    BTarballPosixFile(const std::string &pathName);
+    explicit BTarballPosixFile(const std::string &pathName);
     ~BTarballPosixFile() = default;
 
 private:

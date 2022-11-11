@@ -35,8 +35,8 @@ public:
 
 public:
     ServiceReverse() = delete;
-    ServiceReverse(BSessionRestore::Callbacks callbacks);
-    ServiceReverse(BSessionBackup::Callbacks callbacks);
+    explicit ServiceReverse(BSessionRestore::Callbacks callbacks);
+    explicit ServiceReverse(BSessionBackup::Callbacks callbacks);
     ~ServiceReverse() override = default;
 
 private:

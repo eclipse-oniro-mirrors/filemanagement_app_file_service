@@ -30,7 +30,7 @@ public:
     };
 
 public:
-    SvcDeathRecipient(std::function<void(const wptr<IRemoteObject> &)> functor) : functor_(functor) {};
+    explicit SvcDeathRecipient(std::function<void(const wptr<IRemoteObject> &)> functor) : functor_(functor) {};
 
 private:
     std::function<void(const wptr<IRemoteObject> &)> functor_;

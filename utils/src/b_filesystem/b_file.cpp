@@ -43,32 +43,33 @@ unique_ptr<char[]> BFile::ReadFile(const UniqueFd &fd)
     off_t fileSize = stat.st_size;
     if (fileSize == 0) {
         HILOGI("Deserialized an empty file");
-        return std::make_unique<char[]>(1);
+        return make_unique<char[]>(1);
     }
 
-    auto buf = std::make_unique<char[]>(fileSize + 1);
+    auto buf = make_unique<char[]>(fileSize + 1);
     if (read(fd, buf.get(), fileSize) == -1) {
         throw BError(errno);
     }
     return buf;
 }
 
-void BFile::SendFile(int out_fd, int in_fd)
+void BFile::SendFile(int outFd, int inFd)
 {
     long offset = 0;
     long ret = 0;
-    if (lseek(out_fd, 0, SEEK_SET) == -1) {
+    if (lseek(outFd, 0, SEEK_SET) == -1) {
         throw BError(errno);
     }
-    if (lseek(in_fd, 0, SEEK_SET) == -1) {
+    if (lseek(inFd, 0, SEEK_SET) == -1) {
         throw BError(errno);
     }
     struct stat stat = {};
-    if (fstat(in_fd, &stat) == -1) {
+    if (fstat(inFd, &stat) == -1) {
         throw BError(errno);
     }
-    while ((ret = sendfile(out_fd, in_fd, &offset, stat.st_size)) > 0)
-        ;
+    while ((ret = sendfile(outFd, inFd, &offset, stat.st_size)) > 0) {
+    };
+
     if (ret == -1) {
         throw BError(errno);
     }

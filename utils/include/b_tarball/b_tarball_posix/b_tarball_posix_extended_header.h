@@ -27,7 +27,7 @@ public:
 
 public:
     BTarballPosixExtendedHeader() = default;
-    BTarballPosixExtendedHeader(BTarballPosixExtendedData &extData);
+    explicit BTarballPosixExtendedHeader(BTarballPosixExtendedData &extData);
     ~BTarballPosixExtendedHeader() = default;
 
 private:

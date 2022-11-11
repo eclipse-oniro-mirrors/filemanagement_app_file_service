@@ -31,7 +31,7 @@ void BTarballPosixFileData::Publish(const UniqueFd &inFile, const UniqueFd &outF
         case S_IFLNK:
         case S_IFDIR:
             break;
-        case S_IFREG:
+        case S_IFREG: {
             loff_t inOffset = 0;
             loff_t outOffset = lseek(outFile, 0, SEEK_CUR);
             ssize_t lengthToCopy = stat_.st_size;
@@ -54,6 +54,9 @@ void BTarballPosixFileData::Publish(const UniqueFd &inFile, const UniqueFd &outF
                     throw exception();
                 }
             }
+            break;
+        }
+        default:
             break;
     }
 }

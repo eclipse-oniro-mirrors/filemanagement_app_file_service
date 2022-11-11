@@ -126,7 +126,7 @@ public:
     std::string GetUsrConfig() const;
 
 public:
-    ExtBackupJs(AbilityRuntime::JsRuntime &jsRuntime) : jsRuntime_(jsRuntime) {}
+    explicit ExtBackupJs(AbilityRuntime::JsRuntime &jsRuntime) : jsRuntime_(jsRuntime) {}
     ~ExtBackupJs() override = default;
 
 private:

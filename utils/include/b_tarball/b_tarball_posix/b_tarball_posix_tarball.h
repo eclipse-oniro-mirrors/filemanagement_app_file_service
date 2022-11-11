@@ -29,7 +29,7 @@ public:
 
 public:
     BTarballPosixTarball() = default;
-    BTarballPosixTarball(const std::string pathTarball);
+    explicit BTarballPosixTarball(const std::string pathTarball);
     ~BTarballPosixTarball() = default;
 
 private:

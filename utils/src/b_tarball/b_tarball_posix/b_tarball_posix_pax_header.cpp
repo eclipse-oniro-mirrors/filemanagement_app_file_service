@@ -56,6 +56,8 @@ BTarballPosixPaxHeader::BTarballPosixPaxHeader(const string &pathName, const str
                 throw exception();
             }
             break;
+        default:
+            break;
     }
     strncpy_s(header_.uname, BConstants::UGNAME_MAX_SIZE, getpwuid(statInfo.st_uid)->pw_name,
               BConstants::UGNAME_MAX_SIZE - 1);

@@ -27,7 +27,7 @@ public:
 
 public:
     BTarballPosixFileData() = default;
-    BTarballPosixFileData(struct stat &statInfo);
+    explicit BTarballPosixFileData(struct stat &statInfo);
     ~BTarballPosixFileData() = default;
 
 private:
