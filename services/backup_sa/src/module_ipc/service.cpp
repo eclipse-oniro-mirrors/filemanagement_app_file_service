@@ -16,7 +16,8 @@
 /*
  * 注意：
  *     - 注意点1：本文件原则上只处理与IPC无关的业务逻辑
- *     - 注意点2：本文件原则上要捕获所有异常，防止异常扩散到异常不安全的模块
+ *     - 注意点2：This document, in principle, captures all exceptions.
+ *               Prevent exceptions from spreading to insecure modules.
  */
 #include "module_ipc/service.h"
 

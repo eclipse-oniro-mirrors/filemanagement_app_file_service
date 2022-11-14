@@ -276,9 +276,7 @@ int BackupExtExtension::HandleBackup(const BJsonEntityExtensionConfig &usrConfig
         // 打包
         auto tarballTar = BTarballFactory::Create("cmdline", tarName);
         (tarballTar->tar)(root, {includes.begin(), includes.end()}, {excludes.begin(), excludes.end()});
-        if (chmod(tarName.data(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) < 0) {
-            throw BError(errno);
-        }
+
         struct stat sta = {};
         if (stat(tarName.data(), &sta) == -1) {
             HILOGE("failed to invoke the system function stat, %{public}s", tarName.c_str());
