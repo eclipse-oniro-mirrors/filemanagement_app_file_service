@@ -45,7 +45,7 @@ public:
          * An absolute path is required.
          * @param _2 _1中需要打包的路径。
          * 要求输入相对路径，除禁止路径穿越外无其余要求，不填默认全部打包
-         * @param _3 待打包路径中无需打包的部分。
+         * @param _3 The part that does not need to be packed in the path to be packed.
          * 要求输入相对路径，路径穿越场景无实际意义因此予以禁止。可用于排除部分子目录
          */
         std::function<void(std::string_view, std::vector<std::string_view>, std::vector<std::string_view>)> tar;
