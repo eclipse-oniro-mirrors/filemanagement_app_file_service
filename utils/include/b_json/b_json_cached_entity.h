@@ -46,7 +46,7 @@ public:
     {
         static_assert(!std::is_default_constructible_v<T>);
         static_assert(!std::is_base_of_v<T, BJsonEntity>);
-        return {obj_};
+        return T(obj_);
     }
 
     /**
@@ -146,7 +146,7 @@ public:
      * @param sv 用于加载/持久化JSon对象的字符串
      * @param option 任意类型对象
      */
-    BJsonCachedEntity(std::string_view sv, std::any option = std::any()) : entity_(std::ref(obj_))
+    explicit BJsonCachedEntity(std::string_view sv, std::any option = std::any()) : entity_(std::ref(obj_))
     {
         ReloadFromString(entity_.GetJSonSource(sv, option));
     }

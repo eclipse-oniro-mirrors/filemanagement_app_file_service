@@ -44,7 +44,7 @@ public:
      * @param obj Json对象引用
      * @param option 任意类型对象
      */
-    BJsonEntity(Json::Value &obj, std::any option = std::any()) : obj_(obj), option_(option) {}
+    explicit BJsonEntity(Json::Value &obj, std::any option = std::any()) : obj_(obj), option_(option) {}
     BJsonEntity() = delete;
     virtual ~BJsonEntity() = default;
 

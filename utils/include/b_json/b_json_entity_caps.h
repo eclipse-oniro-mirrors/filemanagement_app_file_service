@@ -74,7 +74,7 @@ public:
      * @param obj Json对象引用
      * @param option 任意类型对象
      */
-    BJsonEntityCaps(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option)
+    explicit BJsonEntityCaps(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option)
     {
         SetFreeDiskSpace(GetFreeDiskSpace());
     }
