@@ -71,6 +71,10 @@ void SvcSessionManager::Active(Impl newImpl)
 void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool force)
 {
     unique_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken || !impl_.clientProxy) {
+        HILOGI("Empty session");
+        return;
+    }
     if (!force && (!impl_.clientToken || !impl_.clientProxy)) {
         throw BError(BError::Codes::SA_REFUSED_ACT, "Try to deactive an empty session");
     }
