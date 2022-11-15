@@ -34,7 +34,7 @@ public:
      *
      * @param tgtDir 目标目录
      */
-    BGuardCwd(std::string_view tgtDir);
+    explicit BGuardCwd(std::string_view tgtDir);
 
     /**
      * @brief 析构器，其中会把目标目录恢复为当前目录

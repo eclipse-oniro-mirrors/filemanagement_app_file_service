@@ -73,7 +73,7 @@ public:
      * @param obj Json对象引用
      * @param option 任意类型对象
      */
-    BJsonEntityExtManage(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option) {}
+    explicit BJsonEntityExtManage(Json::Value &obj, std::any option = std::any()) : BJsonEntity(obj, option) {}
 };
 } // namespace OHOS::FileManagement::Backup
 

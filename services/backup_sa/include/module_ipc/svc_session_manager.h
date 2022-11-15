@@ -59,11 +59,11 @@ public:
      * @brief 检验调用者是否是会话所有者，且当前命令是否与当前场景相匹配
      *
      * @param clientToken 调用者TOKEN
-     * @param scen 给定场景
+     * @param scenario 给定场景
      * @throw BError::Codes::SA_REFUSED_ACT 调用者不是会话所有者
      * @throw BError::Codes::SDK_MIXED_SCENARIO 调用者在备份/恢复场景使用了不匹配的函数
      */
-    void VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scen) const;
+    void VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scenario) const;
 
     /**
      * @brief 激活会话

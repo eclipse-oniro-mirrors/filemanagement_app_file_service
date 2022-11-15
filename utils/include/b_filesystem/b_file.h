@@ -37,11 +37,11 @@ public:
 
     /**
      * @brief linux sendfile 二次封装
-     * @param out_fd 参数是待写入内容的文件描述符
-     * @param in_fd 参数是待读出内容的文件描述符
+     * @param outFd 参数是待写入内容的文件描述符
+     * @param inFd 参数是待读出内容的文件描述符
      * @throw std::system_error IO异常
      */
-    static void SendFile(int out_fd, int in_fd);
+    static void SendFile(int outFd, int inFd);
 
     /**
      * @brief linux write 二次封装
