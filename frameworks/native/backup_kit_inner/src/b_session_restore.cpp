@@ -102,7 +102,7 @@ ErrCode BSessionRestore::GetExtFileName(string &bundleName, string &fileName)
 void BSessionRestore::RegisterBackupServiceDied(std::function<void()> functor)
 {
     auto proxy = ServiceProxy::GetInstance();
-    if (proxy == nullptr) {
+    if (proxy == nullptr || !functor) {
         return;
     }
     auto remoteObj = proxy->AsObject();
