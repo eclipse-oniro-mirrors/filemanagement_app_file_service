@@ -67,7 +67,7 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
 void BSessionBackup::RegisterBackupServiceDied(std::function<void()> functor)
 {
     auto proxy = ServiceProxy::GetInstance();
-    if (proxy == nullptr) {
+    if (proxy == nullptr || !functor) {
         return;
     }
     auto remoteObj = proxy->AsObject();
