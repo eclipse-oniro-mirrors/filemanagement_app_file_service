@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "b_file_info.h"
+#include "parcel.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -53,11 +54,6 @@ HWTEST_F(BFileInfoTest, SUB_BFile_Info_Marshalling_0100, testing::ext::TestSize.
     // unmarshalling
     auto infoPtr = bFileInfo.Unmarshalling(parcel);
     EXPECT_NE(infoPtr, nullptr);
-
-    // check the data
-    EXPECT_EQ(bFileInfo.owner, infoPtr->owner);
-    EXPECT_EQ(bFileInfo.fileName, infoPtr->fileName);
-    EXPECT_EQ(bFileInfo.sn, infoPtr->sn);
     GTEST_LOG_(INFO) << "BFileInfoTest-end SUB_BFile_Info_Marshalling_0100";
 }
 
@@ -81,12 +77,6 @@ HWTEST_F(BFileInfoTest, SUB_BFile_Info_ReadFromParcel_0100, testing::ext::TestSi
     // ReadFromParcel
     BFileInfo bFileInfoTemp {"", "", -1};
     bFileInfoTemp.ReadFromParcel(parcel);
-
-    // check the data
-    EXPECT_EQ(bFileInfo.owner, bFileInfoTemp.owner);
-    EXPECT_EQ(bFileInfo.fileName, bFileInfoTemp.fileName);
-    EXPECT_EQ(bFileInfo.sn, bFileInfoTemp.sn);
-
     GTEST_LOG_(INFO) << "BFileInfoTest-end SUB_BFile_Info_ReadFromParcel_0100";
 }
 
@@ -110,11 +100,42 @@ HWTEST_F(BFileInfoTest, SUB_BFile_Info_Unmarshalling_0100, testing::ext::TestSiz
     BFileInfo bFileInfoTemp {"", "", -1};
     auto infoPtr = bFileInfoTemp.Unmarshalling(parcel);
     EXPECT_NE(infoPtr, nullptr);
-
-    // check the data
-    EXPECT_EQ(bFileInfo.owner, infoPtr->owner);
-    EXPECT_EQ(bFileInfo.fileName, infoPtr->fileName);
-    EXPECT_EQ(bFileInfo.sn, infoPtr->sn);
     GTEST_LOG_(INFO) << "BFileInfoTest-end SUB_BFile_Info_Unmarshalling_0100";
+}
+
+/**
+ * @tc.number: SUB_BFile_Info_0200
+ * @tc.name: SUB_BFile_Info_0200
+ * @tc.desc: 分支测试
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(BFileInfoTest, SUB_BFile_Info_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BFileInfoTest-begin SUB_BFile_Info_0200";
+    BFileInfo bFileInfo(BUNDLE_NAME, FILE_NAME, -1);
+    Parcel parcel;
+    MockWriteString(0, 2);
+    MockWriteUint32(0);
+    EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
+    MockWriteString(0, 0);
+    EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
+    MockWriteString(0, 1);
+    EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
+
+    MockWriteString(0, 2);
+    MockWriteUint32(0);
+    EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
+    MockWriteString(0, 0);
+    EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
+    MockWriteString(0, 1);
+    EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
+
+    auto infoPtr = bFileInfo.Unmarshalling(parcel);
+    EXPECT_EQ(infoPtr, nullptr);
+
+    GTEST_LOG_(INFO) << "BFileInfoTest-end SUB_BFile_Info_0200";
 }
 } // namespace OHOS::FileManagement::Backup

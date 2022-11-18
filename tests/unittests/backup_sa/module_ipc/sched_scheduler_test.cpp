@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-#include <cstddef>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "b_error/b_error.h"
 #include "module_ipc/service.h"
+#include "module_ipc/svc_session_manager.h"
 #include "module_sched/sched_scheduler.h"
-#include "svc_session_manager_mock.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -28,47 +27,35 @@ using namespace testing;
 
 namespace {
 const string BUNDLE_NAME = "com.example.app2backup";
-const string MANAGE_JSON = "manage.json";
-const string FILE_NAME = "1.tar";
 constexpr int32_t CLIENT_TOKEN_ID = 100;
 constexpr int32_t SERVICE_ID = 5203;
 } // namespace
 
-class ServiceMock : public Service {
-public:
-    explicit ServiceMock(int32_t saID) : Service(saID) {};
-    ~ServiceMock() = default;
-
-    MOCK_METHOD1(LaunchBackupExtension, ErrCode(const BundleName &));
-    MOCK_METHOD1(ExtStart, void(const string &));
-};
-
 class SchedSchedulerTest : public testing::Test {
 public:
-    static void SetUpTestCase(void) {};
-    static void TearDownTestCase() {};
-    void SetUp() override;
-    void TearDown() override;
-
+    static void SetUpTestCase(void);
+    static void TearDownTestCase();
+    void SetUp() override {};
+    void TearDown() override {};
     void Init(IServiceReverse::Scenario scenario);
 
-    sptr<SchedScheduler> schedPtr_;
-    sptr<ServiceMock> servicePtr_;
-    sptr<SvcSessionManagerMock> sessionManagerPtr_;
+    static inline sptr<SchedScheduler> schedPtr_ = nullptr;
+    static inline sptr<SvcSessionManager> sessionManagerPtr_ = nullptr;
+    static inline sptr<Service> servicePtr_ = nullptr;
 };
 
-void SchedSchedulerTest::SetUp()
+void SchedSchedulerTest::SetUpTestCase()
 {
-    servicePtr_ = sptr<ServiceMock>(new ServiceMock(SERVICE_ID));
-    sessionManagerPtr_ = sptr<SvcSessionManagerMock>(new SvcSessionManagerMock(wptr(servicePtr_)));
+    servicePtr_ = sptr<Service>(new Service(SERVICE_ID));
+    sessionManagerPtr_ = sptr<SvcSessionManager>(new SvcSessionManager(wptr(servicePtr_)));
     schedPtr_ = sptr(new SchedScheduler(wptr(servicePtr_), wptr(sessionManagerPtr_)));
 }
 
-void SchedSchedulerTest::TearDown()
+void SchedSchedulerTest::TearDownTestCase()
 {
-    schedPtr_ = nullptr;
-    sessionManagerPtr_ = nullptr;
     servicePtr_ = nullptr;
+    sessionManagerPtr_ = nullptr;
+    schedPtr_ = nullptr;
 }
 
 void SchedSchedulerTest::Init(IServiceReverse::Scenario scenario)
@@ -86,11 +73,6 @@ void SchedSchedulerTest::Init(IServiceReverse::Scenario scenario)
     transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
               setBackupExtNameMap);
 
-    EXPECT_CALL(*sessionManagerPtr_, GetBundleExtNames(_)).Times(1).WillOnce(Return());
-    EXPECT_CALL(*sessionManagerPtr_, InitClient(_)).Times(1).WillOnce(Return());
-    EXPECT_CALL(*sessionManagerPtr_, InitExtConn(_))
-        .Times(1)
-        .WillOnce(Invoke(sessionManagerPtr_.GetRefPtr(), &SvcSessionManagerMock::InvokeInitExtConn));
     sessionManagerPtr_->Active({
         .clientToken = CLIENT_TOKEN_ID,
         .scenario = scenario,
@@ -112,9 +94,7 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_Sched_0100, testing::ext::TestSize.Leve
     GTEST_LOG_(INFO) << "SchedSchedulerTest-begin SUB_Service_Sched_0100";
     try {
         Init(IServiceReverse::Scenario::BACKUP);
-        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::FINISH);
         schedPtr_->Sched();
-        servicePtr_->OnStop();
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-an exception occurred by Sched.";
@@ -135,14 +115,10 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_ExecutingQueueTasks_0100, testing::ext:
 {
     GTEST_LOG_(INFO) << "SchedSchedulerTest-begin SUB_Service_ExecutingQueueTasks_0100";
     try {
-        Init(IServiceReverse::Scenario::RESTORE);
-        EXPECT_CALL(*servicePtr_, LaunchBackupExtension(_)).Times(1).WillOnce(Return(0));
-        EXPECT_CALL(*servicePtr_, ExtStart(_)).Times(1).WillOnce(Return());
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
         schedPtr_->ExecutingQueueTasks(BUNDLE_NAME);
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::RUNNING);
         schedPtr_->ExecutingQueueTasks(BUNDLE_NAME);
-        servicePtr_->OnStop();
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-an exception occurred by ExecutingQueueTasks.";
@@ -163,12 +139,10 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_RemoveExtConn_0100, testing::ext::TestS
 {
     GTEST_LOG_(INFO) << "SchedSchedulerTest-begin SUB_Service_RemoveExtConn_0100";
     try {
-        Init(IServiceReverse::Scenario::BACKUP);
-        EXPECT_CALL(*servicePtr_, LaunchBackupExtension(_)).Times(1).WillOnce(Return(0));
+        Init(IServiceReverse::Scenario::RESTORE);
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
         schedPtr_->ExecutingQueueTasks(BUNDLE_NAME);
         schedPtr_->RemoveExtConn(BUNDLE_NAME);
-        servicePtr_->OnStop();
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-an exception occurred by RemoveExtConn.";

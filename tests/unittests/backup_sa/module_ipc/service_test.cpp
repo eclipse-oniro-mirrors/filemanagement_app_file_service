@@ -13,21 +13,15 @@
  * limitations under the License.
  */
 
-#include <cstddef>
-#include <gmock/gmock.h>
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include "b_error/b_error.h"
-#include "b_file_info.h"
-#include "ext_extension_mock.h"
 #include "module_ipc/service.h"
-#include "module_sched/sched_scheduler.h"
-#include "service_proxy.h"
 #include "service_reverse_mock.h"
-#include "svc_session_manager_mock.h"
 #include "test_manager.h"
-#include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -42,44 +36,33 @@ constexpr int32_t SERVICE_ID = 5203;
 
 class ServiceTest : public testing::Test {
 public:
-    static void SetUpTestCase(void) {};
-    static void TearDownTestCase() {};
-    void SetUp() override;
-    void TearDown() override;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase();
+    void SetUp() {};
+    void TearDown() {};
 
     ErrCode Init(IServiceReverse::Scenario scenario);
-    void InitExtConnection();
-    void InitSched();
 
-    sptr<Service> servicePtr_;
-    sptr<ServiceReverseMock> remote_;
-    sptr<SvcSessionManagerMock> sessionManagerPtr_;
+    static inline sptr<Service> servicePtr_ = nullptr;
+    static inline sptr<ServiceReverseMock> remote_ = nullptr;
 };
 
-void ServiceTest::SetUp()
+void ServiceTest::SetUpTestCase(void)
 {
+    GTEST_LOG_(INFO) << "SetUpTestCase enter";
     servicePtr_ = sptr<Service>(new Service(SERVICE_ID));
-    sessionManagerPtr_ = sptr<SvcSessionManagerMock>(new SvcSessionManagerMock(wptr(servicePtr_)));
     remote_ = sptr(new ServiceReverseMock());
-    servicePtr_->session_ = sessionManagerPtr_;
 }
 
-void ServiceTest::TearDown()
+void ServiceTest::TearDownTestCase()
 {
-    remote_ = nullptr;
-    sessionManagerPtr_ = nullptr;
-    servicePtr_->session_ = nullptr;
-    servicePtr_->sched_ = nullptr;
+    GTEST_LOG_(INFO) << "TearDownTestCase enter";
     servicePtr_ = nullptr;
+    remote_ = nullptr;
 }
 
 ErrCode ServiceTest::Init(IServiceReverse::Scenario scenario)
 {
-    EXPECT_CALL(*sessionManagerPtr_, GetBundleExtNames(_)).Times(1).WillOnce(Return());
-    EXPECT_CALL(*sessionManagerPtr_, InitClient(_)).Times(1).WillOnce(Return());
-    EXPECT_CALL(*sessionManagerPtr_, InitExtConn(_))
-        .Times(1)
-        .WillOnce(Invoke(sessionManagerPtr_.GetRefPtr(), &SvcSessionManagerMock::InvokeInitExtConn));
     vector<string> bundleNames;
     bundleNames.emplace_back(BUNDLE_NAME);
     ErrCode ret = 0;
@@ -91,24 +74,6 @@ ErrCode ServiceTest::Init(IServiceReverse::Scenario scenario)
         ret = servicePtr_->InitBackupSession(remote_, move(fd), bundleNames);
     }
     return ret;
-}
-
-void ServiceTest::InitExtConnection()
-{
-    AppExecFwk::ElementName element;
-    element.SetBundleName(BUNDLE_NAME);
-    int resultCode = 1;
-    sptr<BackupExtExtensionMock> mock = sptr(new BackupExtExtensionMock());
-    auto backupCon = servicePtr_->session_->GetExtConnection(BUNDLE_NAME);
-    backupCon->OnAbilityConnectDone(element, mock->AsObject(), resultCode);
-    bool ret = backupCon->IsExtAbilityConnected();
-    EXPECT_TRUE(ret);
-}
-
-void ServiceTest::InitSched()
-{
-    servicePtr_->sched_ = sptr(new SchedScheduler(wptr(servicePtr_), wptr(sessionManagerPtr_)));
-    servicePtr_->session_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::FINISH);
 }
 
 /**
@@ -134,47 +99,24 @@ HWTEST_F(ServiceTest, SUB_Service_GetLocalCapabilities_0100, testing::ext::TestS
 }
 
 /**
- * @tc.number: SUB_Service_InitRestoreSession_0100
- * @tc.name: SUB_Service_InitRestoreSession_0100
- * @tc.desc: 测试 InitRestoreSession restore初始化流程
+ * @tc.number: SUB_Service_OnStart_0100
+ * @tc.name: SUB_Service_OnStart_0100
+ * @tc.desc: 测试 OnStart 接口
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
  * @tc.require: SR000H0378
  */
-HWTEST_F(ServiceTest, SUB_Service_InitRestoreSession_0100, testing::ext::TestSize.Level1)
+HWTEST_F(ServiceTest, SUB_Service_OnStart_0100, testing::ext::TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_InitRestoreSession_0100";
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_OnStart_0100";
     try {
-        ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        servicePtr_->OnStart();
     } catch (...) {
         EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by InitRestoreSession.";
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by OnStart.";
     }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_InitRestoreSession_0100";
-}
-
-/**
- * @tc.number: SUB_Service_InitBackupSession_0100
- * @tc.name: SUB_Service_InitBackupSession_0100
- * @tc.desc: 测试 InitBackupSession backup初始化流程
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: SR000H0378
- */
-HWTEST_F(ServiceTest, SUB_Service_InitBackupSession_0100, testing::ext::TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_InitBackupSession_0100";
-    try {
-        ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by InitBackupSession.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_InitBackupSession_0100";
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_OnStart_0100";
 }
 
 /**
@@ -190,10 +132,7 @@ HWTEST_F(ServiceTest, SUB_Service_Start_0100, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_Start_0100";
     try {
-        ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitSched();
-        ret = servicePtr_->Start();
+        auto ret = servicePtr_->Start();
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
@@ -217,7 +156,6 @@ HWTEST_F(ServiceTest, SUB_Service_PublishFile_0100, testing::ext::TestSize.Level
     try {
         ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitExtConnection();
         BFileInfo fileInfo {BUNDLE_NAME, FILE_NAME, 0};
         ret = servicePtr_->PublishFile(fileInfo);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
@@ -226,6 +164,57 @@ HWTEST_F(ServiceTest, SUB_Service_PublishFile_0100, testing::ext::TestSize.Level
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by PublishFile.";
     }
     GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_PublishFile_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_AppFileReady_0100
+ * @tc.name: SUB_Service_AppFileReady_0100
+ * @tc.desc: 测试 AppFileReady 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceTest, SUB_Service_AppFileReady_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_AppFileReady_0100";
+    try {
+        string fileName = MANAGE_JSON;
+        auto ret = servicePtr_->AppFileReady(fileName, UniqueFd(-1));
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by AppFileReady.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_AppFileReady_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_AppDone_0100
+ * @tc.name: SUB_Service_AppDone_0100
+ * @tc.desc: 测试 AppDone 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceTest, SUB_Service_AppDone_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_AppDone_0100";
+    try {
+        GTEST_LOG_(INFO) << "SUB_Service_AppDone_0100 RESTORE";
+        auto ret = servicePtr_->AppDone(BError(BError::Codes::OK));
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "SUB_Service_AppDone_0100 BACKUP";
+        ret = Init(IServiceReverse::Scenario::BACKUP);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        ret = servicePtr_->AppDone(BError(BError::Codes::OK));
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by AppDone.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_AppDone_0100";
 }
 
 /**
@@ -241,41 +230,21 @@ HWTEST_F(ServiceTest, SUB_Service_LaunchBackupExtension_0100, testing::ext::Test
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_LaunchBackupExtension_0100";
     try {
+        GTEST_LOG_(INFO) << "SUB_Service_LaunchBackupExtension_0100 RESTORE";
         ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitExtConnection();
         ret = servicePtr_->LaunchBackupExtension(BUNDLE_NAME);
-        EXPECT_NE(ret, BError(BError::Codes::OK));
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "SUB_Service_LaunchBackupExtension_0100 BACKUP";
+        ret = Init(IServiceReverse::Scenario::BACKUP);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        ret = servicePtr_->LaunchBackupExtension(BUNDLE_NAME);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by LaunchBackupExtension.";
     }
     GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_LaunchBackupExtension_0100";
-}
-
-/**
- * @tc.number: SUB_Service_LaunchBackupExtension_0200
- * @tc.name: SUB_Service_LaunchBackupExtension_0200
- * @tc.desc: 测试 LaunchBackupExtension 接口
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: SR000H0378
- */
-HWTEST_F(ServiceTest, SUB_Service_LaunchBackupExtension_0200, testing::ext::TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_LaunchBackupExtension_0200";
-    try {
-        ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitExtConnection();
-        ret = servicePtr_->LaunchBackupExtension(BUNDLE_NAME);
-        EXPECT_NE(ret, BError(BError::Codes::OK));
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by LaunchBackupExtension.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_LaunchBackupExtension_0200";
 }
 
 /**
@@ -306,6 +275,36 @@ HWTEST_F(ServiceTest, SUB_Service_GetExtFileName_0100, testing::ext::TestSize.Le
 }
 
 /**
+ * @tc.number: SUB_Service_OnBackupExtensionDied_0100
+ * @tc.name: SUB_Service_OnBackupExtensionDied_0100
+ * @tc.desc: 测试 OnBackupExtensionDied 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceTest, SUB_Service_OnBackupExtensionDied_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_OnBackupExtensionDied_0100";
+    try {
+        GTEST_LOG_(INFO) << "SUB_Service_OnBackupExtensionDied_0100 RESTORE";
+        ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        string bundleName = BUNDLE_NAME;
+        servicePtr_->OnBackupExtensionDied(move(bundleName), BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "SUB_Service_OnBackupExtensionDied_0100 BACKUP";
+        ret = Init(IServiceReverse::Scenario::BACKUP);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        bundleName = BUNDLE_NAME;
+        servicePtr_->OnBackupExtensionDied(move(bundleName), BError(BError::Codes::OK));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by GetExtFileName.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_OnBackupExtensionDied_0100";
+}
+
+/**
  * @tc.number: SUB_Service_ExtStart_0100
  * @tc.name: SUB_Service_ExtStart_0100
  * @tc.desc: 测试 ExtStart 接口
@@ -318,11 +317,17 @@ HWTEST_F(ServiceTest, SUB_Service_ExtStart_0100, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtStart_0100";
     try {
+        GTEST_LOG_(INFO) << "SUB_Service_ExtStart_0100 BACKUP";
         ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitSched();
-        InitExtConnection();
-
+        servicePtr_->ExtStart(BUNDLE_NAME);
+        GTEST_LOG_(INFO) << "SUB_Service_ExtStart_0100 RESTORE";
+        ret = Init(IServiceReverse::Scenario::RESTORE);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        string bundleName = BUNDLE_NAME;
+        string fileName = FILE_NAME;
+        ret = servicePtr_->GetExtFileName(bundleName, fileName);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
         servicePtr_->ExtStart(BUNDLE_NAME);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -332,63 +337,28 @@ HWTEST_F(ServiceTest, SUB_Service_ExtStart_0100, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.number: SUB_Service_ExtStart_0200
- * @tc.name: SUB_Service_ExtStart_0200
- * @tc.desc: 测试 ExtStart 接口
+ * @tc.number: SUB_Service_Dump_0100
+ * @tc.name: SUB_Service_Dump_0100
+ * @tc.desc: 测试 Dump 接口
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
  * @tc.require: SR000H0378
  */
-HWTEST_F(ServiceTest, SUB_Service_ExtStart_0200, testing::ext::TestSize.Level1)
+HWTEST_F(ServiceTest, SUB_Service_Dump_0100, testing::ext::TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtStart_0200";
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_Dump_0100";
     try {
-        ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitSched();
-        InitExtConnection();
-        string bundleName = BUNDLE_NAME;
-        string fileName = FILE_NAME;
-        ret = servicePtr_->GetExtFileName(bundleName, fileName);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-
-        servicePtr_->ExtStart(BUNDLE_NAME);
+        servicePtr_->Dump(-1, {});
+        TestManager tm("ServiceTest_GetFd_0100");
+        string filePath = tm.GetRootDirCurTest().append(FILE_NAME);
+        UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+        servicePtr_->Dump(move(fd), {});
     } catch (...) {
         EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by ExtStart.";
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by Dump.";
     }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_ExtStart_0200";
-}
-
-/**
- * @tc.number: SUB_Service_ExtStart_0300
- * @tc.name: SUB_Service_ExtStart_0300
- * @tc.desc: 测试 ExtStart 接口
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: SR000H0378
- */
-HWTEST_F(ServiceTest, SUB_Service_ExtStart_0300, testing::ext::TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtStart_0300";
-    try {
-        ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitExtConnection();
-        InitSched();
-        string bundleName = BUNDLE_NAME;
-        string fileName = "";
-        ret = servicePtr_->GetExtFileName(bundleName, fileName);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-
-        servicePtr_->ExtStart(BUNDLE_NAME);
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by ExtStart.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_ExtStart_0300";
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_Dump_0100";
 }
 
 /**
@@ -404,9 +374,13 @@ HWTEST_F(ServiceTest, SUB_Service_ExtConnectFailed_0100, testing::ext::TestSize.
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtConnectFailed_0100";
     try {
+        GTEST_LOG_(INFO) << "SUB_Service_ExtConnectFailed_0100 RESTORE";
         ErrCode ret = Init(IServiceReverse::Scenario::RESTORE);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitSched();
+        servicePtr_->ExtConnectFailed(BUNDLE_NAME, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "SUB_Service_ExtConnectFailed_0100 BACKUP";
+        ret = Init(IServiceReverse::Scenario::BACKUP);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
         servicePtr_->ExtConnectFailed(BUNDLE_NAME, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
@@ -416,26 +390,65 @@ HWTEST_F(ServiceTest, SUB_Service_ExtConnectFailed_0100, testing::ext::TestSize.
 }
 
 /**
- * @tc.number: SUB_Service_ExtConnectFailed_0200
- * @tc.name: SUB_Service_ExtConnectFailed_0200
- * @tc.desc: 测试 ExtConnectFailed 接口
+ * @tc.number: SUB_Service_ExtConnectDone_0100
+ * @tc.name: SUB_Service_ExtConnectDone_0100
+ * @tc.desc: 测试 ExtConnectDone 接口
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
  * @tc.require: SR000H0378
  */
-HWTEST_F(ServiceTest, SUB_Service_ExtConnectFailed_0200, testing::ext::TestSize.Level1)
+HWTEST_F(ServiceTest, SUB_Service_ExtConnectDone_0100, testing::ext::TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtConnectFailed_0200";
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_ExtConnectDone_0100";
     try {
-        ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        InitSched();
-        servicePtr_->ExtConnectFailed(BUNDLE_NAME, BError(BError::Codes::OK));
+        servicePtr_->ExtConnectDone(BUNDLE_NAME);
     } catch (...) {
         EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by ExtConnectFailed.";
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by ExtConnectDone.";
     }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_ExtConnectFailed_0200";
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_ExtConnectDone_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_StopAll_0100
+ * @tc.name: SUB_Service_StopAll_0100
+ * @tc.desc: 测试 StopAll 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceTest, SUB_Service_StopAll_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_StopAll_0100";
+    try {
+        servicePtr_->StopAll(nullptr, true);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by StopAll.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_StopAll_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_OnStop_0100
+ * @tc.name: SUB_Service_OnStop_0100
+ * @tc.desc: 测试 OnStop 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceTest, SUB_Service_OnStop_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_OnStop_0100";
+    try {
+        servicePtr_->OnStop();
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by OnStop.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_OnStop_0100";
 }
 } // namespace OHOS::FileManagement::Backup

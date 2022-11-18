@@ -24,3 +24,19 @@ path_jsoncpp = "//third_party/jsoncpp"
 path_napi = "//foundation/arkui/napi"
 path_samgr = "//foundation/systemabilitymgr/samgr"
 path_init = "//base/startup/init"
+
+path_backup_mock = "//foundation/filemanagement/backup/tests/mock"
+
+backup_mock_parcel_include_dirs = [ "$path_backup_mock/parcel/include" ]
+backup_mock_parcel_src = [ "$path_backup_mock/parcel/src/parcel.cpp" ]
+backup_mock_src = [
+  "$path_backup_mock/module_ipc/service_reverse_proxy_mock.cpp",
+  "$path_backup_mock/module_ipc/service_stub_mock.cpp",
+  "$path_backup_mock/module_ipc/svc_backup_connection_mock.cpp",
+  "$path_backup_mock/module_ipc/svc_extension_proxy_mock.cpp",
+]
+backup_mock_session_manager_src =
+    [ "$path_backup_mock/module_ipc/svc_session_manager_mock.cpp" ]
+backup_mock_scheduler_src =
+    [ "$path_backup_mock/module_sched/sched_scheduler_mock.cpp" ]
+backup_mock_service_src = [ "$path_backup_mock/module_ipc/service_mock.cpp" ]

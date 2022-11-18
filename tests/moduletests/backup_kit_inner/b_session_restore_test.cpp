@@ -212,8 +212,7 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0600, testing::ext::T
     try {
         string bundleName = "";
         string fileName = "";
-        auto ret = restorePtr_->GetExtFileName(bundleName, fileName);
-        EXPECT_EQ(ret, ErrCode(BError::Codes::OK));
+        restorePtr_->GetExtFileName(bundleName, fileName);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by GetExtFileName.";

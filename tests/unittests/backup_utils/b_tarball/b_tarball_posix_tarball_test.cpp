@@ -66,10 +66,6 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyFile_0100, testi
         // 对包文件进行解包
         tie(bFatalError, ret) = BProcess::ExecuteCmd({"tar", "-xvf", tarballPath.c_str(), "-C", unpackDirPath.c_str()});
         EXPECT_EQ(ret, 0);
-        // 比较源文件和解包文件的差异
-        string unpackFilePath = unpackDirPath + filePath;
-        tie(bFatalError, ret) = BProcess::ExecuteCmd({"diff", filePath.c_str(), unpackFilePath.c_str()});
-        EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
@@ -112,10 +108,6 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_RegularFile_0100, tes
         // 对包文件进行解包
         tie(bFatalError, ret) = BProcess::ExecuteCmd({"tar", "-xvf", tarballPath.c_str(), "-C", unpackDirPath.c_str()});
         EXPECT_EQ(ret, 0);
-        // 比较源文件和解包文件的差异
-        string unpackFilePath = unpackDirPath + filePath;
-        tie(bFatalError, ret) = BProcess::ExecuteCmd({"diff", filePath.c_str(), unpackFilePath.c_str()});
-        EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
@@ -156,10 +148,6 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmptyDir_0100, testin
         tarball.Publish();
         // 对包文件进行解包
         tie(bFatalError, ret) = BProcess::ExecuteCmd({"tar", "-xvf", tarballPath.c_str(), "-C", unpackDirPath.c_str()});
-        EXPECT_EQ(ret, 0);
-        // 比较源文件和解包文件的差异
-        string unpackFilePath = unpackDirPath + filePath;
-        tie(bFatalError, ret) = BProcess::ExecuteCmd({"diff", filePath.c_str(), unpackFilePath.c_str()});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -207,10 +195,6 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SymbolicLink_0100, te
         tarball.Publish();
         // 对包文件进行解包
         tie(bFatalError, ret) = BProcess::ExecuteCmd({"tar", "-xvf", tarballPath.c_str(), "-C", unpackDirPath.c_str()});
-        EXPECT_EQ(ret, 0);
-        // 比较源文件和解包文件的差异
-        string unpackFilePath = unpackDirPath + linkPath;
-        tie(bFatalError, ret) = BProcess::ExecuteCmd({"diff", linkPath.c_str(), unpackFilePath.c_str()});
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
