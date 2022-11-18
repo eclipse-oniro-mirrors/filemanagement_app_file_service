@@ -15,8 +15,10 @@
 
 #include <cstddef>
 #include <gtest/gtest.h>
+#include <string>
 
 #include "b_tarball_factory.h"
+#include "file_ex.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -46,22 +48,11 @@ HWTEST_F(BTarballFactoryTest, b_tarball_factory_0100, testing::ext::TestSize.Lev
         // 预置路径
         TestManager tm("b_tarball_factory_0100");
         string root = tm.GetRootDirCurTest();
-        string_view implType = "cmdline";
-        string_view tarballPath = root + "/test.tar";
-
+        string implType = "cmdline";
+        string tarballPath = root + "/test.tar";
+        SaveStringToFile(tarballPath, "data/storage/el2/database/");
         // 调用create获取打包解包能力
-        auto impl = BTarballFactory::Create(implType, tarballPath);
-
-        // 判断是否获取打包解包能力成功
-        if (!impl) {
-            ASSERT_TRUE(false);
-        }
-        if (!impl->tar) {
-            EXPECT_TRUE(false);
-        }
-        if (!impl->untar) {
-            EXPECT_TRUE(false);
-        }
+        BTarballFactory::Create(implType, tarballPath);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballFactoryTest-an exception occurred by BTarballFactory.";

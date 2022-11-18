@@ -18,11 +18,13 @@
 #include <gtest/gtest.h>
 #include <tuple>
 
+#include "b_filesystem/b_file.h"
 #include "file_ex.h"
 #include "test_manager.h"
-#include "b_filesystem/b_file.h"
 
 namespace OHOS::FileManagement::Backup {
+using namespace std;
+
 class BFileTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
@@ -34,15 +36,15 @@ public:
 /**
  * @brief 创建测试文件
  *
- * @return std::tuple<bool, string, string> 创建结果、文件路径、文件内容
+ * @return tuple<bool, string, string> 创建结果、文件路径、文件内容
  */
-std::tuple<std::string, std::string> GetTestFile(const TestManager &tm)
+static tuple<string, string> GetTestFile(const TestManager &tm)
 {
-    std::string path = tm.GetRootDirCurTest();
-    std::string filePath = path + "temp.txt";
-    std::string content = "backup test";
+    string path = tm.GetRootDirCurTest();
+    string filePath = path + "temp.txt";
+    string content = "backup test";
     if (bool contentCreate = SaveStringToFile(filePath, content, true); !contentCreate) {
-        throw std::system_error(errno, std::system_category());
+        throw system_error(errno, system_category());
     }
     return {filePath, content};
 }
@@ -53,23 +55,73 @@ std::tuple<std::string, std::string> GetTestFile(const TestManager &tm)
  * @tc.desc: Test function of ReadFile interface for SUCCESS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
- * @tc.level Level 0
+ * @tc.level Level 1
  * @tc.require: SR000H037V
  */
-HWTEST_F(BFileTest, b_file_ReadFile_0100, testing::ext::TestSize.Level0)
+HWTEST_F(BFileTest, b_file_ReadFile_0100, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "BFileTest-begin b_file_ReadFile_0100";
     try {
         TestManager tm(__func__);
         const auto [filePath, content] = GetTestFile(tm);
         BFile bf;
-        std::unique_ptr<char[]> result = bf.ReadFile(UniqueFd(open(filePath.data(), O_RDWR)));
-        std::string readContent(result.get());
+        unique_ptr<char[]> result = bf.ReadFile(UniqueFd(open(filePath.data(), O_RDWR)));
+        string readContent(result.get());
         EXPECT_EQ(readContent.compare(content), 0);
-    } catch (const std::exception &e) {
+    } catch (const exception &e) {
         GTEST_LOG_(INFO) << "BFileTest-an exception occurred by ReadFile.";
         e.what();
     }
     GTEST_LOG_(INFO) << "BFileTest-end b_file_ReadFile_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_file_SendFile_0100
+ * @tc.name: b_file_SendFile_0100
+ * @tc.desc: 测试SendFile接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BFileTest, b_file_SendFile_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BFileTest-begin b_file_SendFile_0100";
+    try {
+        TestManager tm(__func__);
+        const auto [filePath, content] = GetTestFile(tm);
+        TestManager tmInFile("b_file_GetFd_0100");
+        string fileInPath = tmInFile.GetRootDirCurTest().append("1.tar");
+        BFile::SendFile(UniqueFd(open(filePath.data(), O_RDWR)), open(fileInPath.data(), O_RDWR));
+    } catch (const exception &e) {
+        GTEST_LOG_(INFO) << "BFileTest-an exception occurred by SendFile.";
+        e.what();
+    }
+    GTEST_LOG_(INFO) << "BFileTest-end b_file_SendFile_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_file_CopyFile_0100
+ * @tc.name: b_file_CopyFile_0100
+ * @tc.desc: 测试CopyFile接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BFileTest, b_file_CopyFile_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BFileTest-begin b_file_CopyFile_0100";
+    try {
+        TestManager tm(__func__);
+        const auto [filePath, content] = GetTestFile(tm);
+        TestManager tmInFile("b_file_GetFd_0200");
+        string fileInPath = tmInFile.GetRootDirCurTest().append("1.txt");
+        BFile::CopyFile(filePath, fileInPath);
+    } catch (const exception &e) {
+        GTEST_LOG_(INFO) << "BFileTest-an exception occurred by CopyFile.";
+        e.what();
+    }
+    GTEST_LOG_(INFO) << "BFileTest-end b_file_CopyFile_0100";
 }
 } // namespace OHOS::FileManagement::Backup

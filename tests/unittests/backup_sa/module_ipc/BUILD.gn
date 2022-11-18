@@ -18,13 +18,10 @@ ohos_unittest("module_ipc_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
-    "sched_scheduler_test.cpp",
     "service_reverse_proxy_test.cpp",
     "service_stub_test.cpp",
-    "service_test.cpp",
     "svc_backup_connection_test.cpp",
     "svc_extension_proxy_test.cpp",
-    "svc_session_manager_test.cpp",
   ]
 
   include_dirs = [
@@ -53,7 +50,122 @@ ohos_unittest("module_ipc_test") {
   use_exceptions = true
 }
 
+ohos_unittest("backup_service_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup}/services/backup_sa/src/module_ipc/service.cpp",
+    "${path_backup}/tests/mock/accesstoken/accesstoken_kit_mock.cpp",
+    "service_test.cpp",
+  ]
+  sources += backup_mock_src
+  sources += backup_mock_session_manager_src
+  sources += backup_mock_scheduler_src
+
+  include_dirs = [
+    "${path_backup}/services/backup_sa/include",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+    "${path_backup}/tests/unittests/backup_api/backup_impl/include",
+    "${path_access_token}/interfaces/innerkits/accesstoken/include",
+  ]
+
+  deps = [
+    "${path_ability_runtime}/interfaces/inner_api/ability_manager:ability_manager",
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils:backup_utils",
+    "${path_googletest}:gmock_main",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "backup:backup_kit_inner",
+    "init:libbegetutil",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  use_exceptions = true
+}
+
+ohos_unittest("backup_service_session_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup}/services/backup_sa/src/module_ipc/svc_session_manager.cpp",
+    "svc_session_manager_test.cpp",
+  ]
+  sources += backup_mock_src
+  sources += backup_mock_scheduler_src
+  sources += backup_mock_service_src
+
+  include_dirs = [
+    "${path_backup}/services/backup_sa/include",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+    "${path_backup}/tests/unittests/backup_api/backup_impl/include",
+    "${path_base}/include",
+  ]
+
+  deps = [
+    "${path_ability_runtime}/interfaces/inner_api/ability_manager:ability_manager",
+    "${path_ability_runtime}/services/abilitymgr:abilityms",
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils:backup_utils",
+    "${path_base}:utils",
+    "${path_googletest}:gmock_main",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "backup:backup_kit_inner",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  use_exceptions = true
+}
+
+ohos_unittest("backup_service_scheduler_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup}/services/backup_sa/src/module_sched/sched_scheduler.cpp",
+    "sched_scheduler_test.cpp",
+  ]
+  sources += backup_mock_src
+  sources += backup_mock_service_src
+  sources += backup_mock_session_manager_src
+
+  include_dirs = [
+    "${path_backup}/services/backup_sa/include",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+    "${path_backup}/tests/unittests/backup_api/backup_impl/include",
+  ]
+
+  deps = [
+    "${path_ability_runtime}/interfaces/inner_api/ability_manager:ability_manager",
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils:backup_utils",
+    "${path_googletest}:gmock_main",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "backup:backup_kit_inner",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  use_exceptions = true
+}
+
 group("backup_sa_ipc_test") {
   testonly = true
-  deps = [ ":module_ipc_test" ]
+  deps = [
+    ":backup_service_scheduler_test",
+    ":backup_service_session_test",
+    ":backup_service_test",
+    ":module_ipc_test",
+  ]
 }
