@@ -16,12 +16,16 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <gtest/gtest.h>
+#include <string_view>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
 #include "b_json/b_json_entity_extension_config.h"
+#include "b_process/b_process.h"
+#include "b_resources/b_constants.h"
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "test_manager.h"
@@ -305,5 +309,72 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_0800, te
         GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by construction.";
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_0800";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_0900
+ * @tc.name: b_json_entity_extension_config_0900
+ * @tc.desc: 测试GetJSonSource接口能否在非service进程下正确读取backup_config.json
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_0900, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_0900";
+    try {
+        string jsonContent = R"({"allowToBackupRestore":true})";
+        auto [bFatalErr, ret] = BProcess::ExecuteCmd({"mkdir", "-p", BConstants::BACKUP_CONFIG_EXTENSION_PATH});
+        EXPECT_FALSE(bFatalErr);
+        EXPECT_EQ(ret, 0);
+        string jsonFilePath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH).append(BConstants::BACKUP_CONFIG_JSON);
+        SaveStringToFile(jsonFilePath, jsonContent);
+        string_view sv;
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        string jsonRead = cache.GetJSonSource(sv, any());
+        EXPECT_EQ(jsonRead, jsonContent);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetJSonSource.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_0900";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1000
+ * @tc.name: b_json_entity_extension_config_1000
+ * @tc.desc: 测试GetJSonSource接口能否在service进程下正确读取backup_config.json
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1000, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1000";
+    try {
+        string bundleName = "com.example.app2backup";
+        string jsonFileDir = string(BConstants::SA_BUNDLE_BACKUP_ROOT_DIR).append(bundleName);
+        string jsonContent = R"({"allowToBackupRestore":true})";
+        auto [bFatalErr, ret] = BProcess::ExecuteCmd({"mkdir", "-p", jsonFileDir});
+        EXPECT_FALSE(bFatalErr);
+        EXPECT_EQ(ret, 0);
+        string jsonFilePath = jsonFileDir.append("/").append(BConstants::BACKUP_CONFIG_JSON);
+        SaveStringToFile(jsonFilePath, jsonContent);
+        uid_t currUid = getuid();
+        setuid(BConstants::BACKUP_UID);
+        string_view sv;
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv, bundleName);
+        auto cache = cachedEntity.Structuralize();
+        string jsonRead = cache.GetJSonSource(sv, bundleName);
+        setuid(currUid);
+        EXPECT_EQ(jsonRead, jsonContent);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetJSonSource.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1000";
 }
 } // namespace OHOS::FileManagement::Backup
