@@ -330,7 +330,7 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_0900, te
         EXPECT_EQ(ret, 0);
         string jsonFilePath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH).append(BConstants::BACKUP_CONFIG_JSON);
         SaveStringToFile(jsonFilePath, jsonContent);
-        string_view sv;
+        string_view sv = R"({"allowToBackupRestore":false})";
         BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
         auto cache = cachedEntity.Structuralize();
         string jsonRead = cache.GetJSonSource(sv, any());
@@ -365,7 +365,7 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1000, te
         SaveStringToFile(jsonFilePath, jsonContent);
         uid_t currUid = getuid();
         setuid(BConstants::BACKUP_UID);
-        string_view sv;
+        string_view sv = R"({"allowToBackupRestore":false})";
         BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv, bundleName);
         auto cache = cachedEntity.Structuralize();
         string jsonRead = cache.GetJSonSource(sv, bundleName);
