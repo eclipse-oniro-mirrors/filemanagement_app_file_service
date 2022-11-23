@@ -19,6 +19,7 @@
 #include "b_file_info.h"
 #include "backup_kit_inner.h"
 #include "unique_fd.h"
+#include "utils_mock_global_variable.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -93,8 +94,13 @@ HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0100, testing::ext::Tes
 {
     GTEST_LOG_(INFO) << "BSessionBackupTest-begin SUB_backup_b_session_backup_0100";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is true";
         auto ret = backupPtr_->Start();
         EXPECT_EQ(ret, ErrCode(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        ret = backupPtr_->Start();
+        EXPECT_NE(ret, ErrCode(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionBackupTest-an exception occurred by Start.";
@@ -142,9 +148,21 @@ HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0300, testing::ext::Tes
 {
     GTEST_LOG_(INFO) << "BSessionBackupTest-begin SUB_backup_b_session_backup_0300";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
         vector<string> bundlesToBackup;
         auto backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, BSessionBackup::Callbacks {});
         EXPECT_EQ(backupPtr, nullptr);
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        GTEST_LOG_(INFO) << "InitBackupSession is false";
+        SetMockGetInstance(true);
+        SetMockInitBackupOrRestoreSession(false);
+        backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, BSessionBackup::Callbacks {});
+        EXPECT_EQ(backupPtr, nullptr);
+        GTEST_LOG_(INFO) << "InitBackupSession is true";
+        SetMockInitBackupOrRestoreSession(true);
+        backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, BSessionBackup::Callbacks {});
+        EXPECT_NE(backupPtr, nullptr);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionBackupTest-an exception occurred by Init.";
@@ -165,6 +183,11 @@ HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0400, testing::ext::Tes
 {
     GTEST_LOG_(INFO) << "BSessionBackupTest-begin SUB_backup_b_session_backup_0400";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        backupPtr_->RegisterBackupServiceDied(nullptr);
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        SetMockGetInstance(true);
         backupPtr_->RegisterBackupServiceDied(nullptr);
     } catch (...) {
         EXPECT_TRUE(false);

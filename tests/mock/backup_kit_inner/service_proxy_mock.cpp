@@ -24,12 +24,16 @@
 #include "b_error/b_error.h"
 #include "b_resources/b_constants.h"
 #include "test_manager.h"
+#include "utils_mock_global_variable.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, const vector<BundleName> &bundleNames)
 {
+    if (!GetMockInitBackupOrRestoreSession()) {
+        return 1;
+    }
     return 0;
 }
 
@@ -37,6 +41,9 @@ int32_t ServiceProxy::InitBackupSession(sptr<IServiceReverse> remote,
                                         UniqueFd fd,
                                         const vector<BundleName> &bundleNames)
 {
+    if (!GetMockInitBackupOrRestoreSession()) {
+        return 1;
+    }
     return 0;
 }
 
@@ -75,6 +82,9 @@ ErrCode ServiceProxy::GetExtFileName(string &bundleName, string &fileName)
 
 sptr<IService> ServiceProxy::GetInstance()
 {
+    if (!GetMockGetInstance()) {
+        return nullptr;
+    }
     if (serviceProxy_ != nullptr) {
         return serviceProxy_;
     }
