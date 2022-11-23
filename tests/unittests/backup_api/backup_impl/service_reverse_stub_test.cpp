@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <message_parcel.h>
+#include <string_ex.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -329,5 +330,34 @@ HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_RestoreOnFileRead
         GTEST_LOG_(INFO) << "ServiceReverseStubTest-an exception occurred by RestoreOnFileReady.";
     }
     GTEST_LOG_(INFO) << "ServiceReverseStubTest-end SUB_backup_ServiceReverseStub_RestoreOnFileReady_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_ServiceReverseStub_error_0100
+ * @tc.name: SUB_backup_ServiceReverseStub_error_0100
+ * @tc.desc: Test function of RestoreOnFileReady interface for SUCCESS.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(ServiceReverseStubTest, SUB_backup_ServiceReverseStub_error_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceReverseStubTest-begin SUB_backup_ServiceReverseStub_error_0100";
+    try {
+        MockServiceReverse service;
+        MessageParcel data;
+        MessageParcel reply;
+        MessageOption option;
+        EXPECT_TRUE(data.WriteInterfaceToken(Str8ToStr16("test")));
+
+        EXPECT_NE(BError(BError::Codes::OK), service.OnRemoteRequest(3333, data, reply, option));
+        EXPECT_NE(BError(BError::Codes::OK),
+                  service.OnRemoteRequest(IServiceReverse::SERVICER_RESTORE_ON_FILE_READY, data, reply, option));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceReverseStubTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "ServiceReverseStubTest-end SUB_backup_ServiceReverseStub_error_0100";
 }
 } // namespace OHOS::FileManagement::Backup

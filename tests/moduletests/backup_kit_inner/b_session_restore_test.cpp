@@ -19,6 +19,7 @@
 #include "b_file_info.h"
 #include "backup_kit_inner.h"
 #include "unique_fd.h"
+#include "utils_mock_global_variable.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -93,8 +94,13 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0100, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0100";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is true";
         auto ret = restorePtr_->Start();
         EXPECT_EQ(ret, ErrCode(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        ret = restorePtr_->Start();
+        EXPECT_NE(ret, ErrCode(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by Start.";
@@ -142,9 +148,21 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0300, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0300";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
         vector<string> bundlesToBackup;
-        auto backupPtr = BSessionRestore::Init(bundlesToBackup, {});
-        EXPECT_EQ(backupPtr, nullptr);
+        auto restorePtr = BSessionRestore::Init(bundlesToBackup, {});
+        EXPECT_EQ(restorePtr, nullptr);
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        GTEST_LOG_(INFO) << "InitBackupSession is false";
+        SetMockGetInstance(true);
+        SetMockInitBackupOrRestoreSession(false);
+        restorePtr = BSessionRestore::Init(bundlesToBackup, {});
+        EXPECT_EQ(restorePtr, nullptr);
+        GTEST_LOG_(INFO) << "InitBackupSession is true";
+        SetMockInitBackupOrRestoreSession(true);
+        restorePtr = BSessionRestore::Init(bundlesToBackup, {});
+        EXPECT_NE(restorePtr, nullptr);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by Init.";
@@ -165,7 +183,13 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0400, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0400";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
         auto fd = restorePtr_->GetLocalCapabilities();
+        EXPECT_NE(fd, 0);
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        SetMockGetInstance(true);
+        fd = restorePtr_->GetLocalCapabilities();
         EXPECT_NE(fd, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -187,9 +211,15 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0500, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0500";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
         BFileInfo bFileInfo("", "", 0);
         auto ret = restorePtr_->PublishFile(bFileInfo);
         EXPECT_NE(ret, ErrCode(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        SetMockGetInstance(true);
+        ret = restorePtr_->PublishFile(bFileInfo);
+        EXPECT_EQ(ret, ErrCode(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by PublishFile.";
@@ -210,9 +240,16 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0600, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0600";
     try {
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
         string bundleName = "";
         string fileName = "";
-        restorePtr_->GetExtFileName(bundleName, fileName);
+        auto ret = restorePtr_->GetExtFileName(bundleName, fileName);
+        EXPECT_NE(ret, ErrCode(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        SetMockGetInstance(true);
+        ret = restorePtr_->GetExtFileName(bundleName, fileName);
+        EXPECT_EQ(ret, ErrCode(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by GetExtFileName.";
@@ -233,7 +270,11 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0700, testing::ext::T
 {
     GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0700";
     try {
-        Init();
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        restorePtr_->RegisterBackupServiceDied(nullptr);
+        GTEST_LOG_(INFO) << "GetInstance is true";
+        SetMockGetInstance(true);
         restorePtr_->RegisterBackupServiceDied(nullptr);
     } catch (...) {
         EXPECT_TRUE(false);

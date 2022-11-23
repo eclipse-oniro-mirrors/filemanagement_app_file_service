@@ -55,7 +55,7 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0100, testing::ext::Tes
         mkdir(strPath.data(), S_IRWXU);
 
         // 尝试匹配当前命令，成功后执行
-        GTEST_LOG_(INFO) << "ToolsOpRestoreTest-backup";
+        GTEST_LOG_(INFO) << "ToolsOpRestoreTest-restore";
         vector<string_view> curOp;
         curOp.emplace_back("restore");
         auto tryOpSucceed = [&curOp](const ToolsOp &op) { return op.TryMatch(curOp); };
@@ -69,5 +69,48 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0100, testing::ext::Tes
         GTEST_LOG_(INFO) << "ToolsOpRestoreTest-an exception occurred by construction.";
     }
     GTEST_LOG_(INFO) << "ToolsOpRestoreTest-end SUB_backup_tools_op_restore_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_tools_op_restore_0200
+ * @tc.name: SUB_backup_tools_op_restore_0200
+ * @tc.desc: 测试
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0382
+ */
+HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ToolsOpRestoreTest-begin SUB_backup_tools_op_restore_0200";
+    try {
+        GTEST_LOG_(INFO) << "ToolsOpRestoreTest-The pathCapFile field is not contained.";
+        map<string, vector<string>> mapArgToVal;
+        vector<string> bundles = {"com.example.app2backup"};
+        vector<string> path = {"/data/backup/tmp"};
+        mapArgToVal.insert(make_pair("bundles", bundles));
+
+        vector<string_view> curOp;
+        curOp.emplace_back("restore");
+        auto tryOpSucceed = [&curOp](const ToolsOp &op) { return op.TryMatch(curOp); };
+        auto &&opeartions = ToolsOp::GetAllOperations();
+        auto matchedOp = find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
+        int ret = 0;
+        if (matchedOp != opeartions.end()) {
+            ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
+        }
+        GTEST_LOG_(INFO) << "ToolsOpRestoreTest-The bundles field is not contained.";
+        mapArgToVal.clear();
+        mapArgToVal.insert(make_pair("pathCapFile", path));
+        if (matchedOp != opeartions.end()) {
+            ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
+        }
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ToolsOpRestoreTest-an exception occurred by construction.";
+    }
+    GTEST_LOG_(INFO) << "ToolsOpRestoreTest-end SUB_backup_tools_op_restore_0200";
 }
 } // namespace OHOS::FileManagement::Backup

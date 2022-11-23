@@ -18,19 +18,28 @@ ohos_unittest("b_session_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
+    "${path_backup}/frameworks/native/backup_kit_inner/src/b_session_backup.cpp",
+    "${path_backup}/frameworks/native/backup_kit_inner/src/b_session_restore.cpp",
+    "${path_backup}/frameworks/native/backup_kit_inner/src/service_reverse.cpp",
+    "${path_backup}/frameworks/native/backup_kit_inner/src/service_reverse_stub.cpp",
     "b_session_backup_test.cpp",
     "b_session_restore_test.cpp",
   ]
+  sources += backup_mock_proxy_src
 
-  include_dirs =
-      [ "${path_backup}/interfaces/inner_api/native/backup_kit_inner/" ]
+  include_dirs = [
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+    "${path_backup}/frameworks/native/backup_kit_inner/include",
+  ]
+  include_dirs += backup_mock_utils_include
 
   deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
     "${path_backup}/utils:backup_utils",
-    "//third_party/googletest:gmock_main",
+    "${path_ipc}/interfaces/innerkits/ipc_core:ipc_core",
+    "${path_samgr}/interfaces/innerkits/samgr_proxy:samgr_proxy",
   ]
-
-  external_deps = [ "backup:backup_kit_inner" ]
 
   use_exceptions = true
 }
