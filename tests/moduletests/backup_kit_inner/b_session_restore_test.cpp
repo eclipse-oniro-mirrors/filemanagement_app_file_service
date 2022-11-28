@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <gtest/gtest.h>
 
 #include "b_error/b_error.h"
@@ -64,6 +65,8 @@ public:
 
 void BSessionRestoreTest::SetUp()
 {
+    SetMockInitBackupOrRestoreSession(true);
+    SetMockGetInstance(true);
     restorePtr_ = unique_ptr<BSessionRestore>();
 }
 
@@ -161,7 +164,8 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0300, testing::ext::T
         EXPECT_EQ(restorePtr, nullptr);
         GTEST_LOG_(INFO) << "InitBackupSession is true";
         SetMockInitBackupOrRestoreSession(true);
-        restorePtr = BSessionRestore::Init(bundlesToBackup, {});
+        Init();
+        restorePtr = BSessionRestore::Init(bundlesToBackup, callbacks_);
         EXPECT_NE(restorePtr, nullptr);
     } catch (...) {
         EXPECT_TRUE(false);

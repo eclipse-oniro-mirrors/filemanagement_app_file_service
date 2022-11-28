@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <fcntl.h>
+#include <gtest/gtest.h>
 #include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -28,6 +29,68 @@
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
+
+class MockIRemoteObject : public IRemoteObject {
+public:
+    MockIRemoteObject() : IRemoteObject(u"mock_i_remote_object")
+    {
+        GTEST_LOG_(INFO) << "MockIRemoteObject is ok";
+    }
+
+    ~MockIRemoteObject() {}
+
+    int SendRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override
+    {
+        return 0;
+    }
+
+    int32_t GetObjectRefCount() override
+    {
+        return 0;
+    }
+
+    bool CheckObjectLegality() const override
+    {
+        return true;
+    }
+
+    bool IsProxyObject() const override
+    {
+        return true;
+    }
+
+    bool AddDeathRecipient(const sptr<DeathRecipient> &recipient) override
+    {
+        GTEST_LOG_(INFO) << "AddDeathRecipient is ok";
+        return true;
+    }
+
+    bool RemoveDeathRecipient(const sptr<DeathRecipient> &recipient) override
+    {
+        return true;
+    }
+
+    sptr<IRemoteBroker> AsInterface() override
+    {
+        return nullptr;
+    }
+
+    bool Marshalling(Parcel &parcel) const override
+    {
+        return true;
+    }
+
+    std::u16string GetObjectDescriptor() const
+    {
+        std::u16string descriptor = std::u16string();
+        return descriptor;
+    }
+
+    int Dump(int fd, const std::vector<std::u16string> &args) override
+    {
+        return 0;
+    }
+};
 
 int32_t ServiceProxy::InitRestoreSession(sptr<IServiceReverse> remote, const vector<BundleName> &bundleNames)
 {
@@ -88,7 +151,8 @@ sptr<IService> ServiceProxy::GetInstance()
     if (serviceProxy_ != nullptr) {
         return serviceProxy_;
     }
-    serviceProxy_ = sptr(new ServiceProxy(nullptr));
+    sptr<IRemoteObject> object = new MockIRemoteObject();
+    serviceProxy_ = sptr(new ServiceProxy(object));
     return serviceProxy_;
 }
 
