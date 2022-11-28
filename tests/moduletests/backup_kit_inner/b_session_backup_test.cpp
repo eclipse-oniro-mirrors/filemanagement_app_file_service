@@ -64,6 +64,8 @@ public:
 
 void BSessionBackupTest::SetUp()
 {
+    SetMockInitBackupOrRestoreSession(true);
+    SetMockGetInstance(true);
     backupPtr_ = make_unique<BSessionBackup>();
 }
 
@@ -161,7 +163,8 @@ HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0300, testing::ext::Tes
         EXPECT_EQ(backupPtr, nullptr);
         GTEST_LOG_(INFO) << "InitBackupSession is true";
         SetMockInitBackupOrRestoreSession(true);
-        backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, BSessionBackup::Callbacks {});
+        Init();
+        backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, callbacks_);
         EXPECT_NE(backupPtr, nullptr);
     } catch (...) {
         EXPECT_TRUE(false);
