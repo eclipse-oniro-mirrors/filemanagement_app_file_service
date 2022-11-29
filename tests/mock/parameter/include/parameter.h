@@ -15,12 +15,18 @@
 
 #ifndef MOCK_OHOS_BACKUP_PARAMETER_H
 #define MOCK_OHOS_BACKUP_PARAMETER_H
+
+#include <stdbool.h>
 #include <stdint.h>
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif
 #endif /* __cplusplus */
+
+void SetMockParameter(bool para);
+bool GetMockParameter();
 
 uint32_t FindParameter(const char *key);
 int GetParameterValue(uint32_t handle, char *value, uint32_t len);

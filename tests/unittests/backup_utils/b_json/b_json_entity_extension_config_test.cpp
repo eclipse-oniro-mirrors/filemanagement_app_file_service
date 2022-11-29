@@ -28,6 +28,7 @@
 #include "b_resources/b_constants.h"
 #include "directory_ex.h"
 #include "file_ex.h"
+#include "parameter.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -331,6 +332,7 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_0900, te
         string jsonFilePath = string(BConstants::BACKUP_CONFIG_EXTENSION_PATH).append(BConstants::BACKUP_CONFIG_JSON);
         SaveStringToFile(jsonFilePath, jsonContent);
         string_view sv = R"({"allowToBackupRestore":false})";
+        SetMockParameter(true);
         BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
         auto cache = cachedEntity.Structuralize();
         string jsonRead = cache.GetJSonSource(sv, any());
@@ -366,6 +368,7 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1000, te
         uid_t currUid = getuid();
         setuid(BConstants::BACKUP_UID);
         string_view sv = R"({"allowToBackupRestore":false})";
+        SetMockParameter(true);
         BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv, bundleName);
         auto cache = cachedEntity.Structuralize();
         string jsonRead = cache.GetJSonSource(sv, bundleName);
@@ -376,5 +379,31 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1000, te
         GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetJSonSource.";
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1000";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1100
+ * @tc.name: b_json_entity_extension_config_1100
+ * @tc.desc: 测试GetJSonSource接口能否在backup.debug.overrideExtensionConfig为false的情况下保持原JSon字符串不变
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1100, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1100";
+    try {
+        string_view sv = R"({"allowToBackupRestore":false})";
+        SetMockParameter(false);
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        string jsonRead = cache.GetJSonSource(sv, any());
+        EXPECT_EQ(jsonRead, string(sv));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetJSonSource.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1100";
 }
 } // namespace OHOS::FileManagement::Backup
