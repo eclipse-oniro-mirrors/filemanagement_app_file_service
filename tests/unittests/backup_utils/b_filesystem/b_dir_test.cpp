@@ -20,6 +20,8 @@
 #include <gtest/gtest.h>
 
 #include "b_filesystem/b_dir.h"
+#include "b_process/b_process.h"
+#include "errors.h"
 #include "file_ex.h"
 #include "test_manager.h"
 
@@ -73,5 +75,44 @@ HWTEST_F(BDirTest, b_dir_GetDirFiles_0100, testing::ext::TestSize.Level0)
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
     }
     GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetDirFiles_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_dir_GetBigFiles_0100
+ * @tc.name: b_dir_GetBigFiles_0100
+ * @tc.desc: 测试GetBigFiles接口是否能成功获取大文件
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BDirTest, b_dir_GetBigFiles_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetBigFiles_0100";
+    try {
+        TestManager tm("b_dir_GetBigFiles_0100");
+        string rootDir = tm.GetRootDirCurTest();
+        string filePath1 = rootDir + "a.txt";
+        string filePath2 = rootDir + "b.txt";
+        // 文件大小大于等于1GB（1024MB）的文件属于大文件，因此这里创建大小为1025MB和1026MB的大文件
+        auto [bFatalErr, ret] =
+            BProcess::ExecuteCmd({"dd", "if=/dev/urandom", ("of=" + filePath1).c_str(), "bs=1M", "count=1025"});
+        EXPECT_FALSE(bFatalErr);
+        EXPECT_EQ(ret, 0);
+        tie(bFatalErr, ret) =
+            BProcess::ExecuteCmd({"dd", "if=/dev/urandom", ("of=" + filePath2).c_str(), "bs=1M", "count=1026"});
+        EXPECT_FALSE(bFatalErr);
+        EXPECT_EQ(ret, 0);
+        vector<string> includes = {rootDir};
+        vector<string> excludes = {filePath2};
+        auto [errCode, mpNameToStat] = BDir::GetBigFiles(includes, excludes);
+        EXPECT_EQ(errCode, ERR_OK);
+        EXPECT_EQ(mpNameToStat.at(filePath1).st_size, 1024 * 1024 * 1025);
+        EXPECT_EQ(mpNameToStat.find(filePath2), mpNameToStat.end());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetBigFiles_0100";
 }
 } // namespace OHOS::FileManagement::Backup
