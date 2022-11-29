@@ -38,13 +38,6 @@ constexpr int32_t SERVICE_ID = 5203;
 constexpr int32_t CLIENT_TOKEN_ID = 100;
 } // namespace
 
-class SvcSessionManagerMock : public SvcSessionManager {
-public:
-    SvcSessionManagerMock(wptr<Service> reversePtr) : SvcSessionManager(reversePtr) {};
-    virtual ~SvcSessionManagerMock() = default;
-    MOCK_METHOD1(GetBundleExtNames, void(map<string, BackupExtInfo> &));
-};
-
 class SvcSessionManagerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -53,7 +46,7 @@ public:
     void TearDown() override {};
     void Init(IServiceReverse::Scenario scenario);
 
-    static inline sptr<SvcSessionManagerMock> sessionManagerPtr_ = nullptr;
+    static inline sptr<SvcSessionManager> sessionManagerPtr_ = nullptr;
     static inline sptr<ServiceReverseMock> remote_ = nullptr;
     static inline sptr<Service> servicePtr_ = nullptr;
 };
@@ -63,8 +56,7 @@ void SvcSessionManagerTest::SetUpTestCase(void)
     GTEST_LOG_(INFO) << "SetUpTestCase enter";
     remote_ = sptr(new ServiceReverseMock());
     servicePtr_ = sptr(new Service(SERVICE_ID));
-    sessionManagerPtr_ = sptr<SvcSessionManagerMock>(new SvcSessionManagerMock(wptr(servicePtr_)));
-    EXPECT_CALL(*sessionManagerPtr_, GetBundleExtNames(_)).WillRepeatedly(Return());
+    sessionManagerPtr_ = sptr<SvcSessionManager>(new SvcSessionManager(wptr(servicePtr_)));
 }
 
 void SvcSessionManagerTest::TearDownTestCase(void)
