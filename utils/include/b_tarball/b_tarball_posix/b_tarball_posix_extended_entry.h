@@ -31,7 +31,6 @@ public:
 
 public:
     size_t GetEntrySize();
-    std::string GetEntry();
     void Publish(const UniqueFd &outFile);
 
 public:
