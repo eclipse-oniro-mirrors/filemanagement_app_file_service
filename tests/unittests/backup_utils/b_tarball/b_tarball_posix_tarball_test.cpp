@@ -16,8 +16,10 @@
 #include <cstdlib>
 #include <gtest/gtest.h>
 #include <string>
+#include <sys/stat.h>
 
 #include "b_process/b_process.h"
+#include "b_resources/b_constants.h"
 #include "b_tarball/b_tarball_posix/b_tarball_posix_tarball.h"
 #include "test_manager.h"
 
@@ -340,5 +342,47 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_SuperLargeFile_0100, 
         GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
     }
     GTEST_LOG_(INFO) << "BTarballPosixTarballTest-end b_tarball_posix_tarball_SuperLargeFile_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_tarball_posix_tarball_EmplaceAndClear_0100
+ * @tc.name: b_tarball_posix_tarball_EmplaceAndClear_0100
+ * @tc.desc: 测试BTarballPosixTarball的Emplace接口和Clear接口能否正常使用
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmplaceAndClear_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BTarballPosixTarballTest-begin b_tarball_posix_tarball_EmplaceAndClear_0100";
+    try {
+        TestManager testManager("b_tarball_posix_tarball_EmplaceAndClear_0100");
+        string backupRootDirPath = testManager.GetRootDirCurTest();
+        // 指定包文件的名称和路径
+        string pathTarball = backupRootDirPath + "test.tar";
+        // 创建空文件
+        string pathFile = backupRootDirPath + "empty.file";
+        auto [bFatalErr, ret] = BProcess::ExecuteCmd({"touch", pathFile.c_str()});
+        EXPECT_FALSE(bFatalErr);
+        EXPECT_EQ(ret, 0);
+
+        BTarballPosixTarball tarball(pathTarball);
+        tarball.Publish();
+
+        tarball.Emplace(pathFile);
+        tarball.Publish();
+        struct stat tarballStat = {};
+        stat(pathTarball.c_str(), &tarballStat);
+        EXPECT_EQ(tarballStat.st_size, BConstants::HEADER_SIZE + BConstants::BLOCK_PADDING_SIZE);
+
+        tarball.Clear();
+        stat(pathTarball.c_str(), &tarballStat);
+        EXPECT_EQ(tarballStat.st_size, 0);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
+    }
+    GTEST_LOG_(INFO) << "BTarballPosixTarballTest-end b_tarball_posix_tarball_EmplaceAndClear_0100";
 }
 } // namespace OHOS::FileManagement::Backup

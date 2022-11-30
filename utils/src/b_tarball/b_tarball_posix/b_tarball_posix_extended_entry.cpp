@@ -68,11 +68,6 @@ size_t BTarballPosixExtendedEntry::GetEntrySize()
     return entrySize_;
 }
 
-string BTarballPosixExtendedEntry::GetEntry()
-{
-    return entry_;
-}
-
 void BTarballPosixExtendedEntry::Publish(const UniqueFd &outFile)
 {
     if (write(outFile, entry_.c_str(), entry_.size()) == -1) {
