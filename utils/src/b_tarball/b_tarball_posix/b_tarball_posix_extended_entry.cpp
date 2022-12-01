@@ -32,24 +32,18 @@ optional<BTarballPosixExtendedEntry> BTarballPosixExtendedEntry::TryToGetEntry(B
         case BConstants::SUPER_LONG_PATH: {
             string::size_type firstNotSlashIndex = pathName.find_first_not_of('/');
             string tmpPathName = pathName.substr(firstNotSlashIndex);
-            if (tmpPathName.size() > BConstants::PATHNAME_MAX_SIZE - 1) {
+            if (tmpPathName.size() > BConstants::PATHNAME_MAX_SIZE) {
                 return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_PATH, tmpPathName);
             }
             break;
         }
         case BConstants::SUPER_LONG_LINK_PATH: {
-            switch (statInfo.st_mode & S_IFMT) {
-                case S_IFLNK: {
-                    char linkName[PATH_MAX] {};
-                    ssize_t linkSize =
-                        readlink(pathName.c_str(), linkName, PATH_MAX); // return size of link name without nul
-                    if (linkSize > BConstants::LINKNAME_MAX_SIZE - 1) {
-                        return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_LINKPATH, linkName);
-                    }
-                    break;
+            if ((statInfo.st_mode & S_IFMT) == S_IFLNK) {
+                char linkName[PATH_MAX] {};
+                ssize_t linkSize = readlink(pathName.c_str(), linkName, PATH_MAX);
+                if (linkSize > BConstants::LINKNAME_MAX_SIZE) {
+                    return BTarballPosixExtendedEntry(BConstants::ENTRY_NAME_LINKPATH, linkName);
                 }
-                default:
-                    break;
             }
             break;
         }
