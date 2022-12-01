@@ -32,7 +32,7 @@ BTarballPosixPaxHeader::BTarballPosixPaxHeader(const string &pathName, const str
 {
     string::size_type firstNotSlashIndex = pathName.find_first_not_of('/');
     string tmpPathName = pathName.substr(firstNotSlashIndex);
-    strncpy_s(header_.pathName, BConstants::PATHNAME_MAX_SIZE, tmpPathName.c_str(), BConstants::PATHNAME_MAX_SIZE - 1);
+    memcpy_s(header_.pathName, BConstants::PATHNAME_MAX_SIZE, tmpPathName.c_str(), tmpPathName.size());
     (void)snprintf_s(header_.mode, BConstants::MODE_MAX_SIZE, BConstants::MODE_MAX_SIZE - 1, "%o", statInfo.st_mode);
     (void)snprintf_s(header_.uid, BConstants::UGID_MAX_SIZE, BConstants::UGID_MAX_SIZE - 1, "%o", statInfo.st_uid);
     (void)snprintf_s(header_.gid, BConstants::UGID_MAX_SIZE, BConstants::UGID_MAX_SIZE - 1, "%o", statInfo.st_gid);
