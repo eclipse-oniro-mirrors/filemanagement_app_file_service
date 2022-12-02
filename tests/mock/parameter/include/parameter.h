@@ -26,7 +26,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 void SetMockParameter(bool para);
-bool GetMockParameter();
+bool GetMockParameter(void);
 
 uint32_t FindParameter(const char *key);
 int GetParameterValue(uint32_t handle, char *value, uint32_t len);

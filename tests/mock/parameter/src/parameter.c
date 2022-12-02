@@ -15,6 +15,8 @@
 
 #include "parameter.h"
 
+#include <string.h>
+
 #include "securec.h"
 
 static int g_bMockParameter = 0;
@@ -24,7 +26,7 @@ void SetMockParameter(bool para)
     g_bMockParameter = para;
 }
 
-bool GetMockParameter()
+bool GetMockParameter(void)
 {
     return g_bMockParameter;
 }
@@ -36,10 +38,13 @@ uint32_t FindParameter(const char *key)
 
 int GetParameterValue(uint32_t handle, char *value, uint32_t len)
 {
+    errno_t ret = EOK;
     if (GetMockParameter()) {
-        strncpy_s(value, len, "true", len);
+        char src[] = "true";
+        ret = strncpy_s(value, len, src, strlen(src));
     } else {
-        strncpy_s(value, len, "false", len);
+        char src[] = "false";
+        ret = strncpy_s(value, len, src, strlen(src));
     }
-    return 1;
+    return ret == EOK ? 1 : -1;
 }
