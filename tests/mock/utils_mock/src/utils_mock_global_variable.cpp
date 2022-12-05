@@ -19,6 +19,7 @@ namespace OHOS::FileManagement::Backup {
 namespace {
 static bool g_bMockGetInstance = true;
 static bool g_bMockInitBackupOrRestoreSession = true;
+static bool g_bMockLoadSystemAbility = true;
 } // namespace
 
 void SetMockGetInstance(bool state)
@@ -39,5 +40,15 @@ bool GetMockGetInstance()
 bool GetMockInitBackupOrRestoreSession()
 {
     return g_bMockInitBackupOrRestoreSession;
+}
+
+void SetMockLoadSystemAbility(bool state)
+{
+    g_bMockLoadSystemAbility = state;
+}
+
+bool GetMockLoadSystemAbility()
+{
+    return g_bMockLoadSystemAbility;
 }
 } // namespace OHOS::FileManagement::Backup

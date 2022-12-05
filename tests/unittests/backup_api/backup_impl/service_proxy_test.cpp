@@ -20,10 +20,12 @@
 
 #include "b_file_info.h"
 #include "i_service_mock.h"
+#include "iremote_object_mock.h"
 #include "iservice_registry.h"
 #include "service_proxy.h"
 #include "service_reverse_mock.h"
 #include "unique_fd.h"
+#include "utils_mock_global_variable.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -315,5 +317,34 @@ HWTEST_F(ServiceProxyTest, SUB_Service_proxy_OnLoadSystemAbilityFail_0100, testi
     loadCallback->OnLoadSystemAbilityFail(SERVICE_ID);
     loadCallback = nullptr;
     GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_OnLoadSystemAbilityFail_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_proxy_GetInstance_0100
+ * @tc.name: SUB_Service_proxy_GetInstance_0100
+ * @tc.desc: 测试 GetInstance 接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(ServiceProxyTest, SUB_Service_proxy_GetInstance_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceProxyTest-begin SUB_Service_proxy_GetInstance_0100";
+    GTEST_LOG_(INFO) << "MockLoadSystemAbility is false";
+    SetMockLoadSystemAbility(false);
+    auto proxy = ServiceProxy::GetInstance();
+    EXPECT_EQ(proxy, nullptr);
+    GTEST_LOG_(INFO) << "MockLoadSystemAbility is true";
+    SetMockLoadSystemAbility(true);
+    proxy = ServiceProxy::GetInstance();
+    EXPECT_EQ(proxy, nullptr);
+    sptr<ServiceProxy::ServiceProxyLoadCallback> loadCallback = new ServiceProxy::ServiceProxyLoadCallback();
+    sptr<IRemoteObject> object = new MockIRemoteObject();
+    loadCallback->OnLoadSystemAbilitySuccess(SERVICE_ID, object);
+    GTEST_LOG_(INFO) << "GetInstance is ok";
+    proxy = ServiceProxy::GetInstance();
+    EXPECT_NE(proxy, nullptr);
+    GTEST_LOG_(INFO) << "ServiceProxyTest-end SUB_Service_proxy_GetInstance_0100";
 }
 } // namespace OHOS::FileManagement::Backup
