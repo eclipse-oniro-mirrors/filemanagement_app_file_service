@@ -21,5 +21,7 @@ void SetMockGetInstance(bool state);
 void SetMockInitBackupOrRestoreSession(bool state);
 bool GetMockGetInstance();
 bool GetMockInitBackupOrRestoreSession();
+void SetMockLoadSystemAbility(bool state);
+bool GetMockLoadSystemAbility();
 } // namespace OHOS::FileManagement::Backup
 #endif
