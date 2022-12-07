@@ -87,11 +87,13 @@ sptr<IService> ServiceProxy::GetInstance()
     if (!GetMockGetInstance()) {
         return nullptr;
     }
-    if (serviceProxy_ != nullptr) {
-        return serviceProxy_;
+
+    if (!GetMockLoadSystemAbility()) {
+        serviceProxy_ = sptr(new ServiceProxy(nullptr));
+    } else {
+        sptr<IRemoteObject> object = new MockIRemoteObject();
+        serviceProxy_ = sptr(new ServiceProxy(object));
     }
-    sptr<IRemoteObject> object = new MockIRemoteObject();
-    serviceProxy_ = sptr(new ServiceProxy(object));
     return serviceProxy_;
 }
 
