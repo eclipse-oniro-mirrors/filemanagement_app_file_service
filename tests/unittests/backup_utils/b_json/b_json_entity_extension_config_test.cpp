@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_caps.h"
@@ -30,6 +31,7 @@
 #include "file_ex.h"
 #include "parameter.h"
 #include "test_manager.h"
+#include "json/value.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -405,5 +407,105 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1100, te
         GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetJSonSource.";
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1200
+ * @tc.name: b_json_entity_extension_config_1200
+ * @tc.desc: 测试GetIncludes接口在Json数据中键为includes的值不为数组时能否成功返回默认目录
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1200, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1200";
+    try {
+        string_view sv = R"({"includes":1})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        vector<string> vs = cache.GetIncludes();
+        EXPECT_EQ(vs, DEFAULT_INCLUDE_DIR);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetIncludes.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1200";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1300
+ * @tc.name: b_json_entity_extension_config_1300
+ * @tc.desc: 测试GetIncludes接口在Json数据中键为includes的值为数组且数组元素全都不为字符串时能否成功返回空目录
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1300, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1300";
+    try {
+        string_view sv = R"({"includes":[1]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        vector<string> vs = cache.GetIncludes();
+        EXPECT_EQ(vs, vector<string>({""}));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetIncludes.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1300";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1400
+ * @tc.name: b_json_entity_extension_config_1400
+ * @tc.desc: 测试GetExcludes接口在Json数据中键为excludes的值不为数组时能否成功返回空vector
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1400, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1400";
+    try {
+        string_view sv = R"({"excludes":1})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        vector<string> vs = cache.GetExcludes();
+        EXPECT_EQ(vs, vector<string>());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetExcludes.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1400";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1500
+ * @tc.name: b_json_entity_extension_config_1500
+ * @tc.desc: 测试GetExcludes接口在Json数据中键为excludes的值为数组且数组元素全都不为字符串时能否成功返回空vector
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1500, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1500";
+    try {
+        string_view sv = R"({"excludes":[1]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        vector<string> vs = cache.GetExcludes();
+        EXPECT_EQ(vs, vector<string>());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetExcludes.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1500";
 }
 } // namespace OHOS::FileManagement::Backup
