@@ -508,4 +508,75 @@ HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1500, te
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1500";
 }
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1600
+ * @tc.name: b_json_entity_extension_config_1600
+ * @tc.desc: 测试GetAllowToBackupRestore接口在Json数据对象nullValue时能否成功返回false
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1600, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1600";
+    try {
+        Json::Value jv(Json::nullValue);
+        BJsonEntityExtensionConfig extCfg(jv);
+        EXPECT_FALSE(extCfg.GetAllowToBackupRestore());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetAllowToBackupRestore.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1600";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1700
+ * @tc.name: b_json_entity_extension_config_1700
+ * @tc.desc: 测试GetAllowToBackupRestore接口在Json数据对象不含allowToBackupRestore键时能否成功返回false
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1700, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1700";
+    try {
+        string_view sv = R"({"allowToBackupRestore_":true})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        EXPECT_FALSE(cache.GetAllowToBackupRestore());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetAllowToBackupRestore.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1700";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_extension_config_1800
+ * @tc.name: b_json_entity_extension_config_1800
+ * @tc.desc: 测试GetAllowToBackupRestore接口在Json数据对象键为allowToBackupRestore的值不为布尔值时能否成功返回false
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 2
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, b_json_entity_extension_config_1800, testing::ext::TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin b_json_entity_extension_config_1800";
+    try {
+        string_view sv = R"({"allowToBackupRestore":1})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        EXPECT_FALSE(cache.GetAllowToBackupRestore());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred by GetAllowToBackupRestore.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end b_json_entity_extension_config_1800";
+}
 } // namespace OHOS::FileManagement::Backup
