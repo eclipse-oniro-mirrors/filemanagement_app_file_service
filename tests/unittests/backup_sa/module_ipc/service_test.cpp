@@ -159,6 +159,10 @@ HWTEST_F(ServiceTest, SUB_Service_PublishFile_0100, testing::ext::TestSize.Level
         BFileInfo fileInfo {BUNDLE_NAME, FILE_NAME, 0};
         ret = servicePtr_->PublishFile(fileInfo);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "ServiceTest-PublishFile Branches";
+        fileInfo.fileName = "test";
+        ret = servicePtr_->PublishFile(fileInfo);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by PublishFile.";
@@ -181,6 +185,10 @@ HWTEST_F(ServiceTest, SUB_Service_AppFileReady_0100, testing::ext::TestSize.Leve
     try {
         string fileName = MANAGE_JSON;
         auto ret = servicePtr_->AppFileReady(fileName, UniqueFd(-1));
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "ServiceTest-AppFileReady Branches";
+        fileName = "test";
+        ret = servicePtr_->AppFileReady(fileName, UniqueFd(-1));
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
@@ -208,6 +216,10 @@ HWTEST_F(ServiceTest, SUB_Service_AppDone_0100, testing::ext::TestSize.Level1)
         GTEST_LOG_(INFO) << "SUB_Service_AppDone_0100 BACKUP";
         ret = Init(IServiceReverse::Scenario::BACKUP);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "ServiceTest-AppDone Branches";
+        ret = servicePtr_->AppDone(1);
+        EXPECT_EQ(ret, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "ServiceTest-AppDone Branches End";
         ret = servicePtr_->AppDone(BError(BError::Codes::OK));
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
@@ -321,13 +333,10 @@ HWTEST_F(ServiceTest, SUB_Service_ExtStart_0100, testing::ext::TestSize.Level1)
         ErrCode ret = Init(IServiceReverse::Scenario::BACKUP);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
         servicePtr_->ExtStart(BUNDLE_NAME);
+        GTEST_LOG_(INFO) << "ServiceTest-ExtStart BACKUP Branches";
+        servicePtr_->ExtStart(BUNDLE_NAME);
         GTEST_LOG_(INFO) << "SUB_Service_ExtStart_0100 RESTORE";
         ret = Init(IServiceReverse::Scenario::RESTORE);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
-        string bundleName = BUNDLE_NAME;
-        string fileName = FILE_NAME;
-        ret = servicePtr_->GetExtFileName(bundleName, fileName);
-        EXPECT_EQ(ret, BError(BError::Codes::OK));
         servicePtr_->ExtStart(BUNDLE_NAME);
     } catch (...) {
         EXPECT_TRUE(false);

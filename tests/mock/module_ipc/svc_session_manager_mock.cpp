@@ -16,6 +16,7 @@
 #include "module_ipc/svc_session_manager.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <memory>
@@ -31,58 +32,75 @@ using namespace std;
 
 namespace {
 constexpr int SCHED_NUM = 1;
-}
+constexpr int FILE_NUM = 2;
+static int32_t g_nFileReadyNum = 0;
+} // namespace
 
 void SvcSessionManager::VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
-    return;
+    GTEST_LOG_(INFO) << "VerifyCallerAndScenario";
 }
 
 void SvcSessionManager::Active(Impl newImpl)
 {
+    GTEST_LOG_(INFO) << "Active";
     extConnectNum_ = 0;
     impl_ = newImpl;
 }
 
 void SvcSessionManager::Deactive(const wptr<IRemoteObject> &remoteInAction, bool force)
 {
-    return;
+    GTEST_LOG_(INFO) << "Deactive";
 }
 
 void SvcSessionManager::VerifyBundleName(string &bundleName)
 {
-    return;
+    GTEST_LOG_(INFO) << "VerifyBundleName " << bundleName;
 }
 
 sptr<IServiceReverse> SvcSessionManager::GetServiceReverseProxy()
 {
+    GTEST_LOG_(INFO) << "GetServiceReverseProxy";
     return impl_.clientProxy;
 }
 
 IServiceReverse::Scenario SvcSessionManager::GetScenario()
 {
+    GTEST_LOG_(INFO) << "GetScenario";
     return impl_.scenario;
 }
 
-void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backupExtNameMap) {}
+void SvcSessionManager::GetBundleExtNames(map<BundleName, BackupExtInfo> &backupExtNameMap)
+{
+    GTEST_LOG_(INFO) << "GetBundleExtNames";
+}
 
 bool SvcSessionManager::OnBunleFileReady(const string &bundleName, const string &fileName)
 {
-    return true;
+    GTEST_LOG_(INFO) << "OnBunleFileReady";
+    g_nFileReadyNum++;
+    if (g_nFileReadyNum % FILE_NUM == SCHED_NUM) {
+        GTEST_LOG_(INFO) << "OnBunleFileReady is true";
+        return true;
+    }
+    GTEST_LOG_(INFO) << "OnBunleFileReady is false";
+    return false;
 }
 
 UniqueFd SvcSessionManager::OnBunleExtManageInfo(const string &bundleName, UniqueFd fd)
 {
+    GTEST_LOG_(INFO) << "OnBunleExtManageInfo";
     return UniqueFd(-1);
 }
 
 void SvcSessionManager::RemoveExtInfo(const string &bundleName)
 {
-    return;
+    GTEST_LOG_(INFO) << "RemoveExtInfo";
 }
 
 wptr<SvcBackupConnection> SvcSessionManager::GetExtConnection(const BundleName &bundleName)
 {
+    GTEST_LOG_(INFO) << "GetExtConnection";
     auto it = impl_.backupExtNameMap.find(bundleName);
     if (it == impl_.backupExtNameMap.end()) {
         return nullptr;
@@ -99,32 +117,36 @@ wptr<SvcBackupConnection> SvcSessionManager::GetExtConnection(const BundleName &
 
 void SvcSessionManager::InitExtConn(std::map<BundleName, BackupExtInfo> &backupExtNameMap)
 {
-    return;
+    GTEST_LOG_(INFO) << "InitExtConn";
 }
 
 void SvcSessionManager::DumpInfo(const int fd, const std::vector<std::u16string> &args)
 {
-    return;
+    GTEST_LOG_(INFO) << "DumpInfo";
 }
 
 void SvcSessionManager::InitClient(Impl &newImpl)
 {
-    return;
+    GTEST_LOG_(INFO) << "InitClient";
 }
 
 void SvcSessionManager::SetExtFileNameRequest(const string &bundleName, const string &fileName)
 {
-    return;
+    GTEST_LOG_(INFO) << "SetExtFileNameRequest";
 }
 
 std::set<std::string> SvcSessionManager::GetExtFileNameRequest(const std::string &bundleName)
 {
+    GTEST_LOG_(INFO) << "GetExtFileNameRequest";
     std::set<std::string> fileNameInfo;
+    fileNameInfo.insert("testName");
+    fileNameInfo.insert("fileName");
     return fileNameInfo;
 }
 
 map<BundleName, BackupExtInfo>::iterator SvcSessionManager::GetBackupExtNameMap(const string &bundleName)
 {
+    GTEST_LOG_(INFO) << "GetBackupExtNameMap";
     auto it = impl_.backupExtNameMap.find(bundleName);
     return it;
 }
@@ -172,6 +194,7 @@ void SvcSessionManager::SetServiceSchedAction(const string &bundleName, BConstan
 
 string SvcSessionManager::GetBackupExtName(const string &bundleName)
 {
+    GTEST_LOG_(INFO) << "GetBackupExtName " << bundleName;
     return "";
 }
 } // namespace OHOS::FileManagement::Backup
