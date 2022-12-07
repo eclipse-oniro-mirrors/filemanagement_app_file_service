@@ -67,6 +67,7 @@ void BSessionRestoreTest::SetUp()
 {
     SetMockInitBackupOrRestoreSession(true);
     SetMockGetInstance(true);
+    SetMockLoadSystemAbility(true);
     restorePtr_ = unique_ptr<BSessionRestore>();
 }
 
@@ -287,4 +288,42 @@ HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0700, testing::ext::T
     GTEST_LOG_(INFO) << "BSessionRestoreTest-end SUB_backup_b_session_restore_0700";
 }
 
+/**
+ * @tc.number: SUB_backup_b_session_restore_0800
+ * @tc.name: SUB_backup_b_session_restore_0800
+ * @tc.desc: 测试析构流程接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BSessionRestoreTest, SUB_backup_b_session_restore_0800, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BSessionRestoreTest-begin SUB_backup_b_session_restore_0800";
+    try {
+        vector<string> bundlesToBackup;
+        SetMockGetInstance(true);
+        SetMockLoadSystemAbility(true);
+        Init();
+        auto restorePtr = BSessionRestore::Init(bundlesToBackup, callbacks_);
+        EXPECT_NE(restorePtr, nullptr);
+
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        restorePtr = nullptr;
+
+        SetMockGetInstance(true);
+        SetMockLoadSystemAbility(true);
+        restorePtr = BSessionRestore::Init(bundlesToBackup, callbacks_);
+        EXPECT_NE(restorePtr, nullptr);
+
+        GTEST_LOG_(INFO) << "LoadSystemAbility is false";
+        SetMockLoadSystemAbility(false);
+        restorePtr = nullptr;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BSessionRestoreTest-an exception occurred by ~BSessionRestore.";
+    }
+    GTEST_LOG_(INFO) << "BSessionRestoreTest-end SUB_backup_b_session_restore_0800";
+}
 } // namespace OHOS::FileManagement::Backup

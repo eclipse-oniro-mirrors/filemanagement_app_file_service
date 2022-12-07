@@ -379,6 +379,9 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmplaceAndClear_0100,
         tarball.Clear();
         stat(pathTarball.c_str(), &tarballStat);
         EXPECT_EQ(tarballStat.st_size, 0);
+
+        GTEST_LOG_(INFO) << "BTarballPosixTarballTest-Publish Branches";
+        tarball.Publish();
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";

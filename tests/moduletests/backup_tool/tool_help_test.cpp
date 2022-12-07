@@ -50,4 +50,29 @@ HWTEST_F(ToolsTest, tool_help_0100, testing::ext::TestSize.Level0)
     }
     GTEST_LOG_(INFO) << "ToolsTest-end tool_help_0100";
 }
+
+/**
+ * @tc.number: SUB_backup_tool_help_0200
+ * @tc.name: tool_help_0200
+ * @tc.desc: 测试help命令错误使用
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: SR000H0377
+ */
+HWTEST_F(ToolsTest, tool_help_0200, testing::ext::TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "ToolsTest-begin tool_help_0200";
+    try {
+        auto [bFatalError, ret] = BProcess::ExecuteCmd({
+            "/system/bin/backup_tool",
+            "xxxx",
+        });
+        EXPECT_NE(ret, 0);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ToolsTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "ToolsTest-end tool_help_0200";
+}
 } // namespace OHOS::FileManagement::Backup

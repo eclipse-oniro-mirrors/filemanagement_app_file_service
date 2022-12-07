@@ -66,6 +66,7 @@ void BSessionBackupTest::SetUp()
 {
     SetMockInitBackupOrRestoreSession(true);
     SetMockGetInstance(true);
+    SetMockLoadSystemAbility(true);
     backupPtr_ = make_unique<BSessionBackup>();
 }
 
@@ -197,5 +198,44 @@ HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0400, testing::ext::Tes
         GTEST_LOG_(INFO) << "BSessionBackupTest-an exception occurred by RegisterBackupServiceDied.";
     }
     GTEST_LOG_(INFO) << "BSessionBackupTest-end SUB_backup_b_session_backup_0400";
+}
+
+/**
+ * @tc.number: SUB_backup_b_session_backup_0500
+ * @tc.name: SUB_backup_b_session_backup_0500
+ * @tc.desc: 测试析构流程接口
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BSessionBackupTest, SUB_backup_b_session_backup_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BSessionBackupTest-begin SUB_backup_b_session_backup_0500";
+    try {
+        SetMockGetInstance(true);
+        SetMockLoadSystemAbility(true);
+        vector<string> bundlesToBackup;
+        Init();
+        auto backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, callbacks_);
+        EXPECT_NE(backupPtr, nullptr);
+
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        backupPtr = nullptr;
+
+        SetMockGetInstance(true);
+        SetMockLoadSystemAbility(true);
+        backupPtr = BSessionBackup::Init(UniqueFd(-1), bundlesToBackup, callbacks_);
+        EXPECT_NE(backupPtr, nullptr);
+
+        GTEST_LOG_(INFO) << "LoadSystemAbility is false";
+        SetMockLoadSystemAbility(false);
+        backupPtr = nullptr;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BSessionBackupTest-an exception occurred by ~BSessionBackup.";
+    }
+    GTEST_LOG_(INFO) << "BSessionBackupTest-end SUB_backup_b_session_backup_0500";
 }
 } // namespace OHOS::FileManagement::Backup

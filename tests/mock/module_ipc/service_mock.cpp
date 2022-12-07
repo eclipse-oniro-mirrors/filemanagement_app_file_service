@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <gtest/gtest.h>
 
 #include "b_error/b_error.h"
 #include "b_resources/b_constants.h"
@@ -95,7 +96,10 @@ int Service::Dump(int fd, const vector<u16string> &args)
     return 0;
 }
 
-void Service::ExtConnectFailed(const string &bundleName, ErrCode ret) {}
+void Service::ExtConnectFailed(const string &bundleName, ErrCode ret)
+{
+    GTEST_LOG_(INFO) << "ExtConnectFailed is OK";
+}
 
 void Service::ExtConnectDone(string bundleName) {}
 

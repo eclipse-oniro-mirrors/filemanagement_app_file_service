@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -27,6 +28,10 @@
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
+
+namespace {
+constexpr int SCHED_NUM = 1;
+}
 
 void SvcSessionManager::VerifyCallerAndScenario(uint32_t clientToken, IServiceReverse::Scenario scenario) const
 {
@@ -126,11 +131,23 @@ map<BundleName, BackupExtInfo>::iterator SvcSessionManager::GetBackupExtNameMap(
 
 bool SvcSessionManager::GetSchedBundleName(string &bundleName)
 {
+    if (extConnectNum_ == 0) {
+        GTEST_LOG_(INFO) << "GetSchedBundleName is zero";
+        extConnectNum_++;
+        return false;
+    } else if (extConnectNum_ == SCHED_NUM || extConnectNum_ == (SCHED_NUM + 1)) {
+        GTEST_LOG_(INFO) << "GetSchedBundleName is one two";
+        bundleName = "com.example.app2backup";
+        extConnectNum_++;
+        return true;
+    }
+
     auto it = impl_.backupExtNameMap.find(bundleName);
     if (it == impl_.backupExtNameMap.end()) {
         return false;
     }
     it->second.backupExtName = bundleName;
+    GTEST_LOG_(INFO) << "GetSchedBundleName is " << it->second.backupExtName;
     return true;
 }
 
@@ -140,6 +157,7 @@ BConstants::ServiceSchedAction SvcSessionManager::GetServiceSchedAction(const st
     if (it == impl_.backupExtNameMap.end()) {
         return BConstants::ServiceSchedAction::WAIT;
     }
+    GTEST_LOG_(INFO) << "GetServiceSchedAction is " << it->second.schedAction;
     return it->second.schedAction;
 }
 
