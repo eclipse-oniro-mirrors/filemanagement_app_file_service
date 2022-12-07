@@ -53,6 +53,11 @@ public:
 
     UniqueFd GetFileHandle(const std::string &fileName) override
     {
+        GTEST_LOG_(INFO) << "GetFileHandle" << fileName;
+        if (fileName == "testName") {
+            return UniqueFd(-1);
+        }
+
         if (fileName.empty()) {
             return UniqueFd(-1);
         }
@@ -61,18 +66,34 @@ public:
         UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
         return fd;
     };
+
     ErrCode HandleClear() override
     {
         return BError(BError::Codes::OK);
     };
+
     ErrCode HandleBackup() override
     {
+        GTEST_LOG_(INFO) << "HandleBackup";
+        if (nHandleBackupNum_ == 1) {
+            GTEST_LOG_(INFO) << "HandleBackup is false";
+            return 1;
+        }
+        nHandleBackupNum_++;
         return BError(BError::Codes::OK);
     };
+
     ErrCode PublishFile(const std::string &fileName) override
     {
+        GTEST_LOG_(INFO) << "PublishFile " << fileName;
+        if (fileName == "test") {
+            return 1;
+        }
         return BError(BError::Codes::OK);
     };
+
+private:
+    int32_t nHandleBackupNum_ = 0;
 };
 } // namespace OHOS::FileManagement::Backup
 #endif // MOCK_EXTENSION_MOCK_H

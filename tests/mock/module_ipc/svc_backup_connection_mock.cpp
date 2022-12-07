@@ -23,6 +23,10 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
+namespace {
+static bool g_bExtAbilityConnected = false;
+}
+
 void SvcBackupConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &element,
                                                const sptr<IRemoteObject> &remoteObject,
                                                int resultCode)
@@ -53,7 +57,9 @@ ErrCode SvcBackupConnection::DisconnectBackupExtAbility()
 
 bool SvcBackupConnection::IsExtAbilityConnected()
 {
-    return isConnected_.load();
+    bool bFlag = g_bExtAbilityConnected;
+    g_bExtAbilityConnected = !bFlag;
+    return bFlag;
 }
 
 sptr<IExtension> SvcBackupConnection::GetBackupExtProxy()
