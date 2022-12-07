@@ -16,8 +16,8 @@
 #include "file_share_log.h"
 #include "datashare_helper.h"
 #include "datashare_values_bucket.h"
-#include "napi_base_context.h"
 #include "ability.h"
+#include "remote_uri.h"
 
 using namespace OHOS::DataShare;
 using namespace OHOS::FileManagement::LibN;
@@ -56,6 +56,12 @@ namespace ModuleFileShare {
         auto [succPath, path, lenPath] = NVal(env, funcArg[NARG_POS::FIRST]).ToUTF8String();
         if (!succPath) {
             LOGE("FileShare::GetJSArgs get path parameter failed!");
+            NError(EINVAL).ThrowErr(env);
+            return nullptr;
+        }
+
+        if (!DistributedFS::ModuleRemoteUri::RemoteUri::IsMediaUri(path.get())) {
+            LOGE("FileShare::GetJSArgs path parameter format error!");
             NError(EINVAL).ThrowErr(env);
             return nullptr;
         }
