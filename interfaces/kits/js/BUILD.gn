@@ -53,15 +53,12 @@ ohos_shared_library("fileshare") {
   ]
 
   external_deps = [
-    "ability_base:want",
     "ability_base:zuri",
-    "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
-    "ability_runtime:napi_base_context",
-    "ability_runtime:static_subscriber_extension",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "file_api:remote_uri_native",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
   ]
