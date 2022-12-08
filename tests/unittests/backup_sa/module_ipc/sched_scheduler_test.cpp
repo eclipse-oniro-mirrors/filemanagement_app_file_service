@@ -26,10 +26,6 @@ using namespace std;
 using namespace testing;
 
 namespace {
-constexpr int32_t WAIT_TIME = 16;
-} // namespace
-
-namespace {
 const string BUNDLE_NAME = "com.example.app2backup";
 constexpr int32_t CLIENT_TOKEN_ID = 100;
 constexpr int32_t SERVICE_ID = 5203;
@@ -102,11 +98,9 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_Sched_0100, testing::ext::TestSize.Leve
         GTEST_LOG_(INFO) << "SchedSchedulerTest-Sched Branches";
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::FINISH);
         schedPtr_->Sched();
-        schedPtr_->StartTimer();
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::WAIT);
         schedPtr_->Sched();
         GTEST_LOG_(INFO) << "SchedSchedulerTest-ExecutingQueueTasks time callback";
-        sleep(WAIT_TIME);
         schedPtr_->RemoveExtConn(BUNDLE_NAME);
         schedPtr_->Sched("test");
     } catch (...) {
@@ -158,7 +152,7 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_RemoveExtConn_0100, testing::ext::TestS
         schedPtr_->ExecutingQueueTasks(BUNDLE_NAME);
         schedPtr_->RemoveExtConn(BUNDLE_NAME);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-RemoveExtConn Branches";
-        schedPtr_->RemoveExtConn(BUNDLE_NAME);
+        schedPtr_->RemoveExtConn("test");
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-an exception occurred by RemoveExtConn.";
