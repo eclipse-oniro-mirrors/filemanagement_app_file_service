@@ -54,8 +54,8 @@ ohos_unittest("backup_service_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
+    "${path_backup_mock}/accesstoken/accesstoken_kit_mock.cpp",
     "${path_backup}/services/backup_sa/src/module_ipc/service.cpp",
-    "${path_backup}/tests/mock/accesstoken/accesstoken_kit_mock.cpp",
     "service_test.cpp",
   ]
   sources += backup_mock_src
@@ -91,8 +91,8 @@ ohos_unittest("backup_service_session_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
+    "${path_backup_mock}/bundle_manager/src/mock_bundle_manager.cpp",
     "${path_backup}/services/backup_sa/src/module_ipc/svc_session_manager.cpp",
-    "${path_backup}/tests/mock/bundle_manager/src/mock_bundle_manager.cpp",
     "svc_session_manager_test.cpp",
   ]
   sources += backup_mock_src
@@ -104,7 +104,7 @@ ohos_unittest("backup_service_session_test") {
     "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
     "${path_backup}/tests/unittests/backup_api/backup_impl/include",
     "${path_base}/include",
-    "${path_backup}/tests/mock/bundle_manager/include",
+    "${path_backup_mock}/bundle_manager/include",
   ]
 
   deps = [
@@ -132,6 +132,7 @@ ohos_unittest("backup_service_scheduler_test") {
   module_out_path = "filemanagement/backup"
 
   sources = [
+    "${path_backup_mock}/timer/timer_mock.cpp",
     "${path_backup}/services/backup_sa/src/module_sched/sched_scheduler.cpp",
     "sched_scheduler_test.cpp",
   ]

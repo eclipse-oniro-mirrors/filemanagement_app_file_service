@@ -75,8 +75,8 @@ void SvcSessionManagerTest::Init(IServiceReverse::Scenario scenario)
     auto setBackupExtNameMap = [](const string &bundleName) {
         BackupExtInfo info {};
         info.backupExtName = BUNDLE_NAME;
-        info.receExtManageJson = true;
-        info.receExtAppDone = true;
+        info.receExtManageJson = false;
+        info.receExtAppDone = false;
         return make_pair(bundleName, info);
     };
     transform(bundleNames.begin(), bundleNames.end(), inserter(backupExtNameMap, backupExtNameMap.end()),
@@ -288,6 +288,16 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_GetSchedBundleName_0100, t
         bool condition = sessionManagerPtr_->GetSchedBundleName(bundleName);
         EXPECT_EQ(bundleName, BUNDLE_NAME);
         EXPECT_TRUE(condition);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-GetSchedBundleName Branches";
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
+        condition = sessionManagerPtr_->GetSchedBundleName(bundleName);
+        EXPECT_FALSE(condition);
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
+        condition = sessionManagerPtr_->GetSchedBundleName(bundleName);
+        EXPECT_FALSE(condition);
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::WAIT);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by GetSchedBundleName.";
@@ -314,6 +324,8 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_GetServiceSchedAction_0100
         sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
         action = sessionManagerPtr_->GetServiceSchedAction(BUNDLE_NAME);
         EXPECT_EQ(action, BConstants::ServiceSchedAction::START);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-SetServiceSchedAction Branches";
+        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::FINISH);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by GetServiceSchedAction.";
@@ -357,6 +369,8 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_removeextinfo_0100, testin
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_removeextinfo_0100";
     try {
         sessionManagerPtr_->RemoveExtInfo(BUNDLE_NAME);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-RemoveExtInfo Branches";
+        sessionManagerPtr_->RemoveExtInfo(BUNDLE_NAME);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by RemoveExtInfo.";
@@ -399,17 +413,59 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_OnBunleExtManageInfo_0100,
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_OnBunleExtManageInfo_0100";
     try {
         Init(IServiceReverse::Scenario::BACKUP);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-OnBunleFileReady Branches";
+        auto ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_FALSE(ret);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-OnBunleFileReady Branches End";
         TestManager tm("SvcSessionManagerTest_GetFd_0100");
         string filePath = tm.GetRootDirCurTest().append(MANAGE_JSON);
         SaveStringToFile(filePath, R"({"fileName" : "1.tar"})");
         UniqueFd fd(open(filePath.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
         sessionManagerPtr_->OnBunleExtManageInfo(BUNDLE_NAME, move(fd));
-        sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
-        sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-OnBunleFileReady Branches";
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, MANAGE_JSON);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_TRUE(ret);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-OnBunleFileReady Branches End";
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by OnBunleExtManageInfo.";
     }
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_OnBunleExtManageInfo_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_sa_session_OnBunleFileReady_0200
+ * @tc.name: SUB_backup_sa_session_OnBunleFileReady_0200
+ * @tc.desc: 测试 OnBunleFileReady
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_OnBunleFileReady_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_OnBunleFileReady_0200";
+    try {
+        sessionManagerPtr_->Deactive(nullptr, true);
+        Init(IServiceReverse::Scenario::BACKUP);
+        auto ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, MANAGE_JSON);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_FALSE(ret);
+        ret = sessionManagerPtr_->OnBunleFileReady(BUNDLE_NAME, FILE_NAME);
+        EXPECT_FALSE(ret);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by OnBunleFileReady.";
+    }
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_OnBunleFileReady_0200";
 }
 } // namespace OHOS::FileManagement::Backup

@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <future>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <string>
@@ -27,6 +28,10 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 using namespace testing;
+
+namespace {
+constexpr int32_t WAIT_TIME = 1;
+} // namespace
 
 class SvcBackupConnectionTest : public testing::Test {
 public:
@@ -138,6 +143,14 @@ HWTEST_F(SvcBackupConnectionTest, SUB_BackupConnection_ConnectBackupExtAbility_0
     GTEST_LOG_(INFO) << "SvcBackupConnectionTest-end SUB_BackupConnection_ConnectBackupExtAbility_0100";
 }
 
+static void CallBack(sptr<SvcBackupConnection> backupCon)
+{
+    GTEST_LOG_(INFO) << "SvcBackupConnectionTest-CallBack Begin";
+    sleep(WAIT_TIME);
+    backupCon->OnAbilityDisconnectDone({}, WAIT_TIME);
+    GTEST_LOG_(INFO) << "SvcBackupConnectionTest-CallBack End";
+}
+
 /**
  * @tc.number: SUB_BackupConnection_DisconnectBackupExtAbility_0100
  * @tc.name: SUB_BackupConnection_DisconnectBackupExtAbility_0100
@@ -152,6 +165,14 @@ HWTEST_F(SvcBackupConnectionTest, SUB_BackupConnection_DisconnectBackupExtAbilit
     GTEST_LOG_(INFO) << "SvcBackupConnectionTest-begin SUB_BackupConnection_DisconnectBackupExtAbility_0100";
     ErrCode ret = backupCon_->DisconnectBackupExtAbility();
     EXPECT_EQ(ret, BError(BError::Codes::OK));
+    GTEST_LOG_(INFO) << "SvcBackupConnectionTest-DisconnectBackupExtAbility async Begin";
+    auto future = std::async(std::launch::async, CallBack, backupCon_);
+    sleep(WAIT_TIME);
+    GTEST_LOG_(INFO) << "SvcBackupConnectionTest-DisconnectBackupExtAbility Branches Begin";
+    ret = backupCon_->DisconnectBackupExtAbility();
+    EXPECT_EQ(ret, BError(BError::Codes::OK));
+    GTEST_LOG_(INFO) << "SvcBackupConnectionTest-DisconnectBackupExtAbility Branches End";
+    future.get();
     GTEST_LOG_(INFO) << "SvcBackupConnectionTest-end SUB_BackupConnection_DisconnectBackupExtAbility_0100";
 }
 } // namespace OHOS::FileManagement::Backup

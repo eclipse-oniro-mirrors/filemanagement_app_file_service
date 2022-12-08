@@ -51,11 +51,18 @@ public:
     MOCK_METHOD2(GetExtFileName, ErrCode(string &bundleName, string &fileName));
     UniqueFd InvokeGetLocalCapabilities()
     {
+        if (bCapabilities_) {
+            return UniqueFd(-1);
+        }
         TestManager tm("MockService_GetFd_0100");
         std::string filePath = tm.GetRootDirCurTest().append(FILE_NAME);
         UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+        bCapabilities_ = true;
         return fd;
     }
+
+private:
+    bool bCapabilities_ = {false};
 };
 
 class ServiceStubTest : public testing::Test {
@@ -135,6 +142,12 @@ HWTEST_F(ServiceStubTest, SUB_backup_sa_ServiceStub_InitBackupSession_0100, test
 
         EXPECT_EQ(BError(BError::Codes::OK),
                   service.OnRemoteRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, data, reply, option));
+        GTEST_LOG_(INFO) << "ServiceStubTest-CmdInitBackupSession Brances";
+        MessageParcel brances;
+        EXPECT_TRUE(data.WriteInterfaceToken(IService::GetDescriptor()));
+        EXPECT_TRUE(data.WriteRemoteObject(remote->AsObject().GetRefPtr()));
+        EXPECT_NE(BError(BError::Codes::OK),
+                  service.OnRemoteRequest(IService::SERVICE_CMD_INIT_BACKUP_SESSION, brances, reply, option));
         remote = nullptr;
     } catch (...) {
         EXPECT_TRUE(false);
@@ -186,6 +199,8 @@ HWTEST_F(ServiceStubTest, SUB_backup_sa_ServiceStub_GetLocalCapabilities_0100, t
     try {
         sptr<MockService> serviceSptr = sptr(new MockService());
         EXPECT_CALL(*serviceSptr, GetLocalCapabilities())
+            .Times(2)
+            .WillOnce(Invoke(serviceSptr.GetRefPtr(), &MockService::InvokeGetLocalCapabilities))
             .WillOnce(Invoke(serviceSptr.GetRefPtr(), &MockService::InvokeGetLocalCapabilities));
         MessageParcel data;
         MessageParcel reply;
@@ -197,6 +212,11 @@ HWTEST_F(ServiceStubTest, SUB_backup_sa_ServiceStub_GetLocalCapabilities_0100, t
                   serviceSptr->OnRemoteRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, data, reply, option));
         UniqueFd fd(reply.ReadFileDescriptor());
         EXPECT_GT(fd, BError(BError::Codes::OK));
+        GTEST_LOG_(INFO) << "ServiceStubTest-CmdGetLocalCapabilities Brances";
+        MessageParcel brances;
+        EXPECT_TRUE(brances.WriteInterfaceToken(IService::GetDescriptor()));
+        EXPECT_NE(BError(BError::Codes::OK),
+                  serviceSptr->OnRemoteRequest(IService::SERVICE_CMD_GET_LOCAL_CAPABILITIES, brances, reply, option));
         serviceSptr = nullptr;
     } catch (...) {
         EXPECT_TRUE(false);
@@ -264,6 +284,12 @@ HWTEST_F(ServiceStubTest, SUB_backup_sa_ServiceStub_AppFileReady_0100, testing::
         EXPECT_TRUE(data.WriteFileDescriptor(fd));
         EXPECT_EQ(BError(BError::Codes::OK),
                   service.OnRemoteRequest(IService::SERVICE_CMD_APP_FILE_READY, data, reply, option));
+        GTEST_LOG_(INFO) << "ServiceStubTest-begin-CmdAppFileReady Brances";
+        MessageParcel brances;
+        EXPECT_TRUE(brances.WriteInterfaceToken(IService::GetDescriptor()));
+        EXPECT_TRUE(brances.WriteString(FILE_NAME));
+        EXPECT_NE(BError(BError::Codes::OK),
+                  service.OnRemoteRequest(IService::SERVICE_CMD_APP_FILE_READY, brances, reply, option));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceStubTest-an exception occurred by AppFileReady.";
@@ -326,6 +352,7 @@ HWTEST_F(ServiceStubTest, SUB_backup_sa_ServiceStub_GetExtFileName_0100, testing
         EXPECT_TRUE(data.WriteString(FILE_NAME));
         EXPECT_EQ(BError(BError::Codes::OK),
                   service.OnRemoteRequest(IService::SERVICE_CMD_GET_EXT_FILE_NAME, data, reply, option));
+        EXPECT_NE(BError(BError::Codes::OK), service.OnRemoteRequest(3333, data, reply, option));
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceStubTest-an exception occurred by GetExtFileName.";
