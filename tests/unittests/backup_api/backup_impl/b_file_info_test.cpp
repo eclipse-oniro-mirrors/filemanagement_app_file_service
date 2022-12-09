@@ -117,20 +117,20 @@ HWTEST_F(BFileInfoTest, SUB_BFile_Info_0200, testing::ext::TestSize.Level1)
     GTEST_LOG_(INFO) << "BFileInfoTest-begin SUB_BFile_Info_0200";
     BFileInfo bFileInfo(BUNDLE_NAME, FILE_NAME, -1);
     Parcel parcel;
-    MockWriteString(0, 2);
-    MockWriteUint32(0);
+    ResetParcelState();
+    MockWriteUint32(false);
     EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
-    MockWriteString(0, 0);
+    MockWriteUint32(true);
+    MockWriteString(false, 1);
     EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
-    MockWriteString(0, 1);
     EXPECT_EQ(bFileInfo.Marshalling(parcel), false);
 
-    MockWriteString(0, 2);
-    MockWriteUint32(0);
+    ResetParcelState();
+    MockWriteUint32(false);
     EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
-    MockWriteString(0, 0);
+    MockWriteUint32(true);
+    MockWriteString(false, 1);
     EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
-    MockWriteString(0, 1);
     EXPECT_EQ(bFileInfo.ReadFromParcel(parcel), false);
 
     auto infoPtr = bFileInfo.Unmarshalling(parcel);

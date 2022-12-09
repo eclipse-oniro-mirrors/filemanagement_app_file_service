@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
 #include <iostream>
 #include <map>
 #include <sstream>
 
+#include <gtest/gtest.h>
+
 #include "tools_op.h"
+#include "utils_mock_global_variable.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -33,7 +35,7 @@ public:
 /**
  * @tc.number: SUB_backup_tools_op_backup_0100
  * @tc.name: SUB_backup_tools_op_backup_0100
- * @tc.desc: 测试
+ * @tc.desc: 测试backup流程
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
@@ -43,6 +45,7 @@ HWTEST_F(ToolsOpBackupTest, SUB_backup_tools_op_backup_0100, testing::ext::TestS
 {
     GTEST_LOG_(INFO) << "ToolsOpBackupTest-begin SUB_backup_tools_op_backup_0100";
     try {
+        SetMockGetInstance(true);
         GTEST_LOG_(INFO) << "ToolsOpBackupTest-info";
         map<string, vector<string>> mapArgToVal;
         vector<string> path = {"/data/backup/tmp"};
@@ -64,8 +67,17 @@ HWTEST_F(ToolsOpBackupTest, SUB_backup_tools_op_backup_0100, testing::ext::TestS
         auto &&opeartions = ToolsOp::GetAllOperations();
         auto matchedOp = find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
         if (matchedOp != opeartions.end()) {
-            matchedOp->Execute(mapArgToVal);
+            auto ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_EQ(ret, 0);
         }
+
+        GTEST_LOG_(INFO) << "GetInstance is false";
+        SetMockGetInstance(false);
+        if (matchedOp != opeartions.end()) {
+            auto ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
+        }
+        SetMockGetInstance(true);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ToolsOpBackupTest-an exception occurred by construction.";
@@ -76,7 +88,7 @@ HWTEST_F(ToolsOpBackupTest, SUB_backup_tools_op_backup_0100, testing::ext::TestS
 /**
  * @tc.number: SUB_backup_tools_op_backup_0200
  * @tc.name: SUB_backup_tools_op_backup_0200
- * @tc.desc: 测试
+ * @tc.desc: 测试Exec分支
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
@@ -122,10 +134,56 @@ HWTEST_F(ToolsOpBackupTest, SUB_backup_tools_op_backup_0200, testing::ext::TestS
             ret = matchedOp->Execute(mapArgToVal);
             EXPECT_NE(ret, 0);
         }
+
+        mapArgToVal.clear();
+        if (matchedOp != opeartions.end()) {
+            ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
+        }
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ToolsOpBackupTest-an exception occurred by construction.";
     }
     GTEST_LOG_(INFO) << "ToolsOpBackupTest-end SUB_backup_tools_op_backup_0200";
+}
+
+/**
+ * @tc.number: SUB_backup_tools_op_backup_0300
+ * @tc.name: SUB_backup_tools_op_backup_0300
+ * @tc.desc: 测试Exec分支
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0382
+ */
+HWTEST_F(ToolsOpBackupTest, SUB_backup_tools_op_backup_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ToolsOpBackupTest-begin SUB_backup_tools_op_backup_0300";
+    try {
+        GTEST_LOG_(INFO) << "ToolsOpBackupTest-info";
+        map<string, vector<string>> mapArgToVal;
+        vector<string> path = {"/data/backup/tmp"};
+        mapArgToVal.insert(make_pair("pathCapFile", path));
+        vector<string> bundles = {"com.example.app2backup"};
+        mapArgToVal.insert(make_pair("bundles", bundles));
+        vector<string> local = {"false"};
+        mapArgToVal.insert(make_pair("isLocal", local));
+
+        // 尝试匹配当前命令，成功后执行
+        GTEST_LOG_(INFO) << "ToolsOpBackupTest-backup";
+        vector<string_view> curOp;
+        curOp.emplace_back("backup");
+        auto tryOpSucceed = [&curOp](const ToolsOp &op) { return op.TryMatch(curOp); };
+        auto &&opeartions = ToolsOp::GetAllOperations();
+        auto matchedOp = find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
+        if (matchedOp != opeartions.end()) {
+            auto ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_EQ(ret, 0);
+        }
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ToolsOpBackupTest-an exception occurred by construction.";
+    }
+    GTEST_LOG_(INFO) << "ToolsOpBackupTest-end SUB_backup_tools_op_backup_0300";
 }
 } // namespace OHOS::FileManagement::Backup

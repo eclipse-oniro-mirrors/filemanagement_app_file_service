@@ -19,8 +19,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <file_ex.h>
+#include <gtest/gtest.h>
+
 #include "b_error/b_error.h"
-#include "file_ex.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -62,8 +64,22 @@ ErrCode BSessionRestore::Start()
     callbacks_.onBackupServiceDied();
     callbacks_.onBundleStarted(1, "com.example.app2backup");
     callbacks_.onBundleFinished(1, "com.example.app2backup");
-    callbacks_.onBundleFinished(0, "com.example.app2backup");
     callbacks_.onBundleStarted(0, "com.example.app2backup");
+
+    BFileInfo bFileInfo("com.example.app2backup", "1.tar", 0);
+    TestManager tm("BSessionRestoreMock_GetFd_0100");
+    string filePath = tm.GetRootDirCurTest().append("1.tar");
+    UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
+    callbacks_.onFileReady(bFileInfo, move(fd));
+
+    string fileManagePath = tm.GetRootDirCurTest().append("manage.json");
+    UniqueFd fdManage(open(fileManagePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    bFileInfo.fileName = "manage.json";
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady manage.json";
+    callbacks_.onFileReady(bFileInfo, move(fdManage));
+
+    callbacks_.onBundleFinished(0, "com.example.app2backup");
     return BError(BError::Codes::OK);
 }
 
