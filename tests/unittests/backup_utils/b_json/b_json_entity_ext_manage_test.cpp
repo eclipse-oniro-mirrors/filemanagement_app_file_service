@@ -13,12 +13,20 @@
  * limitations under the License.
  */
 
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+
 #include <fcntl.h>
+#include <sys/stat.h>
+
+#include <file_ex.h>
 #include <gtest/gtest.h>
+#include <json/value.h>
 
 #include "b_json/b_json_cached_entity.h"
 #include "b_json/b_json_entity_ext_manage.h"
-#include "file_ex.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -402,5 +410,87 @@ HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0500, testing::ext::
         GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0500";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_0600
+ * @tc.name: b_json_entity_ext_manage_0600
+ * @tc.desc: 测试SetExtManage接口中的FindLinks在设备号或INode数目为0时能否成功通过GetExtManage获取相关信息
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0600, testing::ext::TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_0600";
+    try {
+        map<string, pair<string, struct stat>> mp = {{"key", {"first", {}}}};
+        Json::Value jv;
+        BJsonEntityExtManage extMg(jv);
+
+        extMg.SetExtManage(mp);
+        set<string> ss = extMg.GetExtManage();
+        EXPECT_EQ(ss.size(), 1);
+
+        mp.at("key").second.st_dev = 1;
+        extMg.SetExtManage(mp);
+        ss = extMg.GetExtManage();
+        EXPECT_EQ(ss.size(), 1);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0600";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_0700
+ * @tc.name: b_json_entity_ext_manage_0700
+ * @tc.desc: 测试GetExtManageInfo在Json数据不为数组时能否成功返回空map
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0700, testing::ext::TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_0700";
+    try {
+        string_view sv = R"({"key":1})";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto mp = cache.GetExtManageInfo();
+        EXPECT_TRUE(mp.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0700";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_0800
+ * @tc.name: b_json_entity_ext_manage_0800
+ * @tc.desc: 测试GetExtManageInfo在Json数据为数组且仅有一个键不为information的对象时能否成功返回空map
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0800, testing::ext::TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_0800";
+    try {
+        string_view sv = R"([{"key":1}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto mp = cache.GetExtManageInfo();
+        EXPECT_TRUE(mp.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0800";
 }
 } // namespace OHOS::FileManagement::Backup
