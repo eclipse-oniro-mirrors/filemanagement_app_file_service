@@ -19,6 +19,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <file_ex.h>
+#include <gtest/gtest.h>
+
 #include "b_error/b_error.h"
 #include "test_manager.h"
 
@@ -56,11 +59,21 @@ ErrCode BSessionBackup::Start()
     callbacks_.onBundleStarted(1, "com.example.app2backup");
     callbacks_.onBundleFinished(1, "com.example.app2backup");
     callbacks_.onBundleStarted(0, "com.example.app2backup");
-    BFileInfo bFileInfo("com.example.app2backup", "1.tar", 0);
+
+    BFileInfo bFileInfo("com.example.app2backup", "manage.json", 0);
     TestManager tm("BSessionBackupMock_GetFd_0100");
+    string fileManagePath = tm.GetRootDirCurTest().append("manage.json");
+    SaveStringToFile(fileManagePath, R"([{"fileName" : "1.tar"}])");
+    UniqueFd fdManage(open(fileManagePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady manage.json";
+    callbacks_.onFileReady(bFileInfo, move(fdManage));
+
     string filePath = tm.GetRootDirCurTest().append("1.tar");
     UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    bFileInfo.fileName = "1.tar";
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
     callbacks_.onFileReady(bFileInfo, move(fd));
+
     callbacks_.onBundleFinished(0, "com.example.app2backup");
     return BError(BError::Codes::OK);
 }

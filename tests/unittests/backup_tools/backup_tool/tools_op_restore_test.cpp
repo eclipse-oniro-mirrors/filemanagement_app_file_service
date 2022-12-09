@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
 #include <iostream>
 #include <map>
 #include <sstream>
+
+#include <gtest/gtest.h>
 
 #include "tools_op.h"
 
@@ -51,7 +52,7 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0100, testing::ext::Tes
         mapArgToVal.insert(make_pair("bundles", bundles));
 
         // 创建测试路径
-        string strPath = "/data/backup";
+        string strPath = "/data/backup/received/com.example.app2backup/";
         mkdir(strPath.data(), S_IRWXU);
 
         // 尝试匹配当前命令，成功后执行
@@ -103,6 +104,12 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0200, testing::ext::Tes
         GTEST_LOG_(INFO) << "ToolsOpRestoreTest-The bundles field is not contained.";
         mapArgToVal.clear();
         mapArgToVal.insert(make_pair("pathCapFile", path));
+        if (matchedOp != opeartions.end()) {
+            ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
+        }
+
+        mapArgToVal.clear();
         if (matchedOp != opeartions.end()) {
             ret = matchedOp->Execute(mapArgToVal);
             EXPECT_NE(ret, 0);
