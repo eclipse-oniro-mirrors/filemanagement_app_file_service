@@ -13,8 +13,12 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
+#include <future>
 #include <string>
+
+#include <unistd.h>
+
+#include <gtest/gtest.h>
 
 #include "b_error/b_error.h"
 #include "module_ipc/service.h"
@@ -29,6 +33,7 @@ namespace {
 const string BUNDLE_NAME = "com.example.app2backup";
 constexpr int32_t CLIENT_TOKEN_ID = 100;
 constexpr int32_t SERVICE_ID = 5203;
+constexpr int32_t WAIT_TIME = 3;
 } // namespace
 
 class SchedSchedulerTest : public testing::Test {
@@ -53,9 +58,9 @@ void SchedSchedulerTest::SetUpTestCase()
 
 void SchedSchedulerTest::TearDownTestCase()
 {
+    schedPtr_ = nullptr;
     servicePtr_ = nullptr;
     sessionManagerPtr_ = nullptr;
-    schedPtr_ = nullptr;
 }
 
 void SchedSchedulerTest::Init(IServiceReverse::Scenario scenario)
@@ -83,7 +88,7 @@ void SchedSchedulerTest::Init(IServiceReverse::Scenario scenario)
 /**
  * @tc.number: SUB_Service_Sched_0100
  * @tc.name: SUB_Service_Sched_0100
- * @tc.desc: 测试 Sched 接口
+ * @tc.desc: 测试 Sched接口
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
@@ -103,6 +108,10 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_Sched_0100, testing::ext::TestSize.Leve
         GTEST_LOG_(INFO) << "SchedSchedulerTest-ExecutingQueueTasks time callback";
         schedPtr_->RemoveExtConn(BUNDLE_NAME);
         schedPtr_->Sched("test");
+        // SchedScheduler在析构时释放OHOS::ThreadPool若此时没有完成的任务，ThreadPool在析构调用stop时会出现异常，目前暂时sleep处理，后续更改ThreadPool方案
+        // 原因是sleep等待ThreadPool任务完成后，任务不再额外持有SchedScheduler的引用计数
+        // 于是本函数执行结束后SchedScheduler引用计数清空，得以在另外的线程上析构SchedScheduler对象及其中的线程池。
+        sleep(WAIT_TIME);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SchedSchedulerTest-an exception occurred by Sched.";
@@ -147,11 +156,6 @@ HWTEST_F(SchedSchedulerTest, SUB_Service_RemoveExtConn_0100, testing::ext::TestS
 {
     GTEST_LOG_(INFO) << "SchedSchedulerTest-begin SUB_Service_RemoveExtConn_0100";
     try {
-        Init(IServiceReverse::Scenario::RESTORE);
-        sessionManagerPtr_->SetServiceSchedAction(BUNDLE_NAME, BConstants::ServiceSchedAction::START);
-        schedPtr_->ExecutingQueueTasks(BUNDLE_NAME);
-        schedPtr_->RemoveExtConn(BUNDLE_NAME);
-        GTEST_LOG_(INFO) << "SchedSchedulerTest-RemoveExtConn Branches";
         schedPtr_->RemoveExtConn("test");
     } catch (...) {
         EXPECT_TRUE(false);

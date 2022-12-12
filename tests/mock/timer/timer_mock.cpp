@@ -39,5 +39,15 @@ uint32_t Timer::Register(const TimerCallback &callback, uint32_t interval, bool 
     callback();
     return 1;
 }
+
+void Timer::Shutdown(bool useJoin)
+{
+    GTEST_LOG_(INFO) << "Timer Shutdown " << useJoin;
+}
+
+void Timer::Unregister(uint32_t timerId)
+{
+    GTEST_LOG_(INFO) << "Timer Unregister " << timerId;
+}
 } // namespace Utils
 } // namespace OHOS
