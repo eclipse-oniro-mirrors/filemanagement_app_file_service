@@ -15,14 +15,16 @@
 
 #include <cstdio>
 #include <cstdlib>
+
 #include <dirent.h>
 #include <fcntl.h>
+
+#include <errors.h>
+#include <file_ex.h>
 #include <gtest/gtest.h>
 
 #include "b_filesystem/b_dir.h"
 #include "b_process/b_process.h"
-#include "errors.h"
-#include "file_ex.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -52,9 +54,6 @@ HWTEST_F(BDirTest, b_dir_GetDirFiles_0100, testing::ext::TestSize.Level0)
         TestManager tm("b_dir_GetDirFiles_0100");
 
         string preparedDir = tm.GetRootDirCurTest();
-        string cmdMkdir = string("mkdir ") + preparedDir;
-        system(cmdMkdir.c_str());
-
         string touchFilePrefix = string("touch ") + preparedDir;
         system(touchFilePrefix.append("a.txt").c_str());
         system(touchFilePrefix.append("b.txt").c_str());
@@ -114,5 +113,70 @@ HWTEST_F(BDirTest, b_dir_GetBigFiles_0100, testing::ext::TestSize.Level1)
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
     }
     GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetBigFiles_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_dir_GetBigFiles_0200
+ * @tc.name: b_dir_GetBigFiles_0200
+ * @tc.desc: 测试GetBigFiles接口 分支逻辑
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BDirTest, b_dir_GetBigFiles_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetBigFiles_0200";
+    try {
+        vector<string> includes = {{}, {}};
+        vector<string> excludes = {{}};
+        auto [errCode, mpNameToStat] = BDir::GetBigFiles(includes, excludes);
+        EXPECT_EQ(errCode, ERR_OK);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetBigFiles_0200";
+}
+
+/**
+ * @tc.number: SUB_backup_b_dir_GetBigFiles_0300
+ * @tc.name: b_dir_GetBigFiles_0300
+ * @tc.desc: 测试GetBigFiles接口 分支逻辑
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H037V
+ */
+HWTEST_F(BDirTest, b_dir_GetBigFiles_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetBigFiles_0300";
+    try {
+        TestManager tm("b_dir_GetBigFiles_0300");
+        string preparedDir = tm.GetRootDirCurTest();
+        string cmdMkdir = string("mkdir -p ") + preparedDir + string("test/test1/test2");
+        system(cmdMkdir.c_str());
+        string touchFilePrefix = string("touch ") + preparedDir;
+        system(touchFilePrefix.append("a.txt").c_str());
+        system(touchFilePrefix.append("b.txt").c_str());
+        system(touchFilePrefix.append("c.txt").c_str());
+
+        touchFilePrefix = string("touch ") + preparedDir + string("test/");
+        system(touchFilePrefix.append("a.txt").c_str());
+        system(touchFilePrefix.append("b.txt").c_str());
+        system(touchFilePrefix.append("c.txt").c_str());
+        touchFilePrefix = string("touch ") + preparedDir + string("test/test1/test2");
+        system(touchFilePrefix.append("a.txt").c_str());
+        system(touchFilePrefix.append("b.txt").c_str());
+        system(touchFilePrefix.append("c.txt").c_str());
+        vector<string> includes = {preparedDir + string("/*"), preparedDir + string("test")};
+        vector<string> excludes = {preparedDir + string("/test/test1/test2"), {}};
+        auto [errCode, mpNameToStat] = BDir::GetBigFiles(includes, excludes);
+        EXPECT_EQ(errCode, ERR_OK);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetBigFiles_0300";
 }
 } // namespace OHOS::FileManagement::Backup
