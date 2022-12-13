@@ -493,4 +493,40 @@ HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0800, testing::ext::
     }
     GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0800";
 }
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_0900
+ * @tc.name: b_json_entity_ext_manage_0900
+ * @tc.desc: 测试SetHardLinkInfo接口和GetHardLinkInfo接口在不符合相关条件时能否成功返回false和空set
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: SR000H0379
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_0900, testing::ext::TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_0900";
+    try {
+        string_view sv = R"({"key":1})";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        EXPECT_FALSE(cache.SetHardLinkInfo("", {}));
+
+        Json::Value jv;
+        BJsonEntityExtManage extMg(jv);
+        EXPECT_FALSE(extMg.SetHardLinkInfo("1", {}));
+
+        EXPECT_FALSE(cache.SetHardLinkInfo("1", {}));
+
+        EXPECT_EQ(cache.GetHardLinkInfo(""), set<string>());
+
+        EXPECT_EQ(extMg.GetHardLinkInfo("1"), set<string>());
+
+        EXPECT_EQ(cache.GetHardLinkInfo("1"), set<string>());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_0900";
+}
 } // namespace OHOS::FileManagement::Backup
