@@ -13,14 +13,18 @@
  * limitations under the License.
  */
 
-#include <cstdlib>
-#include <gtest/gtest.h>
+#include <cstddef>
+#include <optional>
 #include <string>
+
 #include <sys/stat.h>
+
+#include <gtest/gtest.h>
 
 #include "b_process/b_process.h"
 #include "b_resources/b_constants.h"
 #include "b_tarball/b_tarball_posix/b_tarball_posix_tarball.h"
+#include "b_tarball_posix/b_tarball_posix_extended_entry.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -387,5 +391,42 @@ HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_EmplaceAndClear_0100,
         GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
     }
     GTEST_LOG_(INFO) << "BTarballPosixTarballTest-end b_tarball_posix_tarball_EmplaceAndClear_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_tarball_posix_tarball_TryToGetEntry_0100
+ * @tc.name: b_tarball_posix_tarball_TryToGetEntry_0100
+ * @tc.desc: 测试TryToGetEntry能否成功处理超长文件名场景并生成相应的entry
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: SR000H0378
+ */
+HWTEST_F(BTarballPosixTarballTest, b_tarball_posix_tarball_TryToGetEntry_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BTarballPosixTarballTest-begin b_tarball_posix_tarball_TryToGetEntry_0100";
+    try {
+        // 构造一个长度为992字节的文件名
+        string pathName =
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        auto extEntryOptional = BTarballPosixExtendedEntry::TryToGetEntry(BConstants::SUPER_LONG_PATH, pathName, {});
+        EXPECT_NE(extEntryOptional, nullopt);
+        // 长度为992字节的文件名对应entry的长度为1003（"path"字段占4字节，" =\n"占3字节，entry长度"1003"占4字节）
+        size_t entrySize = 1003;
+        EXPECT_EQ(extEntryOptional->GetEntrySize(), entrySize);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BTarballPosixTarballTest-an exception occurred by BTarballPosixTarball.";
+    }
+    GTEST_LOG_(INFO) << "BTarballPosixTarballTest-end b_tarball_posix_tarball_TryToGetEntry_0100";
 }
 } // namespace OHOS::FileManagement::Backup
