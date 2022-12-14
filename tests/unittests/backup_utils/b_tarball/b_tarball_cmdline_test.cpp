@@ -13,15 +13,20 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
+#include <string>
 #include <string_view>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <vector>
 
-#include "b_error.h"
-#include "b_tarball_cmdline.h"
-#include "file_ex.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <file_ex.h>
+#include <gtest/gtest.h>
+#include <unique_fd.h>
+
+#include "b_error/b_error.h"
+#include "b_tarball/b_tarball_cmdline.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -84,6 +89,13 @@ HWTEST_F(BTarballCmdlineTest, b_tarball_cmdline_0200, testing::ext::TestSize.Lev
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
+        string strFile = root + tarballName.data();
+        UniqueFd fd(open(strFile.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+        if (fd < 0) {
+            GTEST_LOG_(INFO) << " invoked open failure, errno :" << errno;
+            throw BError(errno);
+        }
+
         string aFile = testDir + "/a.txt";
         string bFile = testDir + "/b.txt";
         SaveStringToFile(aFile, "hello");
@@ -94,11 +106,6 @@ HWTEST_F(BTarballCmdlineTest, b_tarball_cmdline_0200, testing::ext::TestSize.Lev
         // 调用tar打包
         BTarballCmdline tarballCmdline(tarballDir, tarballName);
         tarballCmdline.Tar(root, includes, excludes);
-
-        // 判断是否生成了打包文件
-        if (access((root + "/" + string(tarballName)).data(), F_OK) != 0) {
-            EXPECT_TRUE(false);
-        }
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballCmdlineTest-an exception occurred by BTarballCmdline.";
@@ -124,41 +131,15 @@ HWTEST_F(BTarballCmdlineTest, b_tarball_cmdline_0300, testing::ext::TestSize.Lev
         string root = tm.GetRootDirCurTest();
         string_view tarballDir = root;
         string_view tarballName = "test.tar";
-        string testDir = root + "/testdir";
         string testUntarDir = root + "/untardir";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
-            GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
-            throw BError(errno);
-        }
         if (mkdir(testUntarDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir + "/a.txt";
-        string bFile = testDir + "/b.txt";
-        SaveStringToFile(aFile, "hello");
-        SaveStringToFile(bFile, "world");
-        vector<string_view> includes {testDir};
-        string::size_type firstNotSlashIndex = bFile.find_first_not_of('/');
-        bFile.erase(0, firstNotSlashIndex);
-        vector<string_view> excludes {bFile};
-
         // 调用tar打包
         BTarballCmdline tarballCmdline(tarballDir, tarballName);
-        tarballCmdline.Tar(root, includes, excludes);
         tarballCmdline.Untar(testUntarDir);
 
-        // 判断是否生成了打包文件
-        if (access((root + "/" + string(tarballName)).data(), F_OK) != 0) {
-            EXPECT_TRUE(false);
-        }
-        // 判断是否解压成功
-        if (access((testUntarDir + "/" + aFile).data(), F_OK) != 0) {
-            EXPECT_TRUE(false);
-        }
-        if (access((testUntarDir + "/" + bFile).data(), F_OK) == 0) {
-            EXPECT_TRUE(false);
-        }
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballCmdlineTest-an exception occurred by BTarballCmdline.";

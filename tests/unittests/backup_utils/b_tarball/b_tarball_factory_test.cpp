@@ -14,11 +14,12 @@
  */
 
 #include <cstddef>
-#include <gtest/gtest.h>
 #include <string>
 
-#include "b_tarball_factory.h"
-#include "file_ex.h"
+#include <file_ex.h>
+#include <gtest/gtest.h>
+
+#include "b_tarball/b_tarball_factory.h"
 #include "test_manager.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -52,7 +53,11 @@ HWTEST_F(BTarballFactoryTest, b_tarball_factory_0100, testing::ext::TestSize.Lev
         string tarballPath = root + "/test.tar";
         SaveStringToFile(tarballPath, "data/storage/el2/database/");
         // 调用create获取打包解包能力
-        BTarballFactory::Create(implType, tarballPath);
+        auto tarballTar = BTarballFactory::Create(implType, tarballPath);
+        GTEST_LOG_(INFO) << "BTarballFactoryTest-tar";
+        (tarballTar->tar)("/", {}, {"/data/storage/el2/database/", {}});
+        GTEST_LOG_(INFO) << "BTarballFactoryTest-untar";
+        (tarballTar->untar)("/");
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BTarballFactoryTest-an exception occurred by BTarballFactory.";

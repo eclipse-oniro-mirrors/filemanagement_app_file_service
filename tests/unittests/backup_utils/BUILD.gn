@@ -69,11 +69,7 @@ ohos_unittest("b_json_test") {
 ohos_unittest("b_tarball_test") {
   module_out_path = "filemanagement/backup"
 
-  sources = [
-    "b_tarball/b_tarball_cmdline_test.cpp",
-    "b_tarball/b_tarball_factory_test.cpp",
-    "b_tarball/b_tarball_posix_tarball_test.cpp",
-  ]
+  sources = [ "b_tarball/b_tarball_posix_tarball_test.cpp" ]
 
   include_dirs = [
     "${path_base}/include",
@@ -91,6 +87,48 @@ ohos_unittest("b_tarball_test") {
   use_exceptions = true
 }
 
+ohos_unittest("b_tarball_cmdline_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup_mock}/b_process/b_process_mock.cpp",
+    "b_tarball/b_tarball_cmdline_test.cpp",
+  ]
+
+  include_dirs = [
+    "${path_base}/include",
+    "${path_backup}/utils/include",
+  ]
+
+  deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_base}:utils",
+  ]
+
+  use_exceptions = true
+}
+
+ohos_unittest("b_tarball_factory_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup_mock}/b_tarball/b_tarball_cmdline_mock.cpp",
+    "b_tarball/b_tarball_factory_test.cpp",
+  ]
+
+  include_dirs = [
+    "${path_base}/include",
+    "${path_backup}/utils/include",
+  ]
+
+  deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_base}:utils",
+  ]
+
+  use_exceptions = true
+}
+
 group("backup_test") {
   testonly = true
 
@@ -98,6 +136,8 @@ group("backup_test") {
     ":b_error_test",
     ":b_file_test",
     ":b_json_test",
+    ":b_tarball_cmdline_test",
+    ":b_tarball_factory_test",
     ":b_tarball_test",
   ]
 }
