@@ -28,14 +28,18 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-static BSessionRestore::Callbacks callbacks_;
+namespace {
+static BSessionRestore::Callbacks callbacks_ = {};
+static vector<BundleName> bundlesToRestore_ = {};
+} // namespace
 
 BSessionRestore::~BSessionRestore() {}
 
 unique_ptr<BSessionRestore> BSessionRestore::Init(vector<BundleName> bundlesToRestore, Callbacks callbacks)
 {
     try {
-        callbacks_ = callbacks;
+        callbacks_ = move(callbacks);
+        bundlesToRestore_ = move(bundlesToRestore);
         auto restore = make_unique<BSessionRestore>();
         return restore;
     } catch (const exception &e) {
@@ -46,6 +50,14 @@ unique_ptr<BSessionRestore> BSessionRestore::Init(vector<BundleName> bundlesToRe
 
 UniqueFd BSessionRestore::GetLocalCapabilities()
 {
+    string bundleName = "test";
+    auto iter = find_if(bundlesToRestore_.begin(), bundlesToRestore_.end(), [&bundleName](auto &obj) {
+        auto &bName = obj;
+        return bName == bundleName;
+    });
+    if (iter != bundlesToRestore_.end()) {
+        return UniqueFd(-1);
+    }
     TestManager tm("BSessionRestoreMock_GetFd_0100");
     string filePath = tm.GetRootDirCurTest().append("tmp");
     UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
@@ -59,27 +71,29 @@ ErrCode BSessionRestore::PublishFile(BFileInfo fileInfo)
 
 ErrCode BSessionRestore::Start()
 {
-    callbacks_.onAllBundlesFinished(0);
-    callbacks_.onAllBundlesFinished(1);
-    callbacks_.onBackupServiceDied();
-    callbacks_.onBundleStarted(1, "com.example.app2backup");
-    callbacks_.onBundleFinished(1, "com.example.app2backup");
     callbacks_.onBundleStarted(0, "com.example.app2backup");
 
     BFileInfo bFileInfo("com.example.app2backup", "1.tar", 0);
     TestManager tm("BSessionRestoreMock_GetFd_0100");
     string filePath = tm.GetRootDirCurTest().append("1.tar");
-    UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    UniqueFd fd(open(filePath.data(), O_RDWR | O_CREAT, S_IRWXU));
     GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
     callbacks_.onFileReady(bFileInfo, move(fd));
 
     string fileManagePath = tm.GetRootDirCurTest().append("manage.json");
-    UniqueFd fdManage(open(fileManagePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    UniqueFd fdManage(open(fileManagePath.data(), O_RDWR | O_CREAT, S_IRWXU));
     bFileInfo.fileName = "manage.json";
     GTEST_LOG_(INFO) << "callbacks_::onFileReady manage.json";
     callbacks_.onFileReady(bFileInfo, move(fdManage));
 
     callbacks_.onBundleFinished(0, "com.example.app2backup");
+
+    callbacks_.onAllBundlesFinished(0);
+    callbacks_.onBundleStarted(1, "com.example.app2backup");
+    callbacks_.onBundleFinished(1, "com.example.app2backup");
+    callbacks_.onAllBundlesFinished(1);
+
+    callbacks_.onBackupServiceDied();
     return BError(BError::Codes::OK);
 }
 
@@ -88,8 +102,5 @@ ErrCode BSessionRestore::GetExtFileName(string &bundleName, string &fileName)
     return BError(BError::Codes::OK);
 }
 
-void BSessionRestore::RegisterBackupServiceDied(function<void()> functor)
-{
-    return;
-}
+void BSessionRestore::RegisterBackupServiceDied(function<void()> functor) {}
 } // namespace OHOS::FileManagement::Backup

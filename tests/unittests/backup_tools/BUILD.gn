@@ -9,15 +9,44 @@ ohos_unittest("backup_tool_test") {
   sources = [
     "${path_backup_mock}/b_filesystem/b_file_mock.cpp",
     "${path_backup}/tests/mock/backup_kit_inner/b_session_backup_mock.cpp",
-    "${path_backup}/tests/mock/backup_kit_inner/b_session_restore_mock.cpp",
     "${path_backup}/tools/backup_tool/src/tools_op.cpp",
     "${path_backup}/tools/backup_tool/src/tools_op_backup.cpp",
     "${path_backup}/tools/backup_tool/src/tools_op_check_sa.cpp",
-    "${path_backup}/tools/backup_tool/src/tools_op_restore.cpp",
     "backup_tool/tools_op_backup_test.cpp",
     "backup_tool/tools_op_check_sa_test.cpp",
-    "backup_tool/tools_op_restore_test.cpp",
     "backup_tool/tools_op_test.cpp",
+  ]
+  sources += backup_mock_proxy_src
+
+  include_dirs = [
+    "${path_base}/include",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
+    "${path_backup}/interfaces/inner_api/native/backup_kit_inner",
+    "${path_backup}/tools/backup_tool/include",
+  ]
+  include_dirs += backup_mock_utils_include
+
+  deps = [
+    "${path_backup}/tests/utils:backup_test_utils",
+    "${path_backup}/utils:backup_utils",
+    "${path_base}:utils",
+    "${path_ipc}/interfaces/innerkits/ipc_core:ipc_core",
+    "${path_samgr}/interfaces/innerkits/samgr_proxy:samgr_proxy",
+  ]
+
+  external_deps = [ "hitrace_native:hitrace_meter" ]
+  use_exceptions = true
+}
+
+ohos_unittest("backup_tool_restore_test") {
+  module_out_path = "filemanagement/backup"
+
+  sources = [
+    "${path_backup_mock}/b_filesystem/b_file_mock.cpp",
+    "${path_backup}/tests/mock/backup_kit_inner/b_session_restore_mock.cpp",
+    "${path_backup}/tools/backup_tool/src/tools_op.cpp",
+    "${path_backup}/tools/backup_tool/src/tools_op_restore.cpp",
+    "backup_tool/tools_op_restore_test.cpp",
   ]
   sources += backup_mock_proxy_src
 
@@ -44,5 +73,8 @@ ohos_unittest("backup_tool_test") {
 group("backup_test") {
   testonly = true
 
-  deps = [ ":backup_tool_test" ]
+  deps = [
+    ":backup_tool_restore_test",
+    ":backup_tool_test",
+  ]
 }
