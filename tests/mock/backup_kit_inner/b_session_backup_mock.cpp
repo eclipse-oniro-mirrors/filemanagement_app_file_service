@@ -28,7 +28,9 @@
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 
-static BSessionBackup::Callbacks callbacks_;
+namespace {
+static BSessionBackup::Callbacks callbacks_ = {};
+} // namespace
 
 BSessionBackup::~BSessionBackup() {}
 
@@ -46,35 +48,39 @@ unique_ptr<BSessionBackup> BSessionBackup::Init(UniqueFd remoteCap,
     return nullptr;
 }
 
-void BSessionBackup::RegisterBackupServiceDied(function<void()> functor)
-{
-    return;
-}
+void BSessionBackup::RegisterBackupServiceDied(function<void()> functor) {}
 
 ErrCode BSessionBackup::Start()
 {
-    callbacks_.onAllBundlesFinished(0);
-    callbacks_.onAllBundlesFinished(1);
-    callbacks_.onBackupServiceDied();
-    callbacks_.onBundleStarted(1, "com.example.app2backup");
-    callbacks_.onBundleFinished(1, "com.example.app2backup");
     callbacks_.onBundleStarted(0, "com.example.app2backup");
 
     BFileInfo bFileInfo("com.example.app2backup", "manage.json", 0);
     TestManager tm("BSessionBackupMock_GetFd_0100");
     string fileManagePath = tm.GetRootDirCurTest().append("manage.json");
-    SaveStringToFile(fileManagePath, R"([{"fileName" : "1.tar"}])");
-    UniqueFd fdManage(open(fileManagePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
+    SaveStringToFile(fileManagePath, R"([{"fileName": "1.tar"}])");
+    UniqueFd fd(open(fileManagePath.data(), O_RDWR, S_IRWXU));
     GTEST_LOG_(INFO) << "callbacks_::onFileReady manage.json";
-    callbacks_.onFileReady(bFileInfo, move(fdManage));
-
-    string filePath = tm.GetRootDirCurTest().append("1.tar");
-    UniqueFd fd(open(filePath.data(), O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR));
-    bFileInfo.fileName = "1.tar";
-    GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
     callbacks_.onFileReady(bFileInfo, move(fd));
 
+    string filePath = tm.GetRootDirCurTest().append("1.tar");
+    UniqueFd fdTar(open(filePath.data(), O_RDONLY | O_CREAT, S_IRWXU));
+    bFileInfo.fileName = "1.tar";
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
+    callbacks_.onFileReady(bFileInfo, move(fdTar));
+
     callbacks_.onBundleFinished(0, "com.example.app2backup");
+
+    callbacks_.onAllBundlesFinished(0);
+    callbacks_.onBundleStarted(1, "com.example.app2backup");
+    callbacks_.onBundleFinished(1, "com.example.app2backup");
+    callbacks_.onAllBundlesFinished(1);
+
+    string filePathTwo = tm.GetRootDirCurTest().append("1.tar");
+    UniqueFd fdFile(open(filePathTwo.data(), O_RDONLY | O_CREAT, S_IRWXU));
+    GTEST_LOG_(INFO) << "callbacks_::onFileReady 1.tar";
+    callbacks_.onFileReady(bFileInfo, move(fdFile));
+
+    callbacks_.onBackupServiceDied();
     return BError(BError::Codes::OK);
 }
 } // namespace OHOS::FileManagement::Backup

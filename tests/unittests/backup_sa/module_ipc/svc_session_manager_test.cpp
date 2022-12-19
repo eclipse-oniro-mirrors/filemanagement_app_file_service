@@ -392,6 +392,14 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_Deactive_0100, testing::ex
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_Deactive_0100";
     try {
         sessionManagerPtr_->Deactive(nullptr, true);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-Deactive Branches One";
+        sessionManagerPtr_->Deactive(nullptr, true);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-Deactive Branches Two";
+        Init(IServiceReverse::Scenario::BACKUP);
+        sessionManagerPtr_->Deactive(remote_, false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-Deactive Branches Three";
+        Init(IServiceReverse::Scenario::BACKUP);
+        sessionManagerPtr_->Deactive(remote_, true);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by Deactive.";

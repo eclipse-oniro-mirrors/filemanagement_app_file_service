@@ -19,10 +19,18 @@
 
 #include <gtest/gtest.h>
 
+#include "b_resources/b_constants.h"
 #include "tools_op.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
+
+namespace {
+const string BUNDLE_NAME = "com.example.app2backup/";
+const string MANAGE_JSON = "manage.json";
+const string FILE_NAME = "1.tar";
+} // namespace
+
 class ToolsOpRestoreTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
@@ -51,9 +59,13 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0100, testing::ext::Tes
         vector<string> bundles = {"com.example.app2backup"};
         mapArgToVal.insert(make_pair("bundles", bundles));
 
-        // 创建测试路径
-        string strPath = "/data/backup/received/com.example.app2backup/";
-        mkdir(strPath.data(), S_IRWXU);
+        // 创建测试路径以及测试环境
+        string cmdMkdir = string("mkdir -p ") + BConstants::BACKUP_TOOL_RECEIVE_DIR.data() + BUNDLE_NAME;
+        system(cmdMkdir.c_str());
+        string touchTar = string("touch ") + BConstants::BACKUP_TOOL_RECEIVE_DIR.data() + BUNDLE_NAME + FILE_NAME;
+        system(touchTar.c_str());
+        string touchManage = string("touch ") + BConstants::BACKUP_TOOL_RECEIVE_DIR.data() + BUNDLE_NAME + MANAGE_JSON;
+        system(touchManage.c_str());
 
         // 尝试匹配当前命令，成功后执行
         GTEST_LOG_(INFO) << "ToolsOpRestoreTest-restore";
@@ -63,7 +75,18 @@ HWTEST_F(ToolsOpRestoreTest, SUB_backup_tools_op_restore_0100, testing::ext::Tes
         auto &&opeartions = ToolsOp::GetAllOperations();
         auto matchedOp = find_if(opeartions.begin(), opeartions.end(), tryOpSucceed);
         if (matchedOp != opeartions.end()) {
-            matchedOp->Execute(mapArgToVal);
+            auto ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_EQ(ret, 0);
+        }
+
+        GTEST_LOG_(INFO) << "GetLocalCapabilities is false";
+        mapArgToVal.clear();
+        mapArgToVal.insert(make_pair("pathCapFile", path));
+        vector<string> bundleVec = {"test"};
+        mapArgToVal.insert(make_pair("bundles", bundleVec));
+        if (matchedOp != opeartions.end()) {
+            auto ret = matchedOp->Execute(mapArgToVal);
+            EXPECT_NE(ret, 0);
         }
     } catch (...) {
         EXPECT_TRUE(false);
