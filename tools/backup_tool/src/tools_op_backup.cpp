@@ -17,7 +17,6 @@
 #include <condition_variable>
 #include <cstdint>
 #include <cstring>
-#include <fcntl.h>
 #include <functional>
 #include <map>
 #include <memory>
@@ -25,9 +24,13 @@
 #include <regex>
 #include <set>
 #include <string>
+
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <directory_ex.h>
 
 #include "b_error/b_error.h"
 #include "b_filesystem/b_file.h"
@@ -35,7 +38,6 @@
 #include "b_resources/b_constants.h"
 #include "backup_kit_inner.h"
 #include "base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/hitrace_meter.h"
-#include "directory_ex.h"
 #include "service_proxy.h"
 #include "tools_op.h"
 
@@ -175,9 +177,41 @@ static void OnBackupServiceDied(shared_ptr<Session> ctx)
     ctx->TryNotify(true);
 }
 
+static void BackupToolDirSoftlinkToBackupDir()
+{
+    // 判断BConstants::BACKUP_TOOL_LINK_DIR 是否是软链接
+    if (access(BConstants::BACKUP_TOOL_LINK_DIR.data(), F_OK) == 0) {
+        struct stat inStat = {};
+        if (lstat(BConstants::BACKUP_TOOL_LINK_DIR.data(), &inStat) == -1) {
+            throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
+        }
+
+        if ((inStat.st_mode & S_IFMT) == S_IFLNK) {
+            return;
+        }
+        // 非软连接删除重新创建
+        if (!ForceRemoveDirectory(BConstants::BACKUP_TOOL_LINK_DIR.data())) {
+            throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
+        }
+    }
+
+    if (access(BConstants::SA_BUNDLE_BACKUP_TOOL_DIR.data(), F_OK) != 0 &&
+        mkdir(BConstants::SA_BUNDLE_BACKUP_TOOL_DIR.data(), S_IRWXU) != 0) {
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
+    }
+    if (symlink(BConstants::SA_BUNDLE_BACKUP_TOOL_DIR.data(), BConstants::BACKUP_TOOL_LINK_DIR.data()) == -1) {
+        HILOGE("failed to create soft link file %{public}s  errno : %{public}d",
+               BConstants::BACKUP_TOOL_LINK_DIR.data(), errno);
+        throw BError(BError::Codes::TOOL_INVAL_ARG, generic_category().message(errno));
+    }
+}
+
 static int32_t InitPathCapFile(const string &isLocal, const string &pathCapFile, vector<string> bundleNames)
 {
     StartTrace(HITRACE_TAG_FILEMANAGEMENT, "InitPathCapFile");
+    // SELinux backup_tool工具/data/文件夹下创建文件夹 SA服务因root用户的自定义标签无写入权限 此处调整为软链接形式
+    BackupToolDirSoftlinkToBackupDir();
+
     UniqueFd fd(open(pathCapFile.data(), O_RDWR | O_CREAT, S_IRWXU));
     if (fd < 0) {
         fprintf(stderr, "Failed to open file error: %d %s\n", errno, strerror(errno));

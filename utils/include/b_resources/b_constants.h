@@ -107,6 +107,8 @@ static inline std::string_view SA_BUNDLE_BACKUP_ROOT_DIR = "/data/service/el2/10
 static inline std::string_view SA_BUNDLE_BACKUP_TMP_DIR = "/tmp/";
 static inline std::string_view BACKUP_TOOL_RECEIVE_DIR = "/data/backup/received/";
 static inline std::string_view PATH_BUNDLE_BACKUP_HOME = "/data/storage/el2/backup";
+static inline std::string_view SA_BUNDLE_BACKUP_TOOL_DIR = "/data/service/el2/100/backup/backup_tool/";
+static inline std::string_view BACKUP_TOOL_LINK_DIR = "/data/backup";
 
 // 备份恢复配置文件暂存路径
 static inline std::string_view BACKUP_CONFIG_EXTENSION_PATH = "/data/storage/el2/base/temp/";
