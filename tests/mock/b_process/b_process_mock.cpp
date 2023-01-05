@@ -26,7 +26,7 @@ tuple<bool, ErrCode> BProcess::ExecuteCmd(vector<string_view> argvSv, function<b
     GTEST_LOG_(INFO) << "BProcess ExecuteCmd Begin";
     DetectFatalLog("test");
     DetectFatalLog("EOF");
-    return {false, 0};
     GTEST_LOG_(INFO) << "BProcess ExecuteCmd End";
+    return {false, 0};
 }
 } // namespace OHOS::FileManagement::Backup
