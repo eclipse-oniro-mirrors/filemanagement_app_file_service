@@ -52,7 +52,7 @@ UniqueFd BSessionRestore::GetLocalCapabilities()
 {
     string bundleName = "test";
     auto iter = find_if(bundlesToRestore_.begin(), bundlesToRestore_.end(), [&bundleName](auto &obj) {
-        auto &bName = obj;
+        const auto &bName = obj;
         return bName == bundleName;
     });
     if (iter != bundlesToRestore_.end()) {
