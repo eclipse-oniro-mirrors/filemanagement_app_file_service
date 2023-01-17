@@ -1,0 +1,53 @@
+{
+    "name": "@ohos/filemanagement/backup",
+    "description": "The backup component belongs to the filemanagement subsystem of OpenHarmony, which provides the capability of backing up applications.",
+    "optional": "true",
+    "version": "4.0.0",
+    "license": "Apache License 2.0",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "foundation/filemanagement/backup"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+        "name": "backup",
+        "subsystem": "filemanagement",
+        "syscap": [
+            "SystemCapability.FileManagement.StorageService.Backup"
+        ],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "build": {
+            "sub_component": [
+                "//foundation/filemanagement/backup:tgt_backup_extension",
+                "//foundation/filemanagement/backup:tgt_backup_kit_inner",
+                "//foundation/filemanagement/backup:tgt_backup_sa",
+                "//foundation/filemanagement/backup:tgt_backup_tool"
+            ],
+            "inner_kits": [
+                {
+                    "name": "//foundation/filemanagement/backup/interfaces/inner_api/native/backup_kit_inner:backup_kit_inner",
+                    "header": {
+                        "header_base": "//foundation/filemanagement/backup/interfaces/inner_api/native/backup_kit_inner",
+                        "header_files": [
+                            "backup_kit_inner.h",
+                            "impl/b_session_restore.h",
+                            "impl/b_file_info.h",
+                            "impl/service_proxy.h",
+                            "impl/b_session_backup.h",
+                            "impl/i_service.h",
+                            "impl/i_service_reverse.h"
+                        ]
+                    }
+                }
+            ],
+            "test": [
+                "//foundation/filemanagement/backup:tgt_backup_tests"
+            ]
+        }
+    }
+}
