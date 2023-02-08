@@ -19,3 +19,36 @@ group("libremotefileshare") {
     "//foundation/filemanagement/app_file_service/interfaces/kits/js:remotefileshare",
   ]
 }
+
+group("tgt_backup_extension") {
+  deps = [
+    "frameworks/native/backup_ext:backup_extension_ability_native",
+    "interfaces/api/js/napi/backup_ext:backupextensionability_napi",
+  ]
+}
+
+group("tgt_backup_kit_inner") {
+  deps = [ "interfaces/inner_api/native/backup_kit_inner" ]
+}
+
+group("tgt_backup_sa") {
+  deps = [
+    "services:backup_para_etc",
+    "services:backup_sa_etc",
+    "services:backup_sa_profile",
+    "services/backup_sa",
+  ]
+}
+
+group("tgt_backup_tool") {
+  deps = [ "tools/backup_tool" ]
+}
+
+group("tgt_backup_tests") {
+  testonly = true
+
+  deps = [
+    "tests/moduletests",
+    "tests/unittests",
+  ]
+}
