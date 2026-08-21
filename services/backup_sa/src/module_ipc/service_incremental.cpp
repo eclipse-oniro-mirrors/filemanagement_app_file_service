@@ -229,7 +229,7 @@ void Service::StartGetFdTask(std::string bundleName, wptr<Service> ptr)
     if (session == nullptr) {
         throw BError(BError::Codes::SA_INVAL_ARG, "session is nullptr");
     }
-    auto backUpConnection = session->GetExtConnection(bundleName);
+    auto backUpConnection = session->GetExtConnection(bundleName).promote();
     if (backUpConnection == nullptr) {
         throw BError(BError::Codes::SA_INVAL_ARG, "backUpConnection is empty");
     }
