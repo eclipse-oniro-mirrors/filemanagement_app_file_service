@@ -478,6 +478,10 @@ ErrCode Service::AppendBundlesSessionWithDetail(const std::vector<BundleName> &b
     BizScene &scene,
     UniqueFd fd)
 {
+    if (session_ == nullptr) {
+        HILOGE("session_ is nullptr");
+        return BError(BError::Codes::SA_INVAL_ARG);
+    }
     try {
         CounterHelper counterHelper(session_, __PRETTY_FUNCTION__);
         std::vector<std::string> bundleNamesOnly;
