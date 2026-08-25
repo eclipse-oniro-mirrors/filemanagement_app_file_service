@@ -688,9 +688,9 @@ ErrCode BackupExtExtension::ReportNormalAppFileReady(const string& filename, con
     int fdval = open(newPath.data(), O_RDONLY | O_UNCACHE);
     if (fdval < 0) {
         errCode = errno;
-        HILOGE("open file failed, filename: %{public}s, err: %{public}d", GetAnonyString(filePath).c_str(), errCode);
+        HILOGE("open file failed, filename: %{public}s, err: %{public}d", GetAnonyPath(filePath).c_str(), errCode);
         if (errCode == ERR_NO_PERMISSION) {
-            HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyString(filePath).c_str());
+            HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyPath(filePath).c_str());
             return errCode;
         }
     }
@@ -738,9 +738,10 @@ void BackupExtExtension::ProcessReadysInfo(std::vector<std::shared_ptr<IFileInfo
         int fdval = open(newPath.data(), O_RDONLY | O_UNCACHE);
         if (fdval < 0) {
             int errCode = errno;
-            HILOGE("open file failed, filename: %{public}s, err: %{public}d", filePath.c_str(), errCode);
+            HILOGE("open file failed, filename: %{public}s, err: %{public}d", GetAnonyPath(filePath).c_str(),
+                   errCode);
             if (errCode == ERR_NO_PERMISSION) {
-                HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyString(filePath).c_str());
+                HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyPath(filePath).c_str());
                 it = allFiles.erase(it);
                 continue;
             }

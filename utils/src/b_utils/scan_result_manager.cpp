@@ -159,6 +159,10 @@ void ScanResultManager::AddAncoBigFile(
 void ScanResultManager::AddAncoTarFile(const std::string &filename, const std::string &filePath, const struct stat &sta)
 {
     std::lock_guard<std::mutex> lock(pendingFileMutex_);
+    if (sta.st_size < 0) {
+        HILOGE("st_size is negative, fileName:%{public}s!", filename.c_str());
+        return;
+    }
     pendingFileQueue_.push(std::make_shared<AncoFileInfo>(filename, filePath, sta, false));
     currentTarSize_.fetch_add(sta.st_size);
     if (currentTarSize_.load() > GetMaxTarSize()) {

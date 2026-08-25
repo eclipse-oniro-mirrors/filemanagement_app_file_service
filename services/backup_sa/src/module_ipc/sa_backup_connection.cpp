@@ -145,7 +145,7 @@ bool SABackupConnection::InputParaSet(MessageParcel &data)
     if (extension_ == BConstants::EXTENSION_BACKUP) {
         if (!data.WriteString(extInfo_)) {
             HILOGE("InputParaSet WriteString failed sa: %{public}d, extInfo: %{public}s, extension: %{public}s",
-                saId_, extInfo_.c_str(), extension_.c_str());
+                saId_, GetAnonyString(extInfo_).c_str(), extension_.c_str());
             return false;
         }
         return true;
