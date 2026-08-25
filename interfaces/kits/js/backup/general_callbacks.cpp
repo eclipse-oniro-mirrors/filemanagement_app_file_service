@@ -34,6 +34,7 @@ void GeneralCallbacks::RemoveCallbackRef()
     onResultReport.CleanRef();
     onProcess.CleanRef();
     onMigrateResult.CleanRef();
+    onBackupSizeReport.CleanRef();
 }
 
 void BackupRestoreCallback::CleanRef()

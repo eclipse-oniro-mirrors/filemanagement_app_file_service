@@ -225,7 +225,7 @@ bool TarFile::TraversalFile(string &backupPath, int &err, const std::string &res
         HILOGI("noPermissionFlie, don't need to backup, path = %{public}s, err = %{public}d",
             GetAnonyString(backupPath).c_str(), errno);
         return true;
-    } else if (fd > 0) {
+    } else if (fd >= 0) {
         fdsan_exchange_owner_tag(fd, 0, BConstants::FDSAN_EXT_TAG);
         fdsan_close_with_tag(fd, BConstants::FDSAN_EXT_TAG);
     } else {

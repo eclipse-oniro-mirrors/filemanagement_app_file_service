@@ -341,10 +341,12 @@ static bool SetIncrementalBackupEntity(napi_env env, NFuncArg &funcArg, std::uni
         }
         entity->callbacks->RemoveCallbackRef();
     };
-    if (napi_wrap(env, funcArg.GetThisVar(), backupEntity.release(), finalize, nullptr, nullptr) != napi_ok) {
+    IncrBackupEntity* entityPtr = backupEntity.get();
+    if (napi_wrap(env, funcArg.GetThisVar(), entityPtr, finalize, nullptr, nullptr) != napi_ok) {
         HILOGE("Failed to set IncrBackupEntity entity.");
         return false;
     }
+    backupEntity.release();
     return true;
 }
 

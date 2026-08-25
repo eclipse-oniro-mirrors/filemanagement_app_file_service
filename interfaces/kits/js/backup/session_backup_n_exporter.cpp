@@ -349,10 +349,12 @@ static bool SetSessionBackupEntity(napi_env env, NFuncArg &funcArg, std::unique_
         }
         entity->callbacks->RemoveCallbackRef();
     };
-    if (napi_wrap(env, funcArg.GetThisVar(), backupEntity.release(), finalize, nullptr, nullptr) != napi_ok) {
+    BackupEntity* entityPtr = backupEntity.get();
+    if (napi_wrap(env, funcArg.GetThisVar(), entityPtr, finalize, nullptr, nullptr) != napi_ok) {
         HILOGE("Failed to set BackupEntity entity.");
         return false;
     }
+    backupEntity.release();
     return true;
 }
 
