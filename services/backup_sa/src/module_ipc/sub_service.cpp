@@ -465,6 +465,11 @@ ErrCode Service::ProcessReadyFiles(
     const std::vector<int>& errCodes,
     const std::string& callerName)
 {
+    if (fileNames.size() != errCodes.size()) {
+        HILOGE("fileNames size %{public}zu != errCodes size %{public}zu",
+            fileNames.size(), errCodes.size());
+        return BError(BError::Codes::SA_INVAL_ARG);
+    }
     for (size_t i = 0; i < fileNames.size(); ++i) {
         string fileName = fileNames[i];
         int errCode = errCodes[i];

@@ -216,6 +216,7 @@ ErrCode Service::SendDefaultIncrementalFileHandle(const std::string &bundleName,
     if (err != ERR_OK) {
         HILOGE("Failed to send file handle, bundleName:%{public}s, fileName:%{public}s",
             bundleName.c_str(), GetAnonyPath(fileName).c_str());
+        return err;
     }
     return BError(BError::Codes::OK);
 }

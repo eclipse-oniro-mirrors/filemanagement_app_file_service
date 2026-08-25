@@ -952,6 +952,7 @@ ErrCode Service::SendIncrementalFileHandle(const std::string &bundleName, const 
         AppRadar::Info info (bundleName, "", "");
         AppRadar::GetInstance().RecordRestoreFuncRes(info, "Service::GetIncrementalFileHandle",
             GetUserIdDefault(), BizStageRestore::BIZ_STAGE_GET_FILE_HANDLE_FAIL, err);
+        return err;
     }
     return BError(BError::Codes::OK);
 }
