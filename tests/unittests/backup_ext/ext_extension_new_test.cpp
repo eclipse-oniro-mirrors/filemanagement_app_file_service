@@ -1386,7 +1386,7 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0100, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0100";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/file.txt"), "/bak/p1/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/file.txt", false), "/bak/p1/file.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0100";
 }
 
@@ -1403,8 +1403,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0200, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0200";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt"), "/p1/sub/file.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1"), "/p1");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt", false), "/p1/sub/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1", true), "/p1/");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0200";
 }
 
@@ -1421,8 +1421,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0300, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0300";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt"), "/bak/p1other/file.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/data/other/file.txt"), "/data/other/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt", false), "/bak/p1other/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/data/other/file.txt", false), "/data/other/file.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0300";
 }
 
@@ -1439,9 +1439,33 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0400, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0400";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}, {"/bak/p2", "/p2"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p2/a.txt"), "/p2/a.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/b.txt"), "/p1/b.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p2/a.txt", false), "/p2/a.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/b.txt", false), "/p1/b.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0400";
+}
+
+/**
+ * @tc.number: Ext_Extension_MapPathWithCompatDir_Test_0500
+ * @tc.name: Ext_Extension_MapPathWithCompatDir_Test_0500
+ * @tc.desc: 测试MapPathWithCompatDir backupDir末尾带斜杠的场景
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0500";
+    ASSERT_TRUE(extExtension_ != nullptr);
+    extExtension_->compatDirMapping_ = {{"/bak/p1/", "/p1"}};
+    // 文件: backupDir末尾带'/', 文件路径自然匹配子路径
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt", false), "/p1/sub/file.txt");
+    // 目录: isDir=true补齐末尾'/', 与backupDir前缀匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1", true), "/p1/");
+    // 目录: 已有末尾'/', 直接匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/", true), "/p1/");
+    // 文件: filePath不在backupDir下, 不匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt", false), "/bak/p1other/file.txt");
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0500";
 }
 
 /**

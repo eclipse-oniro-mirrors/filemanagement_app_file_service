@@ -2396,7 +2396,8 @@ ErrCode BackupExtExtension::IncrementalAllFileReady(const TarMap &pkgInfo,
     TarMap correctedPkgInfo;
     for (const auto &item : pkgInfo) {
         auto [filePath, sta, isBeforeTar] = item.second;
-        correctedPkgInfo.emplace(item.first, std::make_tuple(MapPathWithCompatDir(filePath), sta, isBeforeTar));
+        correctedPkgInfo.emplace(
+            item.first, std::make_tuple(MapPathWithCompatDir(filePath, S_ISDIR(sta.st_mode)), sta, isBeforeTar));
     }
     BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(std::move(fdIndex));
     auto cache = cachedEntity.Structuralize();
