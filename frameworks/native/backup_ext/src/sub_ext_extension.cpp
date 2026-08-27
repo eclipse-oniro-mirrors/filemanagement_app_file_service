@@ -1564,7 +1564,11 @@ std::string BackupExtExtension::MapPathWithCompatDir(const std::string &filePath
             continue;
         }
         // backupDir 末尾带 '/', 前缀已包含分隔符, 匹配成功
+        // 需保证 restoreDir 末尾也有 '/', 否则拼接后缺少分隔符
         if (!backupDir.empty() && backupDir.back() == '/') {
+            if (!restoreDir.empty() && restoreDir.back() != '/') {
+                return restoreDir + '/' + normalizedPath.substr(backupDir.length());
+            }
             return restoreDir + normalizedPath.substr(backupDir.length());
         }
         // backupDir 末尾不带 '/', filePath 精确匹配 backupDir, 匹配成功
