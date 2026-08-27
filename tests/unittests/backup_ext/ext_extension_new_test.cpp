@@ -1343,8 +1343,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_ApplyRestorePathMapping_Test_0400, t
     localFilesInfo.emplace("/bak/p1", info);
     extExtension_->ApplyRestorePathMapping(localFilesInfo);
     EXPECT_EQ(localFilesInfo.size(), 1u);
-    EXPECT_NE(localFilesInfo.find("/p1"), localFilesInfo.end());
-    EXPECT_EQ(localFilesInfo["/p1"].restorePath, "/p1");
+    EXPECT_NE(localFilesInfo.find("/p1/"), localFilesInfo.end());
+    EXPECT_EQ(localFilesInfo["/p1/"].restorePath, "/p1/");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_ApplyRestorePathMapping_Test_0400";
 }
 
