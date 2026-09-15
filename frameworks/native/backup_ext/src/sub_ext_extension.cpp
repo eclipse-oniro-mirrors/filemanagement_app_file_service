@@ -121,12 +121,9 @@ void BackupExtExtension::HandleIncBackupExSuccess(const std::string &backupExRet
 ErrCode BackupExtExtension::HandleIncrementalBackup(int incrementalFd, int manifestFd)
 {
     HILOGI("Start HandleIncrementalBackup. incrementalFd:%{public}d, manifestFd:%{public}d", incrementalFd, manifestFd);
-    UniqueFd incrementalFdUnique(dup(incrementalFd));
-    UniqueFd manifestFdUnique(dup(manifestFd));
-    ErrCode ret = HandleIncrementalBackup(std::move(incrementalFdUnique), std::move(manifestFdUnique));
-    close(incrementalFd);
-    close(manifestFd);
-    return ret;
+    UniqueFd incrementalFdUnique(incrementalFd);
+    UniqueFd manifestFdUnique(manifestFd);
+    return HandleIncrementalBackup(std::move(incrementalFdUnique), std::move(manifestFdUnique));
 }
 
 ErrCode BackupExtExtension::HandleIncrementalBackup(UniqueFd incrementalFd, UniqueFd manifestFd)
@@ -2248,7 +2245,7 @@ bool BackupExtExtension::InitManageJsonFd()
     ssize_t writeLen = write(manageJsonFd_.Get(), "[", 1);
     if (writeLen < 0 || writeLen != 1) {
         HILOGE("InitManageJsonFd: faild write [ , err=%{public}d", errno);
-        close(manageJsonFd_.Release());
+        manageJsonFd_ = UniqueFd();
         return false;
     }
     HILOGI("InitManageJsonFd: successfully opened fd=%{public}d", rawFd);
@@ -2263,7 +2260,7 @@ void BackupExtExtension::CloseManageJsonFd()
         if (writeLen < 0 || writeLen != 1) {
             HILOGE("CloseManageJsonFd: faild write end symbol ] , err=%{public}d", errno);
         }
-        close(manageJsonFd_.Release());
+        manageJsonFd_ = UniqueFd();
         HILOGD("CloseManageJsonFd: closed fd");
     } else {
         HILOGW("CloseManageJsonFd: file not find");
