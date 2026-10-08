@@ -651,6 +651,10 @@ bool UntarFile::UnTarFileInner(FILE *destFile)
     if (remainSize > 0) {
         return false;
     }
+    if (fflush(destFile) != 0) {
+        HILOGE("Failed to flush, err = %{public}d", errno);
+        return false;
+    }
     return true;
 }
 
