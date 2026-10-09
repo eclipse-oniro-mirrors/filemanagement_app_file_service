@@ -34,6 +34,48 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 using namespace testing;
 
+// Test constants for file sizes (bytes)
+constexpr size_t SMALL_FILE_SIZE = 100;
+constexpr size_t MEDIUM_FILE_SIZE = 200;
+constexpr size_t TINY_FILE_SIZE = 50;
+constexpr size_t LARGE_FILE_SIZE = 600 * 1024; // 600KB — spans multiple READ_BUFF_SIZE blocks
+
+// Test constants for timestamps (epoch seconds)
+constexpr off_t MTIME_0100 = 1000000000;       // 2001-09-09
+constexpr off_t MTIME_0200 = 1234567890;       // 2009-02-13
+constexpr off_t MTIME_0300 = 1111111111;       // 2005-03-18
+constexpr off_t ATIME_0300 = 2222222222;       // 2040-06-01
+constexpr off_t MTIME_0400 = 999999999;        // 2001-09-09
+constexpr off_t MTIME_PKT_0100 = 1500000000;   // 2017-07-14
+constexpr off_t ATIME_PKT_0100 = 1600000000;   // 2020-09-13
+constexpr off_t MTIME_PKT_0200_SMALL = 1400000000; // 2014-05-13
+constexpr off_t MTIME_PKT_0200_LARGE = 1700000000; // 2023-11-14
+constexpr off_t MTIME_PKT_0300 = 1300000000;   // 2011-03-13
+
+// Test constants for nanoseconds
+constexpr long NSEC_0100 = 500000000;          // 0.5s
+constexpr long NSEC_0300_MTIME = 123456789;
+constexpr long NSEC_0300_ATIME = 987654321;
+constexpr long NSEC_PKT_0100_MTIME = 250000000;
+constexpr long NSEC_PKT_0100_ATIME = 750000000;
+constexpr long NSEC_PKT_0200_SMALL = 100000000;
+constexpr long NSEC_PKT_0200_LARGE = 900000000;
+constexpr long NSEC_PKT_0300 = 333333333;
+
+// Test constants for file modes
+constexpr mode_t MODE_0644 = 0644;
+constexpr mode_t MODE_0640 = 0640;
+constexpr mode_t MODE_0600 = 0600;
+constexpr mode_t MODE_0666 = 0666;
+constexpr mode_t MODE_0660 = 0660;
+constexpr mode_t MODE_PERMISSION_MASK = 0777;
+
+// Tar checksum field indices (within CHKSUM_LEN=8 field)
+constexpr size_t CHKSUM_NULL_TERM_IDX = 6;
+constexpr size_t CHKSUM_SPACE_IDX = 7;
+
+constexpr const char *TEST_DIR = "/data/local/tmp/untar_real_test";
+
 static void ClearCache();
 
 class UntarFileTest : public testing::Test {
@@ -43,57 +85,15 @@ public:
     void SetUp() override {};
     void TearDown() override {};
 
-    static constexpr const char *testDir = "/data/local/tmp/untar_real_test";
-
-    // Test constants for file sizes (bytes)
-    static constexpr size_t SMALL_FILE_SIZE = 100;
-    static constexpr size_t MEDIUM_FILE_SIZE = 200;
-    static constexpr size_t TINY_FILE_SIZE = 50;
-    static constexpr size_t LARGE_FILE_SIZE = 600 * 1024; // 600KB — spans multiple READ_BUFF_SIZE blocks
-
-    // Test constants for timestamps (epoch seconds)
-    static constexpr off_t MTIME_0100 = 1000000000;       // 2001-09-09
-    static constexpr off_t MTIME_0200 = 1234567890;       // 2009-02-13
-    static constexpr off_t MTIME_0300 = 1111111111;       // 2005-03-18
-    static constexpr off_t ATIME_0300 = 2222222222;       // 2040-06-01
-    static constexpr off_t MTIME_0400 = 999999999;        // 2001-09-09
-    static constexpr off_t MTIME_PKT_0100 = 1500000000;   // 2017-07-14
-    static constexpr off_t ATIME_PKT_0100 = 1600000000;   // 2020-09-13
-    static constexpr off_t MTIME_PKT_0200_SMALL = 1400000000; // 2014-05-13
-    static constexpr off_t MTIME_PKT_0200_LARGE = 1700000000; // 2023-11-14
-    static constexpr off_t MTIME_PKT_0300 = 1300000000;   // 2011-03-13
-
-    // Test constants for nanoseconds
-    static constexpr long NSEC_0100 = 500000000;          // 0.5s
-    static constexpr long NSEC_0300_MTIME = 123456789;
-    static constexpr long NSEC_0300_ATIME = 987654321;
-    static constexpr long NSEC_PKT_0100_MTIME = 250000000;
-    static constexpr long NSEC_PKT_0100_ATIME = 750000000;
-    static constexpr long NSEC_PKT_0200_SMALL = 100000000;
-    static constexpr long NSEC_PKT_0200_LARGE = 900000000;
-    static constexpr long NSEC_PKT_0300 = 333333333;
-
-    // Test constants for file modes
-    static constexpr mode_t MODE_0644 = 0644;
-    static constexpr mode_t MODE_0640 = 0640;
-    static constexpr mode_t MODE_0600 = 0600;
-    static constexpr mode_t MODE_0666 = 0666;
-    static constexpr mode_t MODE_0660 = 0660;
-    static constexpr mode_t MODE_PERMISSION_MASK = 0777;
-
-    // Tar checksum field indices (within CHKSUM_LEN=8 field)
-    static constexpr size_t CHKSUM_NULL_TERM_IDX = 6;
-    static constexpr size_t CHKSUM_SPACE_IDX = 7;
-
     static void SetUpTestDir()
     {
-        filesystem::remove_all(testDir);
-        filesystem::create_directories(testDir);
+        filesystem::remove_all(TEST_DIR);
+        filesystem::create_directories(TEST_DIR);
     }
 
     static void TearDownTestDir()
     {
-        filesystem::remove_all(testDir);
+        filesystem::remove_all(TEST_DIR);
     }
 
     /**
@@ -114,7 +114,8 @@ public:
         EXPECT_GE(snprintf_s(header.gid, sizeof(header.gid), sizeof(header.gid) - 1, "%07o", 0), 0);
         EXPECT_GE(snprintf_s(header.size, sizeof(header.size), sizeof(header.size) - 1, "%011zo", content.size()), 0);
         EXPECT_GE(snprintf_s(header.mtime, sizeof(header.mtime), sizeof(header.mtime) - 1, "%011llo",
-                             static_cast<long long>(mtime)), 0);
+                             static_cast<long long>(mtime)),
+                  0);
         header.typeFlag = REGTYPE;
         EXPECT_EQ(strncpy_s(header.magic, sizeof(header.magic), TMAGIC.c_str(), TMAGIC_LEN - 1), EOK);
         header.version[0] = '0';
@@ -351,18 +352,18 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0200, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0200");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir + "/a.txt";
-        string bFile = testDir + "/b.txt";
+        string aFile = TEST_DIR + "/a.txt";
+        string bFile = TEST_DIR + "/b.txt";
         SaveStringToFile(aFile, "hello");
         SaveStringToFile(bFile, "world");
 
         string tarFile = root + "test.tar";
-        string cmd = "tar -cvf " + tarFile + " " + testDir;
+        string cmd = "tar -cvf " + tarFile + " " + TEST_DIR;
         string rootPath(root);
         if (system(cmd.c_str()) != 0) {
             GTEST_LOG_(INFO) << " execute tar failure, errno :" << errno;
@@ -394,12 +395,12 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0300, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0300");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir + "/a.txt";
+        string aFile = TEST_DIR + "/a.txt";
         SaveStringToFile(aFile, "hello");
 
         string rootPath(root);
@@ -429,13 +430,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0400, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0400");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
         string tarFile = root + "test.tar";
-        string cmd = "tar -cvf " + tarFile + " " + testDir;
+        string cmd = "tar -cvf " + tarFile + " " + TEST_DIR;
         if (system(cmd.c_str()) != 0) {
             GTEST_LOG_(INFO) << " execute tar failure, errno :" << errno;
             throw BError(errno);
@@ -468,13 +469,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0500, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0500");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir/";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir/";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir;
-        string bFile = testDir;
+        string aFile = TEST_DIR;
+        string bFile = TEST_DIR;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -522,13 +523,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0100, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0100");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir/";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir/";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir;
-        string bFile = testDir;
+        string aFile = TEST_DIR;
+        string bFile = TEST_DIR;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -609,8 +610,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0300, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0300");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir/";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir/";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
@@ -659,13 +660,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0400, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0400");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir/";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir/";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir;
-        string bFile = testDir;
+        string aFile = TEST_DIR;
+        string bFile = TEST_DIR;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -721,13 +722,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0500, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0500");
         string root = tm.GetRootDirCurTest();
-        string testDir = root + "/testdir/";
-        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
+        string TEST_DIR = root + "/testdir/";
+        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = testDir + "a.txt";
-        string bFile = testDir + "b.txt";
+        string aFile = TEST_DIR + "a.txt";
+        string bFile = TEST_DIR + "b.txt";
         SaveStringToFile(aFile, "hello");
         SaveStringToFile(bFile, "world");
         // 打 tar
@@ -778,8 +779,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0100, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0100";
     SetUpTestDir();
-    string tarPath = string(testDir) + "/test.tar";
-    string destPath = string(testDir) + "/dest.txt";
+    string tarPath = string(TEST_DIR) + "/test.tar";
+    string destPath = string(TEST_DIR) + "/dest.txt";
     // Small file: 100 bytes — will be buffered in C library buffer (<= st_blksize)
     // This is the exact scenario that triggers the bug without fflush
     string content(SMALL_FILE_SIZE, 'X');
@@ -834,8 +835,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0200, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0200";
     SetUpTestDir();
-    string tarPath = string(testDir) + "/test_large.tar";
-    string destPath = string(testDir) + "/dest_large.txt";
+    string tarPath = string(TEST_DIR) + "/test_large.tar";
+    string destPath = string(TEST_DIR) + "/dest_large.txt";
     // Large file: 600KB — spans multiple READ_BUFF_SIZE blocks, last chunk > st_blksize
     string content(LARGE_FILE_SIZE, 'Y');
     off_t expectedMtime = MTIME_0200;
@@ -884,8 +885,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0300, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0300";
     SetUpTestDir();
-    string tarPath = string(testDir) + "/test_atime.tar";
-    string destPath = string(testDir) + "/dest_atime.txt";
+    string tarPath = string(TEST_DIR) + "/test_atime.tar";
+    string destPath = string(TEST_DIR) + "/dest_atime.txt";
     string content(MEDIUM_FILE_SIZE, 'Z');
     off_t expectedMtime = MTIME_0300;
     off_t expectedAtime = ATIME_0300;
@@ -938,8 +939,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0400, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0400";
     SetUpTestDir();
-    string tarPath = string(testDir) + "/test_empty.tar";
-    string destPath = string(testDir) + "/dest_empty.txt";
+    string tarPath = string(TEST_DIR) + "/test_empty.tar";
+    string destPath = string(TEST_DIR) + "/dest_empty.txt";
     string content; // empty file
     off_t expectedMtime = MTIME_0400;
     mode_t expectedMode = MODE_0666;
@@ -986,8 +987,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0500, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0500";
     SetUpTestDir();
-    string tarPath = string(testDir) + "/test_zero_mtime.tar";
-    string destPath = string(testDir) + "/dest_zero_mtime.txt";
+    string tarPath = string(TEST_DIR) + "/test_zero_mtime.tar";
+    string destPath = string(TEST_DIR) + "/dest_zero_mtime.txt";
     string content(TINY_FILE_SIZE, 'W');
     mode_t expectedMode = MODE_0644;
 
@@ -1035,9 +1036,9 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0100, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0100";
     SetUpTestDir();
-    string srcDir = string(testDir) + "/src";
+    string srcDir = string(TEST_DIR) + "/src";
     filesystem::create_directories(srcDir);
-    string restoreDir = string(testDir) + "/restore";
+    string restoreDir = string(TEST_DIR) + "/restore";
     filesystem::create_directories(restoreDir);
 
     string srcFile = srcDir + "/hello.txt";
@@ -1071,9 +1072,9 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0200, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0200";
     SetUpTestDir();
-    string srcDir = string(testDir) + "/src";
+    string srcDir = string(TEST_DIR) + "/src";
     filesystem::create_directories(srcDir);
-    string restoreDir = string(testDir) + "/restore";
+    string restoreDir = string(TEST_DIR) + "/restore";
     filesystem::create_directories(restoreDir);
 
     FileProps props1;
@@ -1115,10 +1116,10 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0300, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0300";
     SetUpTestDir();
-    string srcDir = string(testDir) + "/src";
+    string srcDir = string(TEST_DIR) + "/src";
     string nestedDir = srcDir + "/dir1/dir2";
     filesystem::create_directories(nestedDir);
-    string restoreDir = string(testDir) + "/restore";
+    string restoreDir = string(TEST_DIR) + "/restore";
     filesystem::create_directories(restoreDir);
 
     // Create nested file
