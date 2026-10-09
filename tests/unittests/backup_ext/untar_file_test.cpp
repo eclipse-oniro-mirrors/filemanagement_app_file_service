@@ -352,18 +352,18 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0200, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0200");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR + "/a.txt";
-        string bFile = TEST_DIR + "/b.txt";
+        string aFile = testDir + "/a.txt";
+        string bFile = testDir + "/b.txt";
         SaveStringToFile(aFile, "hello");
         SaveStringToFile(bFile, "world");
 
         string tarFile = root + "test.tar";
-        string cmd = "tar -cvf " + tarFile + " " + TEST_DIR;
+        string cmd = "tar -cvf " + tarFile + " " + testDir;
         string rootPath(root);
         if (system(cmd.c_str()) != 0) {
             GTEST_LOG_(INFO) << " execute tar failure, errno :" << errno;
@@ -395,12 +395,12 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0300, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0300");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR + "/a.txt";
+        string aFile = testDir + "/a.txt";
         SaveStringToFile(aFile, "hello");
 
         string rootPath(root);
@@ -430,13 +430,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0400, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0400");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
         string tarFile = root + "test.tar";
-        string cmd = "tar -cvf " + tarFile + " " + TEST_DIR;
+        string cmd = "tar -cvf " + tarFile + " " + testDir;
         if (system(cmd.c_str()) != 0) {
             GTEST_LOG_(INFO) << " execute tar failure, errno :" << errno;
             throw BError(errno);
@@ -469,13 +469,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_UnPacket_0500, testing::ext::TestSize.Lev
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_UnPacket_0500");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir/";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir/";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR;
-        string bFile = TEST_DIR;
+        string aFile = testDir;
+        string bFile = testDir;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -523,13 +523,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0100, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0100");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir/";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir/";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR;
-        string bFile = TEST_DIR;
+        string aFile = testDir;
+        string bFile = testDir;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -610,8 +610,8 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0300, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0300");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir/";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir/";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
@@ -660,13 +660,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0400, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0400");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir/";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir/";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR;
-        string bFile = TEST_DIR;
+        string aFile = testDir;
+        string bFile = testDir;
         // 循环100次，用来构造超长路径和超长文件名
         for (int i = 0; i < 100; i++) {
             aFile += "test001/test002/test003/test004/test005/";
@@ -722,13 +722,13 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0500, testing::ext::T
         // 预置文件和目录
         TestManager tm("SUB_Untar_File_IncrementalUnPacket_0500");
         string root = tm.GetRootDirCurTest();
-        string TEST_DIR = root + "/testdir/";
-        if (mkdir(TEST_DIR.data(), S_IRWXU) && errno != EEXIST) {
+        string testDir = root + "/testdir/";
+        if (mkdir(testDir.data(), S_IRWXU) && errno != EEXIST) {
             GTEST_LOG_(INFO) << " invoked mkdir failure, errno :" << errno;
             throw BError(errno);
         }
-        string aFile = TEST_DIR + "a.txt";
-        string bFile = TEST_DIR + "b.txt";
+        string aFile = testDir + "a.txt";
+        string bFile = testDir + "b.txt";
         SaveStringToFile(aFile, "hello");
         SaveStringToFile(bFile, "world");
         // 打 tar
