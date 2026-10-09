@@ -26,6 +26,7 @@
 
 #include "b_error/b_error.h"
 #include "file_ex.h"
+#include "securec.h"
 #include "test_manager.h"
 #include "untar_file.h"
 
@@ -42,17 +43,57 @@ public:
     void SetUp() override {};
     void TearDown() override {};
 
-    static constexpr const char *TEST_DIR = "/data/local/tmp/untar_real_test";
+    static constexpr const char *testDir = "/data/local/tmp/untar_real_test";
+
+    // Test constants for file sizes (bytes)
+    static constexpr size_t SMALL_FILE_SIZE = 100;
+    static constexpr size_t MEDIUM_FILE_SIZE = 200;
+    static constexpr size_t TINY_FILE_SIZE = 50;
+    static constexpr size_t LARGE_FILE_SIZE = 600 * 1024; // 600KB — spans multiple READ_BUFF_SIZE blocks
+
+    // Test constants for timestamps (epoch seconds)
+    static constexpr off_t MTIME_0100 = 1000000000;       // 2001-09-09
+    static constexpr off_t MTIME_0200 = 1234567890;       // 2009-02-13
+    static constexpr off_t MTIME_0300 = 1111111111;       // 2005-03-18
+    static constexpr off_t ATIME_0300 = 2222222222;       // 2040-06-01
+    static constexpr off_t MTIME_0400 = 999999999;        // 2001-09-09
+    static constexpr off_t MTIME_PKT_0100 = 1500000000;   // 2017-07-14
+    static constexpr off_t ATIME_PKT_0100 = 1600000000;   // 2020-09-13
+    static constexpr off_t MTIME_PKT_0200_SMALL = 1400000000; // 2014-05-13
+    static constexpr off_t MTIME_PKT_0200_LARGE = 1700000000; // 2023-11-14
+    static constexpr off_t MTIME_PKT_0300 = 1300000000;   // 2011-03-13
+
+    // Test constants for nanoseconds
+    static constexpr long NSEC_0100 = 500000000;          // 0.5s
+    static constexpr long NSEC_0300_MTIME = 123456789;
+    static constexpr long NSEC_0300_ATIME = 987654321;
+    static constexpr long NSEC_PKT_0100_MTIME = 250000000;
+    static constexpr long NSEC_PKT_0100_ATIME = 750000000;
+    static constexpr long NSEC_PKT_0200_SMALL = 100000000;
+    static constexpr long NSEC_PKT_0200_LARGE = 900000000;
+    static constexpr long NSEC_PKT_0300 = 333333333;
+
+    // Test constants for file modes
+    static constexpr mode_t MODE_0644 = 0644;
+    static constexpr mode_t MODE_0640 = 0640;
+    static constexpr mode_t MODE_0600 = 0600;
+    static constexpr mode_t MODE_0666 = 0666;
+    static constexpr mode_t MODE_0660 = 0660;
+    static constexpr mode_t MODE_PERMISSION_MASK = 0777;
+
+    // Tar checksum field indices (within CHKSUM_LEN=8 field)
+    static constexpr size_t CHKSUM_NULL_TERM_IDX = 6;
+    static constexpr size_t CHKSUM_SPACE_IDX = 7;
 
     static void SetUpTestDir()
     {
-        filesystem::remove_all(TEST_DIR);
-        filesystem::create_directories(TEST_DIR);
+        filesystem::remove_all(testDir);
+        filesystem::create_directories(testDir);
     }
 
     static void TearDownTestDir()
     {
-        filesystem::remove_all(TEST_DIR);
+        filesystem::remove_all(testDir);
     }
 
     /**
@@ -66,28 +107,29 @@ public:
                                    const string &destPath)
     {
         TarHeader header;
-        memset(&header, 0, sizeof(header));
-        strncpy(header.name, fileName.c_str(), sizeof(header.name) - 1);
-        snprintf(header.mode, sizeof(header.mode), "%07o", mode);
-        snprintf(header.uid, sizeof(header.uid), "%07o", 0);
-        snprintf(header.gid, sizeof(header.gid), "%07o", 0);
-        snprintf(header.size, sizeof(header.size), "%011zo", content.size());
-        snprintf(header.mtime, sizeof(header.mtime), "%011llo", static_cast<long long>(mtime));
+        EXPECT_EQ(memset_s(&header, sizeof(header), 0, sizeof(header)), EOK);
+        EXPECT_EQ(strncpy_s(header.name, sizeof(header.name), fileName.c_str(), fileName.length()), EOK);
+        EXPECT_GE(snprintf_s(header.mode, sizeof(header.mode), sizeof(header.mode) - 1, "%07o", mode), 0);
+        EXPECT_GE(snprintf_s(header.uid, sizeof(header.uid), sizeof(header.uid) - 1, "%07o", 0), 0);
+        EXPECT_GE(snprintf_s(header.gid, sizeof(header.gid), sizeof(header.gid) - 1, "%07o", 0), 0);
+        EXPECT_GE(snprintf_s(header.size, sizeof(header.size), sizeof(header.size) - 1, "%011zo", content.size()), 0);
+        EXPECT_GE(snprintf_s(header.mtime, sizeof(header.mtime), sizeof(header.mtime) - 1, "%011llo",
+                             static_cast<long long>(mtime)), 0);
         header.typeFlag = REGTYPE;
-        strncpy(header.magic, TMAGIC.c_str(), TMAGIC_LEN - 1);
+        EXPECT_EQ(strncpy_s(header.magic, sizeof(header.magic), TMAGIC.c_str(), TMAGIC_LEN - 1), EOK);
         header.version[0] = '0';
         header.version[1] = '0';
 
         // Calculate checksum (checksum field treated as spaces)
-        memset(header.chksum, ' ', CHKSUM_LEN);
+        EXPECT_EQ(memset_s(header.chksum, sizeof(header.chksum), ' ', CHKSUM_LEN), EOK);
         uint32_t chksum = 0;
         const uint8_t *p = reinterpret_cast<const uint8_t *>(&header);
         for (size_t i = 0; i < sizeof(header); i++) {
             chksum += p[i];
         }
-        snprintf(header.chksum, sizeof(header.chksum), "%06o", chksum);
-        header.chksum[6] = '\0';
-        header.chksum[7] = ' ';
+        EXPECT_GE(snprintf_s(header.chksum, sizeof(header.chksum), sizeof(header.chksum) - 1, "%06o", chksum), 0);
+        header.chksum[CHKSUM_NULL_TERM_IDX] = '\0';
+        header.chksum[CHKSUM_SPACE_IDX] = ' ';
 
         // Write tar file: header + data (padded) + two zero blocks
         ofstream tar(tarPath, ios::binary);
@@ -170,7 +212,7 @@ public:
             EXPECT_EQ(st.st_atim.tv_nsec, expected.atimeNsec) << "atime nsec should be preserved";
         }
         EXPECT_EQ(st.st_size, static_cast<off_t>(expected.content.size()));
-        EXPECT_EQ(st.st_mode & 0777, expected.mode) << "mode should be preserved";
+        EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expected.mode) << "mode should be preserved";
     }
 
     static string DoPacketAndUnPacket(const vector<pair<string, string>> &srcFiles,
@@ -736,14 +778,14 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0100, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0100";
     SetUpTestDir();
-    string tarPath = string(TEST_DIR) + "/test.tar";
-    string destPath = string(TEST_DIR) + "/dest.txt";
+    string tarPath = string(testDir) + "/test.tar";
+    string destPath = string(testDir) + "/dest.txt";
     // Small file: 100 bytes — will be buffered in C library buffer (<= st_blksize)
     // This is the exact scenario that triggers the bug without fflush
-    string content(100, 'X');
-    off_t expectedMtime = 1000000000; // 2001-09-09
-    long expectedMtimeNsec = 500000000; // 0.5s
-    mode_t expectedMode = 0644;
+    string content(SMALL_FILE_SIZE, 'X');
+    off_t expectedMtime = MTIME_0100; // 2001-09-09
+    long expectedMtimeNsec = NSEC_0100; // 0.5s
+    mode_t expectedMode = MODE_0644;
 
     BuildTarAndPrepare(tarPath, "dest.txt", content, expectedMtime, expectedMode, destPath);
 
@@ -773,7 +815,7 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0100, testing::ext:
         << "mtime should be preserved, not overwritten by fclose's implicit flush";
     EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec)
         << "mtime nsec should be preserved";
-    EXPECT_EQ(st.st_mode & 0777, expectedMode);
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode);
 
     CleanupUntar();
     TearDownTestDir();
@@ -792,12 +834,12 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0200, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0200";
     SetUpTestDir();
-    string tarPath = string(TEST_DIR) + "/test_large.tar";
-    string destPath = string(TEST_DIR) + "/dest_large.txt";
+    string tarPath = string(testDir) + "/test_large.tar";
+    string destPath = string(testDir) + "/dest_large.txt";
     // Large file: 600KB — spans multiple READ_BUFF_SIZE blocks, last chunk > st_blksize
-    string content(600 * 1024, 'Y');
-    off_t expectedMtime = 1234567890;
-    mode_t expectedMode = 0644;
+    string content(LARGE_FILE_SIZE, 'Y');
+    off_t expectedMtime = MTIME_0200;
+    mode_t expectedMode = MODE_0644;
 
     BuildTarAndPrepare(tarPath, "dest_large.txt", content, expectedMtime, expectedMode, destPath);
 
@@ -842,14 +884,14 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0300, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0300";
     SetUpTestDir();
-    string tarPath = string(TEST_DIR) + "/test_atime.tar";
-    string destPath = string(TEST_DIR) + "/dest_atime.txt";
-    string content(200, 'Z');
-    off_t expectedMtime = 1111111111;
-    off_t expectedAtime = 2222222222;
-    long expectedMtimeNsec = 123456789;
-    long expectedAtimeNsec = 987654321;
-    mode_t expectedMode = 0600;
+    string tarPath = string(testDir) + "/test_atime.tar";
+    string destPath = string(testDir) + "/dest_atime.txt";
+    string content(MEDIUM_FILE_SIZE, 'Z');
+    off_t expectedMtime = MTIME_0300;
+    off_t expectedAtime = ATIME_0300;
+    long expectedMtimeNsec = NSEC_0300_MTIME;
+    long expectedAtimeNsec = NSEC_0300_ATIME;
+    mode_t expectedMode = MODE_0600;
 
     BuildTarAndPrepare(tarPath, "dest_atime.txt", content, expectedMtime, expectedMode, destPath);
 
@@ -877,7 +919,7 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0300, testing::ext:
     EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec) << "mtime nsec should be preserved";
     EXPECT_EQ(st.st_atim.tv_sec, expectedAtime) << "atime should be preserved";
     EXPECT_EQ(st.st_atim.tv_nsec, expectedAtimeNsec) << "atime nsec should be preserved";
-    EXPECT_EQ(st.st_mode & 0777, expectedMode);
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode);
 
     CleanupUntar();
     TearDownTestDir();
@@ -896,11 +938,11 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0400, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0400";
     SetUpTestDir();
-    string tarPath = string(TEST_DIR) + "/test_empty.tar";
-    string destPath = string(TEST_DIR) + "/dest_empty.txt";
+    string tarPath = string(testDir) + "/test_empty.tar";
+    string destPath = string(testDir) + "/dest_empty.txt";
     string content; // empty file
-    off_t expectedMtime = 999999999;
-    mode_t expectedMode = 0666;
+    off_t expectedMtime = MTIME_0400;
+    mode_t expectedMode = MODE_0666;
 
     BuildTarAndPrepare(tarPath, "dest_empty.txt", content, expectedMtime, expectedMode, destPath);
 
@@ -944,10 +986,10 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0500, testing::ext:
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0500";
     SetUpTestDir();
-    string tarPath = string(TEST_DIR) + "/test_zero_mtime.tar";
-    string destPath = string(TEST_DIR) + "/dest_zero_mtime.txt";
-    string content(50, 'W');
-    mode_t expectedMode = 0644;
+    string tarPath = string(testDir) + "/test_zero_mtime.tar";
+    string destPath = string(testDir) + "/dest_zero_mtime.txt";
+    string content(TINY_FILE_SIZE, 'W');
+    mode_t expectedMode = MODE_0644;
 
     BuildTarAndPrepare(tarPath, "dest_zero_mtime.txt", content, 0, expectedMode, destPath);
 
@@ -993,19 +1035,19 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0100, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0100";
     SetUpTestDir();
-    string srcDir = string(TEST_DIR) + "/src";
+    string srcDir = string(testDir) + "/src";
     filesystem::create_directories(srcDir);
-    string restoreDir = string(TEST_DIR) + "/restore";
+    string restoreDir = string(testDir) + "/restore";
     filesystem::create_directories(restoreDir);
 
     string srcFile = srcDir + "/hello.txt";
     FileProps props;
     props.content = "Hello, Packet+UnPacket!";
-    props.mode = 0640;
-    props.mtime = 1500000000;
-    props.mtimeNsec = 250000000;
-    props.atime = 1600000000;
-    props.atimeNsec = 750000000;
+    props.mode = MODE_0640;
+    props.mtime = MTIME_PKT_0100;
+    props.mtimeNsec = NSEC_PKT_0100_MTIME;
+    props.atime = ATIME_PKT_0100;
+    props.atimeNsec = NSEC_PKT_0100_ATIME;
     MakeSourceFile(srcFile, props);
 
     vector<pair<string, string>> srcFiles = {{srcFile, "src/hello.txt"}};
@@ -1029,23 +1071,23 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0200, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0200";
     SetUpTestDir();
-    string srcDir = string(TEST_DIR) + "/src";
+    string srcDir = string(testDir) + "/src";
     filesystem::create_directories(srcDir);
-    string restoreDir = string(TEST_DIR) + "/restore";
+    string restoreDir = string(testDir) + "/restore";
     filesystem::create_directories(restoreDir);
 
     FileProps props1;
-    props1.content = string(100, 'A');
-    props1.mode = 0600;
-    props1.mtime = 1400000000;
-    props1.mtimeNsec = 100000000;
+    props1.content = string(SMALL_FILE_SIZE, 'A');
+    props1.mode = MODE_0600;
+    props1.mtime = MTIME_PKT_0200_SMALL;
+    props1.mtimeNsec = NSEC_PKT_0200_SMALL;
     MakeSourceFile(srcDir + "/small.txt", props1);
 
     FileProps props2;
-    props2.content = string(600 * 1024, 'B');
-    props2.mode = 0644;
-    props2.mtime = 1700000000;
-    props2.mtimeNsec = 900000000;
+    props2.content = string(LARGE_FILE_SIZE, 'B');
+    props2.mode = MODE_0644;
+    props2.mtime = MTIME_PKT_0200_LARGE;
+    props2.mtimeNsec = NSEC_PKT_0200_LARGE;
     MakeSourceFile(srcDir + "/large.bin", props2);
 
     vector<pair<string, string>> srcFiles = {
@@ -1073,18 +1115,18 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0300, testing::ext::T
 {
     GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0300";
     SetUpTestDir();
-    string srcDir = string(TEST_DIR) + "/src";
+    string srcDir = string(testDir) + "/src";
     string nestedDir = srcDir + "/dir1/dir2";
     filesystem::create_directories(nestedDir);
-    string restoreDir = string(TEST_DIR) + "/restore";
+    string restoreDir = string(testDir) + "/restore";
     filesystem::create_directories(restoreDir);
 
     // Create nested file
     string srcFile = nestedDir + "/deep.txt";
     string content = "Deep nested file content";
-    mode_t expectedMode = 0660;
-    off_t expectedMtime = 1300000000;
-    long expectedMtimeNsec = 333333333;
+    mode_t expectedMode = MODE_0660;
+    off_t expectedMtime = MTIME_PKT_0300;
+    long expectedMtimeNsec = NSEC_PKT_0300;
     {
         ofstream ofs(srcFile, ios::binary);
         ofs.write(content.data(), content.size());
@@ -1118,7 +1160,7 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0300, testing::ext::T
     ASSERT_EQ(stat(restoredFile.c_str(), &st), 0);
     EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime) << "mtime should be preserved";
     EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec) << "mtime nsec should be preserved";
-    EXPECT_EQ(st.st_mode & 0777, expectedMode) << "mode should be preserved";
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode) << "mode should be preserved";
 
     TearDownTestDir();
     GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_PacketUnPacket_Real_0300";
