@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include <future>
 #include <gtest/gtest.h>
 
 #include "b_error/b_error.h"
@@ -1984,4 +1985,87 @@ HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_ManageJsonFd_0400, testing::ext:
     extExtension->CloseManageJsonFd();
 }
 #include "ext_extension_sub_ext_test.cpp"
+namespace {
+class ReleaseTestBackup : public ExtBackup {
+public:
+    std::function<ErrCode(std::function<void(ErrCode, std::string)>)> release;
+    ErrCode OnRelease(std::function<void(ErrCode, std::string)> callback, int32_t scenario) override
+    {
+        return release(callback);
+    }
+};
+}
+
+// The release worker remains blocked; the control worker must still time out.
+HWTEST_F(ExtExtensionSubTest, OnReleaseBlockedCallTimesOut, testing::ext::TestSize.Level1)
+{
+    auto backup = std::make_shared<ReleaseTestBackup>();
+    sptr<BackupExtExtension> ext = new BackupExtExtension(nullptr, BUNDLE_NAME);
+    ext->extension_ = backup;
+    std::atomic<int> calls {0};
+    std::promise<void> notified;
+    auto notification = notified.get_future();
+    std::promise<void> entered;
+    std::promise<void> unblock;
+    std::promise<void> exited;
+    auto started = entered.get_future();
+    auto gate = unblock.get_future();
+    auto ended = exited.get_future();
+    backup->release = [&](auto callback) {
+        ++calls;
+        entered.set_value();
+        gate.wait();
+        callback(ERR_OK, "late callback");
+        exited.set_value();
+        return ERR_OK;
+    };
+    EXPECT_CALL(*proxy, HandleExtDisconnect(_, false, ERR_OK)).Times(1).WillOnce(Invoke([&](auto, auto, auto) {
+        notified.set_value();
+        return ERR_OK;
+    }));
+    ext->HandleExtOnRelease(false, ERR_OK);
+    EXPECT_EQ(started.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ext->HandleExtOnRelease(false, ERR_OK); // Repeat while application release is blocked.
+    EXPECT_EQ(notification.wait_for(std::chrono::seconds(7)), std::future_status::ready);
+    EXPECT_TRUE(ext->isOnReleased_.load());
+    EXPECT_EQ(ended.wait_for(std::chrono::milliseconds(0)), std::future_status::timeout);
+    bool unlocked = ext->onReleaseLock_.try_lock();
+    EXPECT_TRUE(unlocked);
+    if (unlocked) {
+        ext->onReleaseLock_.unlock();
+    }
+    unblock.set_value();
+    EXPECT_EQ(ended.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ext->threadPool_.Stop();
+    ext->onReleaseTaskPool_.Stop();
+    EXPECT_EQ(calls.load(), 1);
+    Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
+}
+
+HWTEST_F(ExtExtensionSubTest, OnReleaseDuplicateCallbackFinishesOnce, testing::ext::TestSize.Level1)
+{
+    auto backup = std::make_shared<ReleaseTestBackup>();
+    sptr<BackupExtExtension> ext = new BackupExtExtension(nullptr, BUNDLE_NAME);
+    ext->extension_ = backup;
+    std::atomic<int> calls {0};
+    std::promise<void> returned;
+    auto done = returned.get_future();
+    backup->release = [&](auto callback) {
+        ++calls;
+        callback(ERR_OK, "");
+        callback(ERR_OK, "duplicate");
+        returned.set_value();
+        return ERR_OK;
+    };
+    EXPECT_CALL(*proxy, HandleExtDisconnect(_, false, ERR_OK)).Times(1).WillOnce(Return(ERR_OK));
+    ext->HandleExtOnRelease(false, ERR_OK);
+    EXPECT_EQ(done.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ext->HandleExtOnRelease(false, ERR_OK);
+    ext->threadPool_.Stop();
+    ext->onReleaseTaskPool_.Stop();
+    EXPECT_TRUE(ext->isOnReleased_.load());
+    EXPECT_EQ(calls.load(), 1);
+    Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
+}
+
 } // namespace OHOS::FileManagement::Backup
