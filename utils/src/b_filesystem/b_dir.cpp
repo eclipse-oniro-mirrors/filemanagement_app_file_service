@@ -483,7 +483,7 @@ void BDir::PreDealExcludes(std::vector<std::string> &excludes)
     excludes.resize(j);
 }
 
-tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path, bool onlyDirAndRegFile = false)
+tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
 {
     vector<string> files;
     unique_ptr<DIR, function<void(DIR *)>> dir = {opendir(path.c_str()), closedir};
@@ -499,7 +499,7 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path, bool onlyDi
             continue;
         } else if (ptr->d_type == DT_DIR) {
             continue;
-        } else if (!onlyDirAndRegFile || ptr->d_type == DT_REG) {
+        } else {
             files.emplace_back(IncludeTrailingPathDelimiter(path) + string(ptr->d_name));
         }
     }
@@ -507,7 +507,7 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path, bool onlyDi
     return {ERR_OK, files};
 }
 
-static std::set<std::string> GetSubDir(const std::string &path)
+static std::set<std::string> GetSubDir(const std::string &path, bool onlyDirAndRegFile = false)
 {
     if (path.empty()) {
         return {};
@@ -532,7 +532,7 @@ static std::set<std::string> GetSubDir(const std::string &path)
                 continue;
             }
             result.emplace(tmpPath);
-        } else {
+        } else if (!onlyDirAndRegFile || ptr->d_type == DT_REG) {
             result.emplace(IncludeTrailingPathDelimiter(path) + string(ptr->d_name));
         }
     }
