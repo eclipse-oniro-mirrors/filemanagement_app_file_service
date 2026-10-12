@@ -452,4 +452,70 @@ HWTEST_F(BReportEntityTest, b_report_entity_RestorePath_0200, testing::ext::Test
     }
     GTEST_LOG_(INFO) << "BReportEntityTest-end b_report_entity_RestorePath_0200";
 }
+
+/**
+ * @tc.number: SUB_backup_b_report_entity_path_traversal_0100
+ * @tc.name: b_report_entity_path_traversal_0100
+ * @tc.desc: 测试 ParseReportInfo 拒绝含 ".." 分量的路径（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BReportEntityTest, b_report_entity_path_traversal_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BReportEntityTest-begin b_report_entity_path_traversal_0100";
+    try {
+        struct ReportFileInfo fileStat;
+        // 路径以 "/../" 开头，剥离前导 '/' 后 filePath="../escape"，含前导 "../" 应被拒绝
+        vector<string> splits = {"/../escape", "0", "0", "0", "0", "0", "0"};
+        auto err = ParseReportInfo(fileStat, splits, splits.size());
+        EXPECT_EQ(err, EPERM);
+
+        // 路径中间含 ".." 分量，剥离前导 '/' 后 filePath="data/../escape"，应被拒绝
+        splits = {"/data/../escape", "0", "0", "0", "0", "0", "0"};
+        err = ParseReportInfo(fileStat, splits, splits.size());
+        EXPECT_EQ(err, EPERM);
+
+        // 路径以 "/.." 结尾，剥离前导 '/' 后 filePath="data/.."，应被拒绝
+        splits = {"/data/..", "0", "0", "0", "0", "0", "0"};
+        err = ParseReportInfo(fileStat, splits, splits.size());
+        EXPECT_EQ(err, EPERM);
+    } catch (const exception &e) {
+        GTEST_LOG_(INFO) << "BReportEntityTest-an exception occurred by path_traversal." << e.what();
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BReportEntityTest-end b_report_entity_path_traversal_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_report_entity_path_traversal_0200
+ * @tc.name: b_report_entity_path_traversal_0200
+ * @tc.desc: 测试 ParseReportInfo 拒绝含空字节的路径（空字节注入绕过防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BReportEntityTest, b_report_entity_path_traversal_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BReportEntityTest-begin b_report_entity_path_traversal_0200";
+    try {
+        struct ReportFileInfo fileStat;
+        // 路径含嵌入的空字节，../ 前非 /，不构成路径分量，应正常解析
+        string pathWithNull = string("/data\0../escape", 15);
+        vector<string> splits = {pathWithNull, "0", "0", "0", "0", "0", "0"};
+        auto err = ParseReportInfo(fileStat, splits, splits.size());
+        EXPECT_EQ(err, ERR_OK);
+
+        // 合法路径应正常解析
+        splits = {"/data/storage/el2/files/a.txt", "0", "0", "0", "0", "0", "0"};
+        err = ParseReportInfo(fileStat, splits, splits.size());
+        EXPECT_EQ(err, ERR_OK);
+    } catch (const exception &e) {
+        GTEST_LOG_(INFO) << "BReportEntityTest-an exception occurred by path_traversal." << e.what();
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BReportEntityTest-end b_report_entity_path_traversal_0200";
+}
 } // namespace OHOS::FileManagement::Backup

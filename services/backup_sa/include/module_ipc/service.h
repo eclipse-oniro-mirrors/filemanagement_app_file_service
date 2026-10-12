@@ -895,6 +895,7 @@ private:
     ErrCode ProcessReadyFiles(const std::vector<std::string> &fileNames,
                               const std::vector<int> &errCodes,
                               const std::string &callerName);
+    bool HasInvalidFilePath(const std::vector<std::string> &fileNames);
     ErrCode SendIncrementalFileHandlesByEnhance(const std::string &bundleName,
                                                 const vector<std::string> &fileNames,
                                                 std::vector<FileOpenResult> &openResults);
