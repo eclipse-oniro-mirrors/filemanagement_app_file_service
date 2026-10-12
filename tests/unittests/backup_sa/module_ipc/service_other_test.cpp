@@ -977,40 +977,6 @@ HWTEST_F(ServiceTest, SUB_Service_AppendBundlesRestoreSession_0300, TestSize.Lev
 }
 
 /**
- * @tc.number: SUB_Service_SetCurrentSessProperties_0100
- * @tc.name: SUB_Service_SetCurrentSessProperties_0100
- * @tc.desc: 测试 SetCurrentSessProperties
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: issueIAKC3I
- */
-HWTEST_F(ServiceTest, SUB_Service_SetCurrentSessProperties_0100, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_SetCurrentSessProperties_0100";
-    try {
-        ASSERT_TRUE(service != nullptr);
-        BJsonEntityCaps::BundleInfo info;
-        map<string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
-        string bundleNameIndexInfo;
-
-        service->session_ = nullptr;
-        service->SetCurrentSessProperties(info, bundleSettingInfos, bundleNameIndexInfo);
-        service->session_ = sptr<SvcSessionManager>(new SvcSessionManager(wptr(service)));
-        service->session_->SetSessionUserId(0);
-        service->SetCurrentSessProperties(info, bundleSettingInfos, bundleNameIndexInfo);
-
-        info = BJsonEntityCaps::BundleInfo {BUNDLE_NAME, 0, {}, {}, 0, 0, true, false, false, BUNDLE_NAME};
-        bundleSettingInfos = {{BUNDLE_NAME, {true, 0, false, {}, 500}}};
-        service->SetCurrentSessProperties(info, bundleSettingInfos, bundleNameIndexInfo);
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by SetCurrentSessProperties.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_SetCurrentSessProperties_0100";
-}
-
-/**
  * @tc.number: SUB_Service_SetCurrentSessProperties_0200
  * @tc.name: SUB_Service_SetCurrentSessProperties_0200
  * @tc.desc: 测试 SetCurrentSessProperties

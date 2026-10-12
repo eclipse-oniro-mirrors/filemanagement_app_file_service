@@ -31,7 +31,7 @@ const std::string BROADCAST_TYPE = "broadcast";
 const std::string UNICAST_TYPE = "unicast";
 }
 
-// DefaultPropertyStrategy: UserId + ExtensionName + ReadyLaunch
+// DefaultPropertyStrategy: UserId + ExtensionName
 void DefaultPropertyStrategy::Execute(StrategyContext &context)
 {
     auto ptr = context.session.promote();
@@ -41,7 +41,6 @@ void DefaultPropertyStrategy::Execute(StrategyContext &context)
     }
     ptr->SetBundleUserId(context.bundleNameIndexInfo, context.userId);
     ptr->SetBackupExtName(context.bundleNameIndexInfo, context.bundleInfo.extensionName);
-    ptr->SetIsReadyLaunch(context.bundleNameIndexInfo);
 }
 
 // DataSizePropertyStrategy: 区分增量/全量/恢复
@@ -151,4 +150,14 @@ void RestoreExtraPropertyStrategy::Execute(StrategyContext &context)
     }
 }
 
+// ReadyLaunchStrategy: 必须在所有session参数设置完成后执行，标记可以调度拉起extension
+void ReadyLaunchStrategy::Execute(StrategyContext &context)
+{
+    auto ptr = context.session.promote();
+    if (ptr == nullptr) {
+        HILOGE("session pointer is null");
+        return;
+    }
+    ptr->SetIsReadyLaunch(context.bundleNameIndexInfo);
+}
 } // namespace OHOS::FileManagement::Backup

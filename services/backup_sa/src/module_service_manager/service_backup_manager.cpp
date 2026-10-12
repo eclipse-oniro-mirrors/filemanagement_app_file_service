@@ -26,7 +26,8 @@ static const std::vector<std::string> STRATEGY_LIST = {
 "DefaultPropertyStrategy",
 "DataSizePropertyStrategy",
 "ClearDataFlagPropertyStrategy",
-"BackupExtraPropertyStrategy"
+"BackupExtraPropertyStrategy",
+"ReadyLaunchStrategy"
 };
 
 std::vector<std::string> Service::CallGetSupportBundleNames(const vector<BundleName> &bundleNames,
@@ -116,7 +117,8 @@ ErrCode Service::SetSessPropertiesBackup(const std::vector<std::string> &bundleN
         bundleNameIndexBundleInfoMap[bundleNameIndexInfo] = bundleInfo;
     }
 
-    std::vector<std::string> strategies = {"DefaultPropertyStrategy", "DataSizePropertyStrategy"};
+    std::vector<std::string> strategies = {"DefaultPropertyStrategy", "DataSizePropertyStrategy",
+        "ReadyLaunchStrategy"};
 
     for (const auto &bundleName : bundleNames) {
         std::string userBundleName = bundleName;

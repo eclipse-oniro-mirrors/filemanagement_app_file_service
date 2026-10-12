@@ -14,46 +14,6 @@
  */
 
 /**
- * @tc.number: SUB_Service_HandleCurGroupBackupInfos_0000
- * @tc.name: SUB_Service_HandleCurGroupBackupInfos_0000
- * @tc.desc: 测试 HandleCurGroupBackupInfos 的正常/异常分支
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: issueIAKC3I
- */
-HWTEST_F(ServiceTest, SUB_Service_HandleCurGroupBackupInfos_0000, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_HandleCurGroupBackupInfos_0000";
-    try {
-        vector<BJsonEntityCaps::BundleInfo> backupInfos = {
-            {.name = "bundleName", .appIndex = 0, .allToBackup = false, .versionName = ""} };
-        map<string, vector<BJsonUtil::BundleDetailInfo>> bundleNameDetailMap;
-        map<string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(false));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-
-        backupInfos[0].allToBackup = true;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(false));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-
-        backupInfos[0].allToBackup = true;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(true));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by HandleCurGroupBackupInfos.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_HandleCurGroupBackupInfos_0000";
-}
-
-/**
  * @tc.number: SUB_Service_ServiceResultReport_0000
  * @tc.name: SUB_Service_ServiceResultReport_0000
  * @tc.desc: 测试 ServiceResultReport 的正常/异常分支

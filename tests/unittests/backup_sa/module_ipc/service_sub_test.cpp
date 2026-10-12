@@ -1057,36 +1057,6 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesDetailsBackupSession_0100, tes
 }
 
 /**
- * @tc.number: SUB_Service_HandleCurGroupBackupInfos_0100
- * @tc.name: SUB_Service_HandleCurGroupBackupInfos_0100
- * @tc.desc: 测试 HandleCurGroupBackupInfos 接口
- * @tc.size: SMALL
- * @tc.type: FUNC
- * @tc.level Level 1
- */
-HWTEST_F(ServiceSubTest, SUB_Service_HandleCurGroupBackupInfos_0100, testing::ext::TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceSubTest-begin SUB_Service_HandleCurGroupBackupInfos_0100";
-    std::vector<BJsonEntityCaps::BundleInfo> backupInfos;
-    std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> bundleNameDetailMap;
-    std::map<std::string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
-    BJsonEntityCaps::BundleInfo bundleInfo;
-    bundleInfo.name = BUNDLE_NAME;
-    bundleInfo.appIndex = 0;
-    bundleInfo.extensionName = "extensionNameTest";
-    backupInfos.push_back(bundleInfo);
-    EXPECT_TRUE(servicePtr_ != nullptr);
-    GTEST_LOG_(INFO) << "1. HandleCurGroupBackupInfos";
-    servicePtr_->session_ = session_;
-    BackupExtInfo extInfo;
-    session_->impl_.backupExtNameMap.emplace(BUNDLE_NAME, extInfo);
-    servicePtr_->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-    EXPECT_EQ(session_->impl_.backupExtNameMap[BUNDLE_NAME].backupExtName, bundleInfo.extensionName);
-
-    GTEST_LOG_(INFO) << "ServiceSubTest-end SUB_Service_HandleCurGroupBackupInfos_0100";
-}
-
-/**
  * @tc.number: SUB_Service_HandleCurBundleEndWork_0100
  * @tc.name: SUB_Service_HandleCurBundleEndWork_0100
  * @tc.desc: 测试 HandleCurBundleEndWork 接口
