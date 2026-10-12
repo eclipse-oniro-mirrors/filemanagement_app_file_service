@@ -14,6 +14,7 @@
  */
 
 // LCOV_EXCL_BR_START
+#include "b_resources/b_constants.h"
 #include "ext_extension.h"
 
 #include <algorithm>
@@ -2040,11 +2041,16 @@ void BackupExtExtension::HandleExtOnRelease(bool isAppResultReport, ErrCode errC
                 return;
             }
             auto callback = extPtr->OnReleaseCallback(obj);
-            ErrCode ret = extPtr->extension_->OnRelease(callback, scenario);
-            if (ret != ERR_OK) {
-                HILOGE("Call onRelease failed, ret = %{public}d", ret);
-                return;
-            }
+            // Keep the application call separate from the thread waiting for its timeout.
+            extPtr->onReleaseTaskPool_.AddTask([extPtr, callback, scenario]() {
+                if (extPtr->stopWaitOnRelease_.load()) {
+                    return;
+                }
+                ErrCode ret = extPtr->extension_->OnRelease(callback, scenario);
+                if (ret != ERR_OK) {
+                    HILOGE("Call onRelease failed, ret = %{public}d", ret);
+                }
+            });
             std::unique_lock<std::mutex> lock(extPtr->execOnReleaseLock_);
             extPtr->execOnReleaseCon_.wait_for(lock, std::chrono::milliseconds(BConstants::APP_ON_RELEASE_MAX_TIMEOUT),
                 [extPtr] { return extPtr->stopWaitOnRelease_.load(); });
@@ -2053,7 +2059,7 @@ void BackupExtExtension::HandleExtOnRelease(bool isAppResultReport, ErrCode errC
         }
         extPtr->HandleExtDisconnect(isAppResultReport, errCode);
     };
-    onReleaseTaskPool_.AddTask([task]() { task(); });
+    threadPool_.AddTask([task]() { task(); });
 }
 
 std::function<void(ErrCode, const std::string)> BackupExtExtension::GetComInfoCallback(wptr<BackupExtExtension> obj)
