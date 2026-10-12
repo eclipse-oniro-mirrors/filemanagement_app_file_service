@@ -348,6 +348,109 @@ HWTEST_F(BDirTest, b_dir_GetSubDir_0100, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0100
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0100
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface for empty and invalid path
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0100";
+    try {
+        std::set<std::string> result = GetSubDir("", true);
+        EXPECT_EQ(result.size(), 0);
+ 
+        result = GetSubDir("non_existent_path_for_test", true);
+        EXPECT_EQ(result.size(), 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0100";
+}
+ 
+/**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0200
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0200
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface with dirs and regular files
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0200";
+    try {
+        TestManager tm("b_dir_GetSubDirOnlyDirAndRegFile_0200");
+        std::string targetDir = tm.GetRootDirCurTest();
+ 
+        mkdir((targetDir + "subdir1").c_str(), 0755);
+        mkdir((targetDir + "subdir2").c_str(), 0755);
+ 
+        int fd = open((targetDir + "file1.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+        fd = open((targetDir + "file2.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+ 
+        std::set<std::string> result = GetSubDir(targetDir, true);
+        EXPECT_EQ(result.size(), 4); // 2 dirs + 2 regular files
+        EXPECT_TRUE(result.count(targetDir + "subdir1/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "subdir2/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file1.txt") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file2.txt") > 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0200";
+}
+ 
+/**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0300
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0300
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface filters out symlinks
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0300";
+    try {
+        TestManager tm("b_dir_GetSubDirOnlyDirAndRegFile_0300");
+        std::string targetDir = tm.GetRootDirCurTest();
+ 
+        mkdir((targetDir + "subdir").c_str(), 0755);
+ 
+        int fd = open((targetDir + "file.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+ 
+        symlink((targetDir + "file.txt").c_str(), (targetDir + "link_to_file").c_str());
+        symlink((targetDir + "subdir").c_str(), (targetDir + "link_to_dir").c_str());
+ 
+        // GetSubDir with onlyDirAndRegFile should only return dirs and regular files, not symlinks
+        std::set<std::string> result = GetSubDir(targetDir, true);
+        EXPECT_EQ(result.size(), 2); // 1 dir + 1 regular file, symlinks filtered out
+        EXPECT_TRUE(result.count(targetDir + "subdir/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file.txt") > 0);
+        EXPECT_EQ(result.count(targetDir + "link_to_file"), 0);
+        EXPECT_EQ(result.count(targetDir + "link_to_dir"), 0);
+ 
+        // GetSubDir without onlyDirAndRegFile should include symlinks
+        std::set<std::string> resultAll = GetSubDir(targetDir);
+        EXPECT_EQ(resultAll.size(), 4); // 1 dir + 1 regular file + 2 symlinks
+        EXPECT_TRUE(resultAll.count(targetDir + "link_to_file") > 0);
+        EXPECT_TRUE(resultAll.count(targetDir + "link_to_dir") > 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0300";
+}
+
+/**
  * @tc.number: SUB_backup_b_dir_PreDealExcludes_0100
  * @tc.name: b_dir_PreDealExcludes_0100
  * @tc.desc: Test function of PreDealExcludes interface for SUCCESS

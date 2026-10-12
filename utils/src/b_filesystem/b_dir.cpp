@@ -483,7 +483,7 @@ void BDir::PreDealExcludes(std::vector<std::string> &excludes)
     excludes.resize(j);
 }
 
-tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
+tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path, bool onlyDirAndRegFile = false)
 {
     vector<string> files;
     unique_ptr<DIR, function<void(DIR *)>> dir = {opendir(path.c_str()), closedir};
@@ -499,7 +499,7 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
             continue;
         } else if (ptr->d_type == DT_DIR) {
             continue;
-        } else {
+        } else if (!onlyDirAndRegFile || ptr->d_type == DT_REG) {
             files.emplace_back(IncludeTrailingPathDelimiter(path) + string(ptr->d_name));
         }
     }
@@ -544,7 +544,7 @@ static void RmForceExcludePath(set<string> &expandPath)
     set<string> addPaths;
     for (auto it = expandPath.begin(); it != expandPath.end();) {
         if (*it == BConstants::PATH_PUBLIC_HOME) {
-            addPaths = GetSubDir(*it);
+            addPaths = GetSubDir(*it, true);
         }
         if ((*it).find(APP_DATA_DIR) == 0) {
             it = expandPath.erase(it);
