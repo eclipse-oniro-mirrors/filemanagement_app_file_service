@@ -507,7 +507,7 @@ tuple<ErrCode, vector<string>> BDir::GetDirFiles(const string &path)
     return {ERR_OK, files};
 }
 
-static std::set<std::string> GetSubDir(const std::string &path)
+static std::set<std::string> GetSubDir(const std::string &path, bool onlyDirAndRegFile = false)
 {
     if (path.empty()) {
         return {};
@@ -532,7 +532,7 @@ static std::set<std::string> GetSubDir(const std::string &path)
                 continue;
             }
             result.emplace(tmpPath);
-        } else {
+        } else if (!onlyDirAndRegFile || ptr->d_type == DT_REG) {
             result.emplace(IncludeTrailingPathDelimiter(path) + string(ptr->d_name));
         }
     }
@@ -544,7 +544,7 @@ static void RmForceExcludePath(set<string> &expandPath)
     set<string> addPaths;
     for (auto it = expandPath.begin(); it != expandPath.end();) {
         if (*it == BConstants::PATH_PUBLIC_HOME) {
-            addPaths = GetSubDir(*it);
+            addPaths = GetSubDir(*it, true);
         }
         if ((*it).find(APP_DATA_DIR) == 0) {
             it = expandPath.erase(it);
