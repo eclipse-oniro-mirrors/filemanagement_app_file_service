@@ -1551,15 +1551,36 @@ std::unordered_map<std::string, std::string> BackupExtExtension::BuildCompatible
     return mapping;
 }
 
-std::string BackupExtExtension::MapPathWithCompatDir(const std::string &filePath) const
+std::string BackupExtExtension::MapPathWithCompatDir(const std::string &filePath, bool isDir) const
 {
+    std::string normalizedPath = filePath;
+    if (isDir && !normalizedPath.empty() && normalizedPath.back() != '/') {
+        normalizedPath += '/';
+    }
     for (const auto &mapEntry : compatDirMapping_) {
         const std::string &backupDir = mapEntry.first;
         const std::string &restoreDir = mapEntry.second;
-        if (filePath.compare(0, backupDir.length(), backupDir) == 0 &&
-            (filePath.length() == backupDir.length() || filePath[backupDir.length()] == '/')) {
-            return restoreDir + filePath.substr(backupDir.length());
+        // 前缀不匹配, 跳过
+        if (normalizedPath.compare(0, backupDir.length(), backupDir) != 0) {
+            continue;
         }
+        // backupDir 末尾带 '/', 前缀已包含分隔符, 匹配成功
+        // 需保证 restoreDir 末尾也有 '/', 否则拼接后缺少分隔符
+        if (!backupDir.empty() && backupDir.back() == '/') {
+            if (!restoreDir.empty() && restoreDir.back() != '/') {
+                return restoreDir + '/' + normalizedPath.substr(backupDir.length());
+            }
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // backupDir 末尾不带 '/', filePath 精确匹配 backupDir, 匹配成功
+        if (normalizedPath.length() == backupDir.length()) {
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // backupDir 末尾不带 '/', 紧跟分隔符 '/', 匹配成功
+        if (normalizedPath[backupDir.length()] == '/') {
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // 前缀匹配但边界不对, 跳过 (如 "/bak/p1" 误匹配 "/bak/p12/file.txt")
     }
     return filePath;
 }
@@ -1572,7 +1593,7 @@ void BackupExtExtension::ApplyRestorePathMapping(
     }
     std::vector<std::pair<std::string, struct ReportFileInfo>> remappedEntries;
     for (auto it = localFilesInfo.begin(); it != localFilesInfo.end();) {
-        std::string restorePath = MapPathWithCompatDir(it->first);
+        std::string restorePath = MapPathWithCompatDir(it->first, it->second.isDir);
         if (restorePath != it->first) {
             it->second.restorePath = restorePath;
             remappedEntries.emplace_back(std::move(restorePath), std::move(it->second));
