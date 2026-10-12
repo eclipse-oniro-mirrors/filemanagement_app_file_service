@@ -2399,23 +2399,23 @@ void BackupExtExtension::CheckAppIncrementalFileReadyResult(int32_t ret, std::st
 ErrCode BackupExtExtension::IncrementalAllFileReady(const TarMap &pkgInfo,
     const vector<struct ReportFileInfo> &srcFiles, sptr<IService> proxy)
 {
-    UniqueFd fdIndex(open(INDEX_FILE_BACKUP.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
-    if (fdIndex < 0) {
-        HILOGE("Failed to open index json file = %{private}s, err = %{public}d", INDEX_FILE_BACKUP.c_str(), errno);
-        return BError::GetCodeByErrno(errno);
-    }
-
     // 构建修正后的 TarMap, 用 compatDirMapping_ 替换物理路径前缀
     TarMap correctedPkgInfo;
     for (const auto &item : pkgInfo) {
         auto [filePath, sta, isBeforeTar] = item.second;
         correctedPkgInfo.emplace(item.first, std::make_tuple(MapPathWithCompatDir(filePath), sta, isBeforeTar));
     }
-    BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(std::move(fdIndex));
-    auto cache = cachedEntity.Structuralize();
-    cache.SetExtManage(correctedPkgInfo, isSupportWithoutTar_);
-    cachedEntity.Persist();
-    close(cachedEntity.GetFd().Release());
+    {
+        UniqueFd fdIndex(open(INDEX_FILE_BACKUP.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
+        if (fdIndex < 0) {
+            HILOGE("Failed to open index json file = %{private}s, err = %{public}d", INDEX_FILE_BACKUP.c_str(), errno);
+            return BError::GetCodeByErrno(errno);
+        }
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(std::move(fdIndex));
+        auto cache = cachedEntity.Structuralize();
+        cache.SetExtManage(correctedPkgInfo, isSupportWithoutTar_);
+        cachedEntity.Persist();
+    }
 
     string file = GetReportFileName(string(INDEX_FILE_INCREMENTAL_BACKUP).append("all"));
     BFile::WriteFile(file, srcFiles);

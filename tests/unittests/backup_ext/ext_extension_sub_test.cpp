@@ -186,8 +186,6 @@ HWTEST_F(ExtExtensionSubTest, Ext_Extension_Sub_HandleIncrementalBackup_Test_010
         int manifestFd = open(manifestFile.data(), O_RDWR | O_TRUNC, S_IRWXU);
         EXPECT_GT(manifestFd, 0);
         EXPECT_EQ(extExtension->HandleIncrementalBackup(incrementalFd, manifestFd), BError::E_FORBID);
-        close(incrementalFd);
-        close(manifestFd);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ExtExtensionSubTest-an exception occurred by construction.";

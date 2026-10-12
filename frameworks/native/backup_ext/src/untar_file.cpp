@@ -20,6 +20,7 @@
 #include "directory_ex.h"
 #include "filemgmt_libhilog.h"
 #include "securec.h"
+#include "unique_fd.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -166,17 +167,17 @@ std::tuple<int, EndFileInfo, ErrFileInfo> UntarFile::IncrementalUnPacket(
     const string &tarFile, const string &rootPath, const unordered_map<string, struct ReportFileInfo> &includes)
 {
     includes_ = includes;
-    int fd = open(tarFile.c_str(), O_RDONLY | O_UNCACHE);
+    UniqueFd fd(open(tarFile.c_str(), O_RDONLY | O_UNCACHE));
     if (fd < 0) {
         HILOGE("Failed to open tar file %{public}s, err = %{public}d", tarFile.c_str(), errno);
         return {errno, {}, {}};
     }
-    tarFilePtr_ = fdopen(fd, "rb");
+    tarFilePtr_ = fdopen(fd.Get(), "rb");
     if (tarFilePtr_ == nullptr) {
         HILOGE("Failed to fdopen , err = %{public}d", errno);
-        close(fd);
         return {errno, {}, {}};
     }
+    fd.Release();
 
     auto [ret, fileInfos, errFileInfos] = ParseIncrementalTarFile(rootPath);
     if (ret != 0) {
