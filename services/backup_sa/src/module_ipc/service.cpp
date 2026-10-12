@@ -788,6 +788,7 @@ void Service::SetCurrentSessProperties(
             HILOGI("current bundle, unicast info:%{public}s", GetAnonyString(uniCastInfo.detail).c_str());
             session_->SetBackupExtInfo(bundleNameIndexInfo, uniCastInfo.detail);
         }
+        session_->SetIsReadyLaunch(bundleNameIndexInfo);
     }
 }
 
@@ -801,39 +802,6 @@ void Service::ApplyBundleSettings(const std::string &bundleNameIndexInfo,
         session_->SetExcludeInfos(bundleNameIndexInfo, iterSet->second.excludeInfos);
         session_->SetBatchSize(bundleNameIndexInfo, iterSet->second.batchSize);
         session_->SetRestoreScene(bundleNameIndexInfo, iterSet->second.restoreScene);
-    }
-}
-
-void Service::HandleCurGroupBackupInfos(
-    std::vector<BJsonEntityCaps::BundleInfo> &backupInfos,
-    std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
-    std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos)
-{
-    for (auto &info : backupInfos) {
-        HILOGI("Current backupInfo bundleName:%{public}s, extName:%{public}s, appIndex:%{public}d", info.name.c_str(),
-               info.extensionName.c_str(), info.appIndex);
-        std::string bundleNameIndexInfo = BJsonUtil::BuildBundleNameIndexInfo(info.name, info.appIndex);
-        SetCurrentSessProperties(info, bundleSettingInfos, bundleNameIndexInfo);
-        BJsonUtil::BundleDetailInfo uniCastInfo;
-        if (BJsonUtil::FindBundleInfoByName(bundleNameDetailMap, bundleNameIndexInfo, UNICAST_TYPE, uniCastInfo)) {
-            HILOGI("current bundle:%{public}s, unicast info:%{public}s, unicast info size:%{public}zu",
-                   bundleNameIndexInfo.c_str(), GetAnonyString(uniCastInfo.detail).c_str(), uniCastInfo.detail.size());
-            session_->SetBackupExtInfo(bundleNameIndexInfo, uniCastInfo.detail);
-        }
-        session_->SetBundleUserId(bundleNameIndexInfo, session_->GetSessionUserId());
-        session_->SetBackupExtName(bundleNameIndexInfo, info.extensionName);
-        session_->SetIsReadyLaunch(bundleNameIndexInfo);
-        std::string backupScene = "";
-        if (BJsonUtil::FindBackupSceneByName(bundleNameDetailMap, bundleNameIndexInfo, backupScene)) {
-            session_->SetBackupScene(bundleNameIndexInfo, backupScene);
-        }
-        auto iterSet = bundleSettingInfos.find(bundleNameIndexInfo);
-        if (iterSet != bundleSettingInfos.end()) {
-            session_->SetSupportWithoutTar(bundleNameIndexInfo, iterSet->second.isSupportWithoutTar);
-            session_->SetExcludeInfos(bundleNameIndexInfo, iterSet->second.excludeInfos);
-            session_->SetBatchSize(bundleNameIndexInfo, iterSet->second.batchSize);
-            session_->SetRestoreScene(bundleNameIndexInfo, iterSet->second.restoreScene);
-        }
     }
 }
 

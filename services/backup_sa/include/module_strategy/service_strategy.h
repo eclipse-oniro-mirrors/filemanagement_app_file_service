@@ -56,7 +56,7 @@ public:
     virtual void Execute(StrategyContext &context) = 0;
 };
 
-// 策略1：默认基础属性（UserId + ExtensionName + ReadyLaunch）
+// 策略1：默认基础属性（UserId + ExtensionName）
 class DefaultPropertyStrategy : public BundlePropertyStrategy {
 public:
     void Execute(StrategyContext &context) override;
@@ -88,6 +88,12 @@ public:
 
 // 策略6：恢复扩展属性（Broadcast + Unicast）
 class RestoreExtraPropertyStrategy : public BundlePropertyStrategy {
+public:
+    void Execute(StrategyContext &context) override;
+};
+
+// 策略7：就绪拉起标志（必须在所有session参数设置完成后执行）
+class ReadyLaunchStrategy : public BundlePropertyStrategy {
 public:
     void Execute(StrategyContext &context) override;
 };
@@ -138,6 +144,7 @@ public:
         executor.AddStrategy("RestoreBasePropertyStrategy", std::make_unique<RestoreBasePropertyStrategy>());
         executor.AddStrategy("BackupExtraPropertyStrategy", std::make_unique<BackupExtraPropertyStrategy>());
         executor.AddStrategy("RestoreExtraPropertyStrategy", std::make_unique<RestoreExtraPropertyStrategy>());
+        executor.AddStrategy("ReadyLaunchStrategy", std::make_unique<ReadyLaunchStrategy>());
     }
 };
 

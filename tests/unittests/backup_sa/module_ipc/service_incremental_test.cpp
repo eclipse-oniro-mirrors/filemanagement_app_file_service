@@ -439,10 +439,6 @@ void Service::SetCurrentSessProperties(std::vector<BJsonEntityCaps::BundleInfo> 
                                        RestoreTypeEnum,
                                        std::string &) {}
 
-void Service::SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &,
-                                       std::map<std::string, BJsonUtil::BundleSettingInfo> &,
-                                       const std::string &) {}
-
 void Service::ReleaseOnException() {}
 
 bool SvcRestoreDepsManager::UpdateToRestoreBundleMap(const string &bundleName, const string &fileName)

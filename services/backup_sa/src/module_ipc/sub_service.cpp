@@ -704,22 +704,6 @@ std::vector<std::string> Service::GetSupportBackupBundleNames(vector<BJsonEntity
     return supportBackupNames;
 }
 
-void Service::SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &info,
-    std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos, const std::string &bundleNameIndexInfo)
-{
-    HILOGI("Begin");
-    if (session_ == nullptr) {
-        HILOGE("Set currrent session properties error, session is empty");
-        return;
-    }
-    session_->SetBundleDataSize(bundleNameIndexInfo, info.spaceOccupied);
-    auto iter = bundleSettingInfos.find(bundleNameIndexInfo);
-    if (iter != bundleSettingInfos.end()) {
-        session_->SetClearDataFlag(bundleNameIndexInfo, iter->second.isClearData);
-    }
-    HILOGI("End");
-}
-
 ErrCode Service::RefreshDataSize(int64_t totalDataSize)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
@@ -1892,7 +1876,6 @@ void Service::SetBundleParam(const BJsonEntityCaps::BundleInfo &restoreInfo, std
     session_->SetBundleDataSize(bundleNameIndexInfo, restoreInfo.spaceOccupied);
     session_->SetBundleUserId(bundleNameIndexInfo, session_->GetSessionUserId());
     session_->SetBackupExtName(bundleNameIndexInfo, restoreInfo.extensionName);
-    session_->SetIsReadyLaunch(bundleNameIndexInfo);
 }
 
 void Service::TryToClearDispose(const BundleName &bundleName)

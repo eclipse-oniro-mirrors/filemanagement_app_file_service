@@ -621,10 +621,6 @@ private:
     void SetCurrentSessProperties(std::vector<BJsonEntityCaps::BundleInfo> &restoreBundleInfos,
         std::vector<std::string> &restoreBundleNames, RestoreTypeEnum restoreType, std::string &backupVersion);
 
-    void SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &info,
-                                  std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos,
-                                  const std::string &bundleNameIndexInfo);
-
     void ApplyBundleSettings(const std::string &bundleNameIndexInfo,
                              const std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos);
 
@@ -726,10 +722,6 @@ private:
     vector<BIncrementalData> MakeDetailList(const vector<BundleName> &bundleNames);
 
     vector<string> GetBundleNameByDetails(const std::vector<BIncrementalData> &bundlesToBackup);
-
-    void HandleCurGroupBackupInfos(vector<BJsonEntityCaps::BundleInfo> &bundleInfos,
-        std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
-        std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos);
 
     void HandleCurGroupIncBackupInfos(vector<BJsonEntityCaps::BundleInfo> &bundleInfos,
         std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
