@@ -21,6 +21,7 @@
 
 #include "b_error/b_error.h"
 #include "b_error/b_excep_utils.h"
+#include "b_filesystem/b_dir.h"
 #include "b_json/b_json_entity_ext_manage.h"
 #include "b_resources/b_constants.h"
 #include "filemgmt_libhilog.h"
@@ -254,9 +255,59 @@ set<string> BJsonEntityExtManage::GetExtManage() const
         string fileName = item.isObject() && item.isMember("fileName") && item["fileName"].isString()
                               ? item["fileName"].asString()
                               : "";
+        if (!fileName.empty() && !BDir::IsFilePathValid(fileName)) {
+            HILOGE("Path is forbidden, path: %{public}s", fileName.data());
+            continue;
+        }
         info.emplace(fileName);
     }
     return info;
+}
+
+static bool ParseExtManageItem(const Json::Value &item, ExtManageInfo &out)
+{
+    if (!(item.isObject() && item.isMember("information"))) {
+        return false;
+    }
+    string fileName = item.isMember("fileName") && item["fileName"].isString() ? item["fileName"].asString() : "";
+    if (fileName.empty()) {
+        HILOGE("fileName is empty");
+        return false;
+    }
+    if (!BDir::IsFilePathValid(fileName)) {
+        HILOGE("Path is forbidden, path: %{public}s", fileName.data());
+        return false;
+    }
+    string path = item["information"].isMember("path") && item["information"]["path"].isString()
+                      ? item["information"]["path"].asString()
+                      : "";
+    if (path.empty()) {
+        HILOGE("path is empty");
+        return false;
+    }
+    if (!BDir::IsFilePathValid(path)) {
+        HILOGE("Path is forbidden, path: %{public}s", path.data());
+        return false;
+    }
+    struct stat sta = {};
+    if (item["information"].isMember("stat")) {
+        sta = JsonValue2Stat(item["information"]["stat"]);
+    }
+    bool isUserTar = item.isMember("isUserTar") && item["isUserTar"].isBool() ? item["isUserTar"].asBool() : false;
+    bool isBigFile = item.isMember("isBigFile") && item["isBigFile"].isBool() ? item["isBigFile"].asBool() : false;
+    bool isLongPath = item.isMember("isLongPath") && item["isLongPath"].isBool() ? item["isLongPath"].asBool() : false;
+    if (!item.isMember("isBigFile") && ExtractFileExt(fileName) != "tar") {
+        isBigFile = true;
+    }
+    HILOGD("GetExtManageInfo, fileName:%{public}s, isUserTar:%{public}d, isBigFile:%{public}d, isLongPath:%{public}d",
+           fileName.data(), isUserTar, isBigFile, isLongPath);
+    out = ExtManageInfo {.hashName = fileName,
+                         .fileName = path,
+                         .sta = sta,
+                         .isUserTar = isUserTar,
+                         .isBigFile = isBigFile,
+                         .isLongPath = isLongPath};
+    return true;
 }
 
 std::vector<ExtManageInfo> BJsonEntityExtManage::GetExtManageInfo() const
@@ -272,34 +323,9 @@ std::vector<ExtManageInfo> BJsonEntityExtManage::GetExtManageInfo() const
 
     std::vector<ExtManageInfo> infos {};
     for (const Json::Value &item : obj_) {
-        if (!(item.isObject() && item.isMember("information"))) {
-            continue;
-        }
-
-        struct stat sta = {};
-        string path = item["information"].isMember("path") && item["information"]["path"].isString()
-                          ? item["information"]["path"].asString()
-                          : "";
-        if (item["information"].isMember("stat")) {
-            sta = JsonValue2Stat(item["information"]["stat"]);
-        }
-        string fileName = item.isMember("fileName") && item["fileName"].isString() ? item["fileName"].asString() : "";
-        bool isUserTar = item.isMember("isUserTar") && item["isUserTar"].isBool() ? item["isUserTar"].asBool() : false;
-        bool isBigFile = item.isMember("isBigFile") && item["isBigFile"].isBool() ? item["isBigFile"].asBool() : false;
-        bool isLongPath =
-            item.isMember("isLongPath") && item["isLongPath"].isBool() ? item["isLongPath"].asBool() : false;
-        // 兼容旧版本没有isBigFile属性时,增加判断是否为bigFile
-        if (!item.isMember("isBigFile") && fileName != "" && ExtractFileExt(fileName) != "tar") {
-            isBigFile = true;
-        }
-        HILOGD(
-            "GetExtManageInfo, fileName:%{public}s, isUserTar:%{public}d, isBigFile:%{public}d, isLongPath:%{public}d",
-            fileName.data(), isUserTar, isBigFile, isLongPath);
-        if (!fileName.empty()) {
-            ExtManageInfo info = {
-                .hashName = fileName, .fileName = path, .sta = sta, .isUserTar = isUserTar, .isBigFile = isBigFile,
-                .isLongPath = isLongPath};
-            infos.emplace_back(info);
+        ExtManageInfo info;
+        if (ParseExtManageItem(item, info)) {
+            infos.emplace_back(std::move(info));
         }
     }
 

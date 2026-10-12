@@ -21,7 +21,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "b_anony/b_anony.h"
 #include "b_error/b_error.h"
+#include "b_filesystem/b_dir.h"
 #include "filemgmt_libhilog.h"
 #include "sandbox_helper.h"
 #include "unique_fd.h"
@@ -80,6 +82,10 @@ static ErrCode ParseReportInfo(struct ReportFileInfo &fileStat,
         path = (path.length() > 0 && path[0] == '/') ? path.substr(1, path.length() - 1) : path;
         auto fileRawPath = (path.length() > 0) ? path.substr(0, path.length() - 1) : path;
         fileStat.filePath = BReportEntity::DecodeReportItem(fileRawPath, fileStat.encodeFlag);
+        if (fileStat.filePath.empty() || !BDir::IsFilePathValid(fileStat.filePath)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileStat.filePath).c_str());
+            return EPERM;
+        }
         HILOGD("Briefings file %{public}s", fileStat.filePath.c_str());
         fileStat.mode = splits[static_cast<size_t>(KeyType::MODE)];
         fileStat.isDir = splits[static_cast<size_t>(KeyType::DIR)] == DEFAULT_VALUE;

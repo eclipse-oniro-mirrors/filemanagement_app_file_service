@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "b_error/b_error.h"
+#include "b_filesystem/b_dir.h"
 #include "b_filesystem/b_file.h"
 #include "b_ohos/startup/backup_para.h"
 #include "b_resources/b_constants.h"
@@ -50,7 +51,12 @@ vector<string> BJsonEntityExtensionConfig::GetIncludes() const
             HILOGE("Each item of array 'includes' must be of the type string");
             continue;
         }
-        dirs.emplace_back(item.asString());
+        string dir = item.asString();
+        if (!BDir::IsFilePathValid(dir)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(dir).c_str());
+            continue;
+        }
+        dirs.emplace_back(dir);
     }
 
     if (dirs.empty()) {
@@ -80,7 +86,12 @@ vector<string> BJsonEntityExtensionConfig::GetExcludes() const
             HILOGE("Each item of array 'excludes' must be of the type string");
             continue;
         }
-        dirs.emplace_back(item.asString());
+        string dir = item.asString();
+        if (!BDir::IsFilePathValid(dir)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(dir).c_str());
+            continue;
+        }
+        dirs.emplace_back(dir);
     }
     return dirs;
 }
@@ -236,7 +247,12 @@ vector<string> BJsonEntityExtensionConfig::GetDirList(Json::Value& jsonItem) con
             HILOGE("Each item of array must be of the type string");
             continue;
         }
-        dirs.emplace_back(item.asString());
+        string dir = item.asString();
+        if (!BDir::IsFilePathValid(dir)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(dir).c_str());
+            continue;
+        }
+        dirs.emplace_back(dir);
     }
 
     if (dirs.empty()) {
@@ -268,6 +284,11 @@ std::unordered_map<std::string, std::string> BJsonEntityExtensionConfig::GetComp
         }
         std::string restoreDir = item[BConstants::RESTORE_DIR].asString();
         std::string backupDir = item[BConstants::BACKUP_DIR].asString();
+        if (!BDir::IsFilePathValid(restoreDir) || !BDir::IsFilePathValid(backupDir)) {
+            HILOGE("config compatDirMapping path is forbidden, restoreDir:%{public}s, backupDir:%{public}s",
+                GetAnonyPath(restoreDir).c_str(), GetAnonyPath(backupDir).c_str());
+            continue;
+        }
         if (restoreDir.find(BConstants::BACKUP_RESTORE_DIR_SEPARATOR) != std::string::npos ||
             restoreDir.find(BConstants::DIR_WILDCARD) != std::string::npos) {
             HILOGE("config compatDirMapping.restoreDir contain invalid char!");

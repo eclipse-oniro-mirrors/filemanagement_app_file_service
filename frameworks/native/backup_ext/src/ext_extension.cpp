@@ -186,6 +186,10 @@ void BackupExtExtension::VerifyCaller()
 static UniqueFd GetFileHandleForSpecialCloneCloud(const string &fileName)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
+    if (!BDir::IsFilePathValid(fileName)) {
+        HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+        return UniqueFd(BConstants::INVALID_FD_NUM);
+    }
     string filePath = fileName;
     if (fileName.front() != BConstants::FILE_SEPARATOR_CHAR) {
         filePath = BConstants::FILE_SEPARATOR_CHAR + fileName;
@@ -249,6 +253,10 @@ UniqueFd BackupExtExtension::GetFileHandle(const string &fileName, int32_t &errC
             throw BError(BError::Codes::EXT_INVAL_ARG, str);
         }
 
+        if (!BDir::IsFilePathValid(fileName)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+            throw BError(BError::Codes::EXT_INVAL_ARG, "Path is forbidden");
+        }
         string tarName = path + fileName;
         if (access(tarName.c_str(), F_OK) == 0) {
             throw BError(BError::Codes::EXT_INVAL_ARG, string("The file already exists"));
@@ -378,6 +386,11 @@ tuple<ErrCode, UniqueFd, UniqueFd> BackupExtExtension::GetIncreFileHandleForNorm
     UniqueFd fd(BConstants::INVALID_FD_NUM);
     UniqueFd reportFd(BConstants::INVALID_FD_NUM);
     do {
+        if (!BDir::IsFilePathValid(fileName)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+            errCode = BError(BError::Codes::EXT_INVAL_ARG).GetCode();
+            break;
+        }
         errCode = GetIncrementalFileHandlePath(fileName, bundleName_, tarName);
         if (errCode != ERR_OK) {
             HILOGE("GetIncrementalFileHandlePath failed, err = %{public}d", errCode);

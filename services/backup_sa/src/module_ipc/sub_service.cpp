@@ -445,6 +445,9 @@ ErrCode Service::AppFileReadysWithoutFd(const BStringRawData &abnormalfileNamesR
             HILOGE("AppFileReady error, Inconsistent array lengths. errCodes size: %{public}zu", errCodes.size());
             return BError(BError::Codes::SA_INVAL_ARG);
         }
+        if (HasInvalidFilePath(abnormalfileNames)) {
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
         session_->GetServiceReverseProxy()->BackupOnFileReadysWithoutFd(callerName, abnormalfileNamesRD, errCodes);
         ret = ProcessReadyFiles(abnormalfileNames, errCodes, callerName);
         if (ret != ERR_OK) {
@@ -458,6 +461,18 @@ ErrCode Service::AppFileReadysWithoutFd(const BStringRawData &abnormalfileNamesR
         HILOGE("Unexpected exception");
         return EPERM;
     }
+}
+
+bool Service::HasInvalidFilePath(const vector<string> &fileNames)
+{
+    for (const auto &fileName : fileNames) {
+        string filePath = BJsonUtil::GetPath(fileName);
+        if (!BDir::IsFilePathValid(filePath)) {
+            HILOGE("Path is forbidden, path: %{public}s", filePath.c_str());
+            return true;
+        }
+    }
+    return false;
 }
 
 ErrCode Service::ProcessReadyFiles(
@@ -508,6 +523,9 @@ ErrCode Service::AppFileReadys(const BStringRawData &fileNamesRD,
         if (fileNames.size() != fds.size() || fileNames.size() != errCodes.size()) {
             HILOGE("AppFileReady error, Inconsistent array lengths. fds size: %{public}zu, errCodes size: %{public}zu",
                    fds.size(), errCodes.size());
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
+        if (HasInvalidFilePath(fileNames)) {
             return BError(BError::Codes::SA_INVAL_ARG);
         }
         session_->GetServiceReverseProxy()->BackupOnFileReadys(callerName, fileNamesRD, fds, errCodes);

@@ -156,6 +156,14 @@ HWTEST_F(BDirTest, b_dir_IsFilePathValid_0100, testing::ext::TestSize.Level1)
         EXPECT_TRUE(result);
         result = BDir::IsFilePathValid("/test../test../test../..test");
         EXPECT_TRUE(result);
+
+        // 空路径不包含 ../，校验通过
+        result = BDir::IsFilePathValid("");
+        EXPECT_TRUE(result);
+
+        // 含空字节路径中 ../ 前非 /，校验通过
+        result = BDir::IsFilePathValid(string("valid.txt\0../escape", 19));
+        EXPECT_TRUE(result);
     } catch (...) {
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
     }
