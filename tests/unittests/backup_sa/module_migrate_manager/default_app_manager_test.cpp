@@ -173,71 +173,6 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_IsDefaultBundle_EmptyVecto
 }
 
 /**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_Found_1100
- * @tc.desc: Verify GetCallerNameByFilePath returns bundle name when file path contains it
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_Found_1100,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    string filePath = "/data/app/el2/100/base/" + BUNDLE_NAME_DEFAULT + "/backup.tar";
-    EXPECT_EQ(service_->defaultAppManager_->GetCallerNameByFilePath(filePath), BUNDLE_NAME_DEFAULT);
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_Found_El1_1150
- * @tc.desc: Verify GetCallerNameByFilePath finds bundle with el1 path prefix
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_Found_El1_1150,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    string filePath = "/data/app/el1/100/base/" + BUNDLE_NAME_DEFAULT + "/backup.tar";
-    EXPECT_EQ(service_->defaultAppManager_->GetCallerNameByFilePath(filePath), BUNDLE_NAME_DEFAULT);
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_NotFound_1200
- * @tc.desc: Verify GetCallerNameByFilePath returns empty when no bundle name matches
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_NotFound_1200,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    string filePath = "/data/unknown/path.tar";
-    EXPECT_EQ(service_->defaultAppManager_->GetCallerNameByFilePath(filePath), "");
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_EmptyMap_1300
- * @tc.desc: Verify GetCallerNameByFilePath returns empty when map is empty
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_EmptyMap_1300,
-    testing::ext::TestSize.Level1)
-{
-    string filePath = "/data/app/el2/100/base/" + BUNDLE_NAME_DEFAULT + "/backup.tar";
-    EXPECT_EQ(service_->defaultAppManager_->GetCallerNameByFilePath(filePath), "");
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_FirstMatch_1400
- * @tc.desc: Verify GetCallerNameByFilePath returns first matching bundle
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_FirstMatch_1400,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT, BUNDLE_NAME_OTHER}, true);
-    string filePath = "/data/app/el2/100/base/" + BUNDLE_NAME_DEFAULT + "/" + BUNDLE_NAME_OTHER + "/backup.tar";
-    string result = service_->defaultAppManager_->GetCallerNameByFilePath(filePath);
-    EXPECT_EQ(result, BUNDLE_NAME_DEFAULT);
-}
-
-/**
  * @tc.name: DefaultAppManagerTest_GetMigrateInstance_Create_1500
  * @tc.desc: Verify GetMigrateInstance creates new MigrateManager for default bundle
  * @tc.type: FUNC
@@ -354,45 +289,6 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_AfterCl
     service_->defaultAppManager_->ClearDefaultAppData();
     auto instance2 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
     EXPECT_EQ(instance1, instance2);
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetKeyInMap_Found_2300
- * @tc.desc: Verify GetCallerNameByFilePath finds bundle when path ends with /bundlename/
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetKeyInMap_Found_2300, testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    string filePath = "/data/app/el2/100/base/" + BUNDLE_NAME_DEFAULT + "/";
-    string result = service_->defaultAppManager_->GetCallerNameByFilePath(filePath);
-    EXPECT_EQ(result, BUNDLE_NAME_DEFAULT);
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetKeyInMap_NoFalsePositive_2400
- * @tc.desc: Verify GetCallerNameByFilePath does NOT match when bundle name is only a prefix of a directory
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetKeyInMap_NoFalsePositive_2400,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    string filePath = "/data/app/el2/100/base/" + BUNDLE_NAME_DEFAULT + ".extra/backup.tar";
-    string result = service_->defaultAppManager_->GetCallerNameByFilePath(filePath);
-    EXPECT_EQ(result, "");
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_GetCallerNameByFilePath_EmptyPath_2600
- * @tc.desc: Verify GetCallerNameByFilePath returns empty for empty file path
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetCallerNameByFilePath_EmptyPath_2600,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    EXPECT_EQ(service_->defaultAppManager_->GetCallerNameByFilePath(""), "");
 }
 
 /**

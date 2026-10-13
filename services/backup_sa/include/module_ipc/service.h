@@ -66,11 +66,11 @@ public:
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
     ErrCode AppFileReady(const std::string &fileName, int fd, int32_t errCode) override;
     ErrCode DefaultAppFileReady(const std::string &fileName,
-        const std::string &filePath, int fd, int32_t errCode);
+        const std::string &bundleName, int fd, int32_t errCode);
     ErrCode DefaultAppFileReady(const std::string &fileName,
-        const std::string &filePath, UniqueFd fd, int32_t errCode);
+        const std::string &bundleName, UniqueFd fd, int32_t errCode);
     ErrCode AppFileReadyWithoutFd(const std::string &fileName, int32_t errCode) override;
-    ErrCode DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &filePath, int32_t errCode);
+    ErrCode DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &bundleName, int32_t errCode);
     ErrCode AppFileReadys(const BStringRawData &fileNamesRD,
         const std::vector<int> &fds, const std::vector<int> &errCodes) override;
     ErrCode AppFileReadyWithoutFd(const std::string &fileName, const std::string &filePath,
