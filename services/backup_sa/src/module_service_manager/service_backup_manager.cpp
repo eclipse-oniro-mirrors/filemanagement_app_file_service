@@ -251,20 +251,20 @@ void Service::StartBundleTaskBackup(const std::string &bundleName)
     HILOGI("End handle current bundle full backup or full restore, bundleName:%{public}s", bundleName.c_str());
 }
 
-ErrCode Service::DefaultAppFileReady(const std::string &fileName, const std::string &filePath,
+ErrCode Service::DefaultAppFileReady(const std::string &fileName, const std::string &bundleName,
     int fd, int32_t errCode)
 {
     UniqueFd fdUnique(fd);
-    return DefaultAppFileReady(fileName, filePath, std::move(fdUnique), errCode);
+    return DefaultAppFileReady(fileName, bundleName, std::move(fdUnique), errCode);
 }
 
-ErrCode Service::DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &filePath,
+ErrCode Service::DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &bundleName,
     int32_t errCode)
 {
-    return DefaultAppFileReady(fileName, filePath, UniqueFd(INVALID_FD), errCode);
+    return DefaultAppFileReady(fileName, bundleName, UniqueFd(INVALID_FD), errCode);
 }
 
-ErrCode Service::DefaultAppFileReady(const string &fileName, const std::string &filePath,
+ErrCode Service::DefaultAppFileReady(const string &fileName, const std::string &bundleName,
     UniqueFd fd, int32_t errCode)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
@@ -273,24 +273,23 @@ ErrCode Service::DefaultAppFileReady(const string &fileName, const std::string &
             HILOGE("AppFileReady error, session is empty");
             return BError(BError::Codes::SA_INVAL_ARG);
         }
-        string callerName = defaultAppManager_->GetCallerNameByFilePath(filePath);
         ErrCode ret = ERR_OK;
         if (fileName.find('/') != string::npos) {
             HILOGE("AppFileReady error, filename is not valid, fileName:%{public}s", GetAnonyPath(fileName).c_str());
             return BError(BError::Codes::SA_INVAL_ARG);
         }
         if (fileName == BConstants::EXT_BACKUP_MANAGE) {
-            fd = session_->OnBundleExtManageInfo(callerName, move(fd));
+            fd = session_->OnBundleExtManageInfo(bundleName, move(fd));
         }
         bool fdFlag = fd < 0 ? true : false;
-        fdFlag ? session_->GetServiceReverseProxy()->BackupOnFileReadyWithoutFd(callerName, fileName, errCode) :
-                 session_->GetServiceReverseProxy()->BackupOnFileReady(callerName, fileName, move(fd), errCode);
-        FileReadyRadarReport(callerName, fileName, errCode, session_->GetScenario());
-        if (session_->OnBundleFileReady(callerName, fileName)) {
-            ret = HandleCurBundleFileReady(callerName, fileName, false);
+        fdFlag ? session_->GetServiceReverseProxy()->BackupOnFileReadyWithoutFd(bundleName, fileName, errCode) :
+                 session_->GetServiceReverseProxy()->BackupOnFileReady(bundleName, fileName, move(fd), errCode);
+        FileReadyRadarReport(bundleName, fileName, errCode, session_->GetScenario());
+        if (session_->OnBundleFileReady(bundleName, fileName)) {
+            ret = HandleCurBundleFileReady(bundleName, fileName, false);
             if (ret != ERR_OK) {
                 HILOGE("Handle current bundle file failed, bundleName:%{public}s, fileName:%{public}s",
-                    callerName.c_str(),  GetAnonyPath(fileName).c_str());
+                    bundleName.c_str(),  GetAnonyPath(fileName).c_str());
                 return ret;
             }
         }
