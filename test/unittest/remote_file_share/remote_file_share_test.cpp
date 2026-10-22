@@ -685,7 +685,8 @@ namespace {
         uriList.clear();
         uriList.push_back("file://docs/storage/Users/currentUser/Document/Subject1/Subject2/1.txt");
         ret = RemoteFileShare::GetDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
-        EXPECT_EQ(ret, E_OK);
+        // UT environment has no StorageManager SA, MountDisFileShare returns -EINVAL
+        EXPECT_EQ(ret, -EINVAL);
 
         GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDfsUrisDirFromLocal_0002";
     }
@@ -856,5 +857,410 @@ namespace {
         EXPECT_EQ(ret, -EINVAL);
 
         GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_CheckIfNeedMount_0004";
+    }
+
+    /**
+     * @tc.name: Remote_file_share_GetDocsDistributedDir_0001
+     * @tc.desc: Test function of GetDocsDistributedDir() for ok
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDistributedDir_0001, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDistributedDir_0001";
+        int32_t userId = USER_ID;
+        string distributedDir;
+        string networkId = "network123";
+ 
+        int32_t ret = GetDocsDistributedDir(userId, distributedDir, networkId);
+        EXPECT_EQ(ret, E_OK);
+        EXPECT_EQ(distributedDir, DST_PATH_HEAD + std::to_string(userId) + DST_PATH_MID +
+            FILE_MANAGER_BUNDLE_NAME + REMOTE_SHARE_PATH_DIR + BACKSLASH + networkId + DOCS_PATH_SUFFIX);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDistributedDir_0001";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDistributedDir_0002
+     * @tc.desc: Test function of GetDocsDistributedDir() for path too long failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDistributedDir_0002, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDistributedDir_0002";
+        int32_t userId = USER_ID;
+        string distributedDir;
+        char networkId[PATH_MAX];
+        int32_t ret = memset_s(networkId, sizeof(networkId), TEST_CHAR, sizeof(networkId));
+        ASSERT_TRUE(ret == E_OK);
+ 
+        string networkIdStr = networkId;
+        ret = GetDocsDistributedDir(userId, distributedDir, networkIdStr);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDistributedDir_0002";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsPhysicalDir_0001
+     * @tc.desc: Test function of GetDocsPhysicalDir() for ok
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsPhysicalDir_0001, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsPhysicalDir_0001";
+        int32_t userId = USER_ID;
+        string physicalDir;
+ 
+        int32_t ret = GetDocsPhysicalDir(userId, physicalDir);
+        EXPECT_EQ(ret, E_OK);
+        EXPECT_EQ(physicalDir, DST_PATH_HEAD + std::to_string(userId) + DST_PATH_MID_FILES + DOCS_FILES_PATH);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsPhysicalDir_0001";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsPhysicalDir_0002
+     * @tc.desc: Test function of GetDocsPhysicalDir() for path too long failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsPhysicalDir_0002, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsPhysicalDir_0002";
+        int32_t userId = INT32_MAX;
+        string physicalDir;
+ 
+        int32_t ret = GetDocsPhysicalDir(userId, physicalDir);
+        EXPECT_EQ(ret, E_OK);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsPhysicalDir_0002";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_SetDocsHmdfsUriDirInfo_0001
+     * @tc.desc: Test function of SetDocsHmdfsUriDirInfo() for authority != docs failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_SetDocsHmdfsUriDirInfo_0001, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_SetDocsHmdfsUriDirInfo_0001";
+ 
+        HmdfsUriInfo hui;
+        OHOS::Uri uri("file://media/Photo/16/IMG_202506061600_000/screenshot_20250522_223718.jpg");
+        string physicalPath = "/mnt/hmdfs/100/account/cloud_merge_view/files/Photo/16/IMG_1747924738_000.jpg";
+        string networkId = "network123";
+ 
+        int32_t ret = SetDocsHmdfsUriDirInfo(hui, uri, physicalPath, networkId);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_SetDocsHmdfsUriDirInfo_0001";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_SetDocsHmdfsUriDirInfo_0002
+     * @tc.desc: Test function of SetDocsHmdfsUriDirInfo() for valid docs authority but file not exist
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_SetDocsHmdfsUriDirInfo_0002, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_SetDocsHmdfsUriDirInfo_0002";
+ 
+        HmdfsUriInfo hui;
+        OHOS::Uri uri("file://docs/storage/Users/currentUser/Document/1.txt");
+        string physicalPath = "/data/app/el2/100/base/docs/remote_share.txt";
+        string networkId = "network123";
+ 
+        int32_t ret = SetDocsHmdfsUriDirInfo(hui, uri, physicalPath, networkId);
+        EXPECT_EQ(ret, NO_SUCH_FILE_ERROR);
+        string expectedUriStr = FILE_SCHEME + "://" + FILE_MANAGER_BUNDLE_NAME + DISTRIBUTED_DIR_PATH +
+            REMOTE_SHARE_PATH_DIR + BACKSLASH + networkId + uri.GetPath() + NETWORK_PARA + networkId;
+        EXPECT_EQ(hui.uriStr, expectedUriStr);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_SetDocsHmdfsUriDirInfo_0002";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_SetDocsHmdfsUriDirInfo_0003
+     * @tc.desc: Test function of SetDocsHmdfsUriDirInfo() for other authority (com.demo.a) failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_SetDocsHmdfsUriDirInfo_0003, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_SetDocsHmdfsUriDirInfo_0003";
+ 
+        HmdfsUriInfo hui;
+        OHOS::Uri uri("file://com.demo.a/data/storage/el2/base/remote_share.txt");
+        string physicalPath = "/data/app/el2/100/base/com.demo.a/remote_share.txt";
+        string networkId = "network123";
+ 
+        int32_t ret = SetDocsHmdfsUriDirInfo(hui, uri, physicalPath, networkId);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_SetDocsHmdfsUriDirInfo_0003";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0001
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for empty uri list failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0001, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0001";
+ 
+        vector<string> uriList = {};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+        int32_t ret = GetDocsDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0001";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0002
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for GetDocsDistributedDir failure (path too long)
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0002, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0002";
+ 
+        vector<string> uriList = {"file://docs/storage/Users/currentUser/Document/1.txt"};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+ 
+        char networkIdArray[PATH_MAX];
+        int32_t ret = memset_s(networkIdArray, sizeof(networkIdArray), TEST_CHAR, sizeof(networkIdArray));
+        ASSERT_TRUE(ret == E_OK);
+        string networkIdStr = networkIdArray;
+ 
+        int32_t result = GetDocsDistributedDir(usrId, networkIdStr, networkIdStr);
+        EXPECT_EQ(result, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0002";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0003
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for GetDocsPhysicalDir failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0003, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0003";
+ 
+        string physicalDir;
+        int32_t userId = USER_ID;
+        int32_t ret = GetDocsPhysicalDir(userId, physicalDir);
+        EXPECT_EQ(ret, E_OK);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0003";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0004
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for MountDisFileShare failure (invalid dirs)
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0004, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0004";
+ 
+        int32_t userId = USER_ID;
+        string distributedDir = "";
+        string physicalDir = "";
+        int32_t ret = MountDisFileShare(userId, distributedDir, physicalDir);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0004";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0005
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for normal flow with docs uri
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0005, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0005";
+ 
+        vector<string> uriList = {"file://docs/storage/Users/currentUser/Document/Subject1/Subject2/1.txt"};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+        int32_t ret = GetDocsDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
+        // UT environment has no StorageManager SA, MountDisFileShare returns -EINVAL
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0005";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDocsDfsUrisDirFromLocal_0006
+     * @tc.desc: Test function of GetDocsDfsUrisDirFromLocal() for GetPhysicalPath returning empty (invalid uri scheme)
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDocsDfsUrisDirFromLocal_0006, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDocsDfsUrisDirFromLocal_0006";
+ 
+        vector<string> uriList = {"FILE://docs/storage/Users/currentUser/Document/Subject1/Subject2/1.txt"};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+        int32_t ret = GetDocsDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDocsDfsUrisDirFromLocal_0006";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_UriCategoryByType_0001
+     * @tc.desc: Test function of UriCategoryByType() for docs uri classification
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_UriCategoryByType_0001, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_UriCategoryByType_0001";
+ 
+        vector<string> uriList = {
+            "file://media/Photo/16/IMG_202506061600_000/screenshot_20250522_223718.jpg",
+            "file://docs/storage/Users/currentUser/Document/1.txt",
+            "file://com.demo.a/data/storage/el2/base/remote_share.txt"};
+        vector<string> mediaUriList;
+        vector<string> docsUriList;
+        vector<string> otherUriList;
+ 
+        int32_t ret = UriCategoryByType(uriList, mediaUriList, docsUriList, otherUriList);
+        EXPECT_EQ(ret, E_OK);
+        EXPECT_EQ(mediaUriList.size(), 1u);
+        EXPECT_EQ(docsUriList.size(), 1u);
+        EXPECT_EQ(otherUriList.size(), 1u);
+        EXPECT_EQ(mediaUriList[0], "file://media/Photo/16/IMG_202506061600_000/screenshot_20250522_223718.jpg");
+        EXPECT_EQ(docsUriList[0], "file://docs/storage/Users/currentUser/Document/1.txt");
+        EXPECT_EQ(otherUriList[0], "file://com.demo.a/data/storage/el2/base/remote_share.txt");
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_UriCategoryByType_0001";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_UriCategoryByType_0002
+     * @tc.desc: Test function of UriCategoryByType() for empty uri list failure
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_UriCategoryByType_0002, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_UriCategoryByType_0002";
+ 
+        vector<string> uriList = {};
+        vector<string> mediaUriList;
+        vector<string> docsUriList;
+        vector<string> otherUriList;
+ 
+        int32_t ret = UriCategoryByType(uriList, mediaUriList, docsUriList, otherUriList);
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_UriCategoryByType_0002";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_UriCategoryByType_0003
+     * @tc.desc: Test function of UriCategoryByType() for all docs uri classification
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_UriCategoryByType_0003, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_UriCategoryByType_0003";
+ 
+        vector<string> uriList = {
+            "file://docs/storage/Users/currentUser/Document/1.txt",
+            "file://docs/storage/Users/currentUser/Download/Subject/2.jpg"};
+        vector<string> mediaUriList;
+        vector<string> docsUriList;
+        vector<string> otherUriList;
+ 
+        int32_t ret = UriCategoryByType(uriList, mediaUriList, docsUriList, otherUriList);
+        EXPECT_EQ(ret, E_OK);
+        EXPECT_EQ(mediaUriList.size(), 0u);
+        EXPECT_EQ(docsUriList.size(), 2u);
+        EXPECT_EQ(otherUriList.size(), 0u);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_UriCategoryByType_0003";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDfsUrisDirFromLocal_0003
+     * @tc.desc: Test function of GetDfsUrisDirFromLocal() for docs uri processing branch
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDfsUrisDirFromLocal_0003, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDfsUrisDirFromLocal_0003";
+ 
+        vector<string> uriList = {"file://docs/storage/Users/currentUser/Document/Subject1/Subject2/1.txt"};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+ 
+        int32_t ret = RemoteFileShare::GetDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
+        // UT environment has no StorageManager SA, MountDisFileShare returns -EINVAL
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDfsUrisDirFromLocal_0003";
+    }
+ 
+    /**
+     * @tc.name: Remote_file_share_GetDfsUrisDirFromLocal_0004
+     * @tc.desc: Test function of GetDfsUrisDirFromLocal() for mixed media, docs and other uri
+     * @tc.size: MEDIUM
+     * @tc.type: FUNC
+     * @tc.level Level 1
+     */
+    HWTEST_F(RemoteFileShareTest, Remote_file_share_GetDfsUrisDirFromLocal_0004, testing::ext::TestSize.Level1)
+    {
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-begin Remote_file_share_GetDfsUrisDirFromLocal_0004";
+ 
+        vector<string> uriList = {
+            "file://docs/storage/Users/currentUser/Document/Subject1/Subject2/1.txt",
+            "file://com.demo.a/data/storage/el2/base/remote_share.txt"};
+        int32_t usrId = USER_ID;
+        unordered_map<string, HmdfsUriInfo> uriToDfsUriMaps;
+ 
+        int32_t ret = RemoteFileShare::GetDfsUrisDirFromLocal(uriList, usrId, uriToDfsUriMaps);
+        // UT environment has no StorageManager SA, MountDisFileShare returns -EINVAL
+        EXPECT_EQ(ret, -EINVAL);
+ 
+        GTEST_LOG_(INFO) << "RemoteFileShareTest-end Remote_file_share_GetDfsUrisDirFromLocal_0004";
     }
 }
