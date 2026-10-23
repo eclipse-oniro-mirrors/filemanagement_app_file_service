@@ -36,6 +36,7 @@ napi_value FileShareExport(napi_env env, napi_value exports)
     InitPolicyErrorCode(env, exports);
     InitPolicyErrorResult(env, exports);
     InitSharedDirectoryInfo(env, exports);
+    InitGrantStatus(env, exports);
     static napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("grantUriPermission", GrantUriPermission::Async),
         DECLARE_NAPI_FUNCTION("persistPermission", PersistPermission),
@@ -48,6 +49,9 @@ napi_value FileShareExport(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("grantSharedDirectoryPermission", GrantSharedDirectoryPermission),
         DECLARE_NAPI_FUNCTION("revokeSharedDirectoryPermission", RevokeSharedDirectoryPermission),
         DECLARE_NAPI_FUNCTION("getSharedDirectoryInfo", GetSharedDirectoryInfo),
+        DECLARE_NAPI_FUNCTION("getStatusByPermission", GetStatusByPermission),
+        DECLARE_NAPI_FUNCTION("grantPermissionByUser", GrantPermissionByUser),
+        DECLARE_NAPI_FUNCTION("revokePermissionByUser", RevokePermissionByUser),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
@@ -95,7 +99,32 @@ void InitOperationMode(napi_env env, napi_value exports)
     }
     status = napi_set_named_property(env, exports, propertyName, obj);
     if (status != napi_ok) {
-        HILOGE("Failed to set direction property at initializing OperationMode");
+        HILOGE("Failed to set direction property at initializing SharedDirectoryInfo");
+        return;
+    }
+}
+
+void InitGrantStatus(napi_env env, napi_value exports)
+{
+    char propertyName[] = "GrantStatus";
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_STATIC_PROPERTY("DENIED", NVal::CreateInt32(env, -1).val_),
+        DECLARE_NAPI_STATIC_PROPERTY("GRANTED", NVal::CreateInt32(env, 0).val_),
+    };
+    napi_value obj = nullptr;
+    napi_status status = napi_create_object(env, &obj);
+    if (status != napi_ok) {
+        HILOGE("Failed to create object at initializing GrantStatus");
+        return;
+    }
+    status = napi_define_properties(env, obj, sizeof(desc) / sizeof(desc[0]), desc);
+    if (status != napi_ok) {
+        HILOGE("Failed to set properties of character at initializing GrantStatus");
+        return;
+    }
+    status = napi_set_named_property(env, exports, propertyName, obj);
+    if (status != napi_ok) {
+        HILOGE("Failed to set direction property at initializing GrantStatus");
         return;
     }
 }
