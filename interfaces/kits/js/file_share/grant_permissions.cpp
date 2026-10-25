@@ -852,7 +852,7 @@ napi_value GrantPermissionByUser(napi_env env, napi_callback_info info)
     }
 
     auto [succToken, tokenId] = NVal(env, funcArg[NARG_POS::FIRST]).ToUint32();
-    if (!succToken || tokenId == 0) {
+    if (!succToken) {
         LOGE("GrantPermissionByUser invalid tokenId");
         NError(EINVAL).ThrowErr(env);
         return nullptr;
@@ -892,7 +892,7 @@ napi_value RevokePermissionByUser(napi_env env, napi_callback_info info)
     }
 
     auto [succToken, tokenId] = NVal(env, funcArg[NARG_POS::FIRST]).ToUint32();
-    if (!succToken || tokenId == 0) {
+    if (!succToken) {
         LOGE("RevokePermissionByUser invalid tokenId");
         NError(EINVAL).ThrowErr(env);
         return nullptr;
@@ -938,35 +938,13 @@ static bool ParseTokenIdList(napi_env env, napi_value arrayArg, vector<uint32_t>
             return false;
         }
         auto [succ, tokenId] = NVal(env, element).ToUint32();
-        if (!succ || tokenId == 0) {
+        if (!succ) {
             LOGE("GetStatusByPermission invalid tokenId at index=%{public}u", i);
             return false;
         }
         tokenIdList.emplace_back(tokenId);
     }
     return true;
-}
-
-static napi_value BuildPolicyObj(napi_env env, const PolicyInfo &policy)
-{
-    napi_value policyObj = nullptr;
-    napi_status status = napi_create_object(env, &policyObj);
-    if (status != napi_ok) {
-        return nullptr;
-    }
-
-    napi_value pathValue = nullptr;
-    status = napi_create_string_utf8(env, policy.path.c_str(), NAPI_AUTO_LENGTH, &pathValue);
-    if (status == napi_ok) {
-        napi_set_named_property(env, policyObj, "uri", pathValue);
-    }
-
-    napi_value modeValue = nullptr;
-    status = napi_create_uint32(env, static_cast<uint32_t>(policy.mode), &modeValue);
-    if (status == napi_ok) {
-        napi_set_named_property(env, policyObj, "operationMode", modeValue);
-    }
-    return policyObj;
 }
 
 static napi_value BuildStatusResultArray(napi_env env,

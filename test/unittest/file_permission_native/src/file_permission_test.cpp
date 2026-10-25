@@ -1694,7 +1694,7 @@ HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0000, testing::ext::Tes
 
 /**
  * @tc.name: RevokePermissionByUser_test_0001
- * @tc.desc: Test RevokePermissionByUser with empty policies returns EPERM.
+ * @tc.desc: Test RevokePermissionByUser with empty policies returns E_PARAMS.
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
@@ -1705,7 +1705,7 @@ HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0001, testing::ext::Tes
     std::vector<UriPolicyInfo> uriPolicies;
     uint32_t tokenId = 537688848;
     int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
-    EXPECT_EQ(ret, EPERM);
+    EXPECT_EQ(ret, 401); // E_PARAMS: invalid parameter
     GTEST_LOG_(INFO) << "FileShareTest-end RevokePermissionByUser_test_0001";
 }
 
