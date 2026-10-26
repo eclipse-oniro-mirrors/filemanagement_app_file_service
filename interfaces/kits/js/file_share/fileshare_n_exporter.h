@@ -28,6 +28,7 @@ void InitPathPolicyInfo(napi_env env, napi_value exports);
 void InitPolicyErrorResult(napi_env env, napi_value exports);
 void InitPolicyErrorCode(napi_env env, napi_value exports);
 void InitSharedDirectoryInfo(napi_env env, napi_value exports);
+void InitGrantStatus(napi_env env, napi_value exports);
 napi_value FileShareExport(napi_env env, napi_value exports);
 } // namespace ModuleFileShare
 } // namespace AppFileService

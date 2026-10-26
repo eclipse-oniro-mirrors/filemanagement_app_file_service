@@ -1587,6 +1587,258 @@ HWTEST_F(FilePermissionTest, FilePermission_GrantAndSharedDirectory_2000, testin
     EXPECT_EQ(sharedDirectories[0].bundleName, BUNDLE_NAME_A);
     EXPECT_EQ(sharedDirectories[0].permissionMode, OperationMode::READ_MODE);
 }
+/**
+ * @tc.name: GrantPermissionByUser_test_0000
+ * @tc.desc: Test GrantPermissionByUser with valid tokenId and policies returns success.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GrantPermissionByUser_test_0000, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GrantPermissionByUser_test_0000";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, GrantPermissionByUser(_, _)).WillOnce(Return(SANDBOX_MANAGER_OK));
+    int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end GrantPermissionByUser_test_0000";
+}
+
+/**
+ * @tc.name: GrantPermissionByUser_test_0001
+ * @tc.desc: Test GrantPermissionByUser with empty policies returns EPERM.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GrantPermissionByUser_test_0001, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GrantPermissionByUser_test_0001";
+    std::vector<UriPolicyInfo> uriPolicies;
+    uint32_t tokenId = 537688848;
+    int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, EPERM);
+    GTEST_LOG_(INFO) << "FileShareTest-end GrantPermissionByUser_test_0001";
+}
+
+/**
+ * @tc.name: GrantPermissionByUser_test_0002
+ * @tc.desc: Test GrantPermissionByUser with SandboxManagerKit returning PERMISSION_DENIED.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GrantPermissionByUser_test_0002, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GrantPermissionByUser_test_0002";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, GrantPermissionByUser(_, _)).WillOnce(Return(PERMISSION_DENIED));
+    int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
+    EXPECT_NE(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end GrantPermissionByUser_test_0002";
+}
+
+/**
+ * @tc.name: GrantPermissionByUser_test_0003
+ * @tc.desc: Test GrantPermissionByUser with SandboxManagerKit returning INVALID_PARAMTER.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GrantPermissionByUser_test_0003, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GrantPermissionByUser_test_0003";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, GrantPermissionByUser(_, _)).WillOnce(Return(INVALID_PARAMTER));
+    int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, EINVAL);
+    GTEST_LOG_(INFO) << "FileShareTest-end GrantPermissionByUser_test_0003";
+}
+
+/**
+ * @tc.name: RevokePermissionByUser_test_0000
+ * @tc.desc: Test RevokePermissionByUser with valid tokenId and policies returns success.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0000, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin RevokePermissionByUser_test_0000";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, RevokePermissionByUser(_, _)).WillOnce(Return(SANDBOX_MANAGER_OK));
+    int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end RevokePermissionByUser_test_0000";
+}
+
+/**
+ * @tc.name: RevokePermissionByUser_test_0001
+ * @tc.desc: Test RevokePermissionByUser with empty policies returns E_PARAMS.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0001, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin RevokePermissionByUser_test_0001";
+    std::vector<UriPolicyInfo> uriPolicies;
+    uint32_t tokenId = 537688848;
+    int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, 401); // E_PARAMS: invalid parameter
+    GTEST_LOG_(INFO) << "FileShareTest-end RevokePermissionByUser_test_0001";
+}
+
+/**
+ * @tc.name: RevokePermissionByUser_test_0002
+ * @tc.desc: Test RevokePermissionByUser with SandboxManagerKit returning PERMISSION_DENIED.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0002, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin RevokePermissionByUser_test_0002";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, RevokePermissionByUser(_, _)).WillOnce(Return(PERMISSION_DENIED));
+    int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
+    EXPECT_NE(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end RevokePermissionByUser_test_0002";
+}
+
+/**
+ * @tc.name: RevokePermissionByUser_test_0003
+ * @tc.desc: Test RevokePermissionByUser with SandboxManagerKit returning INVALID_PARAMTER.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, RevokePermissionByUser_test_0003, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin RevokePermissionByUser_test_0003";
+    UriPolicyInfo infoA = {.uri = "file://" + BUNDLE_NAME_A + "/storage/test.txt",
+                           .mode = OperationMode::READ_MODE | OperationMode::WRITE_MODE};
+    std::vector<UriPolicyInfo> uriPolicies;
+    uriPolicies.emplace_back(infoA);
+    uint32_t tokenId = 537688848;
+    EXPECT_CALL(*funcMock, lstat(_, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*sandboxMock_, RevokePermissionByUser(_, _)).WillOnce(Return(INVALID_PARAMTER));
+    int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
+    EXPECT_EQ(ret, EINVAL);
+    GTEST_LOG_(INFO) << "FileShareTest-end RevokePermissionByUser_test_0003";
+}
+
+/**
+ * @tc.name: GetStatusByPermission_test_0000
+ * @tc.desc: Test GetStatusByPermission with valid tokenIdList returns success.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GetStatusByPermission_test_0000, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GetStatusByPermission_test_0000";
+    std::vector<uint32_t> tokenIdList = {537688848};
+    std::vector<PermissionStatusInfo> result;
+    EXPECT_CALL(*sandboxMock_, GetStatusByPermission(_, _))
+        .WillOnce(Return(SANDBOX_MANAGER_OK));
+    int32_t ret = FilePermission::GetStatusByPermission(tokenIdList, result);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end GetStatusByPermission_test_0000";
+}
+
+/**
+ * @tc.name: GetStatusByPermission_test_0001
+ * @tc.desc: Test GetStatusByPermission with SandboxManagerKit returning PERMISSION_DENIED.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GetStatusByPermission_test_0001, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GetStatusByPermission_test_0001";
+    std::vector<uint32_t> tokenIdList = {537688848};
+    std::vector<PermissionStatusInfo> result;
+    EXPECT_CALL(*sandboxMock_, GetStatusByPermission(_, _))
+        .WillOnce(Return(PERMISSION_DENIED));
+    int32_t ret = FilePermission::GetStatusByPermission(tokenIdList, result);
+    EXPECT_NE(ret, 0);
+    GTEST_LOG_(INFO) << "FileShareTest-end GetStatusByPermission_test_0001";
+}
+
+/**
+ * @tc.name: GetStatusByPermission_test_0002
+ * @tc.desc: Test GetStatusByPermission with SandboxManagerKit returning INVALID_PARAMTER.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GetStatusByPermission_test_0002, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GetStatusByPermission_test_0002";
+    std::vector<uint32_t> tokenIdList = {537688848};
+    std::vector<PermissionStatusInfo> result;
+    EXPECT_CALL(*sandboxMock_, GetStatusByPermission(_, _))
+        .WillOnce(Return(INVALID_PARAMTER));
+    int32_t ret = FilePermission::GetStatusByPermission(tokenIdList, result);
+    EXPECT_EQ(ret, EINVAL);
+    GTEST_LOG_(INFO) << "FileShareTest-end GetStatusByPermission_test_0002";
+}
+
+/**
+ * @tc.name: GetStatusByPermission_test_0003
+ * @tc.desc: Test GetStatusByPermission with multiple tokenIds and result data.
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(FilePermissionTest, GetStatusByPermission_test_0003, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FileShareTest-begin GetStatusByPermission_test_0003";
+    std::vector<uint32_t> tokenIdList = {537688848, 537688849};
+    std::vector<PermissionStatusInfo> result;
+    std::vector<AccessControl::SandboxManager::PermissionStatusInfo> expectedResult = {
+        {537688848, {"/data/storage/test1.txt", OperationMode::READ_MODE}, 0},
+        {537688849, {"/data/storage/test2.txt", OperationMode::WRITE_MODE}, -1},
+    };
+    EXPECT_CALL(*sandboxMock_, GetStatusByPermission(_, _))
+        .WillOnce(DoAll(
+            SetArgReferee<1>(expectedResult),
+            Return(SANDBOX_MANAGER_OK)));
+    int32_t ret = FilePermission::GetStatusByPermission(tokenIdList, result);
+    EXPECT_EQ(ret, 0);
+    ASSERT_EQ(result.size(), 2);
+    EXPECT_EQ(result[0].tokenId, 537688848);
+    EXPECT_EQ(result[1].tokenId, 537688849);
+    EXPECT_EQ(result[0].grantStatus, 0);
+    EXPECT_EQ(result[1].grantStatus, -1);
+    GTEST_LOG_(INFO) << "FileShareTest-end GetStatusByPermission_test_0003";
+}
 #endif
 } // namespace AppFileService
 } // namespace OHOS

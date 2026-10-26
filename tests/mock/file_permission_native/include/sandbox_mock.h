@@ -45,6 +45,10 @@ public:
     virtual int32_t GrantSharedDirectoryPermission() = 0;
     virtual int32_t RevokeSharedDirectoryPermission() = 0;
     virtual int32_t GetSharedDirectoryInfo(std::vector<SharedDirectoryInfo> &result) = 0;
+    virtual int32_t GrantPermissionByUser(uint32_t tokenId, const std::vector<PolicyInfo> &policies) = 0;
+    virtual int32_t RevokePermissionByUser(uint32_t tokenId, const std::vector<PolicyInfo> &policies) = 0;
+    virtual int32_t GetStatusByPermission(const std::vector<uint32_t> &tokenIdList,
+        std::vector<PermissionStatusInfo> &result) = 0;
     static inline std::shared_ptr<SandboxManagerKitMock> sandboxManagerKitMock = nullptr;
 };
 
@@ -67,6 +71,10 @@ public:
     MOCK_METHOD0(GrantSharedDirectoryPermission, int32_t());
     MOCK_METHOD0(RevokeSharedDirectoryPermission, int32_t());
     MOCK_METHOD1(GetSharedDirectoryInfo, int32_t(std::vector<SharedDirectoryInfo> &result));
+    MOCK_METHOD2(GrantPermissionByUser, int32_t(uint32_t tokenId, const std::vector<PolicyInfo> &policies));
+    MOCK_METHOD2(RevokePermissionByUser, int32_t(uint32_t tokenId, const std::vector<PolicyInfo> &policies));
+    MOCK_METHOD2(GetStatusByPermission, int32_t(const std::vector<uint32_t> &tokenIdList,
+        std::vector<PermissionStatusInfo> &result));
 };
 }
 }

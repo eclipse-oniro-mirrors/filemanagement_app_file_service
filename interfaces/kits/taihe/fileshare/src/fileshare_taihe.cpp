@@ -77,6 +77,9 @@ static int32_t ErrorCodeConversion(int32_t errorCode)
         case EPERM:
             errCode = ERR_EPERM;
             break;
+        case EINVAL:
+            errCode = ERR_EINVAL;
+            break;
         default:
             break;
     }
@@ -90,6 +93,8 @@ static std::string GetErrorMessage(int32_t errorCode)
             return "The device doesn't support this api";
         case ERR_EPERM:
             return "Operation not permitted";
+        case ERR_EINVAL:
+            return "Invalid argument";
         case ERR_PERMISSION_ERROR:
             return "Permission verification failed";
         case ERR_PARAMS:
@@ -132,6 +137,10 @@ static int32_t GetUriPoliciesArg(taihe::array_view<ohos::fileshare::fileShare::P
     std::vector<OHOS::AppFileService::UriPolicyInfo> &uriPolicies)
 {
     uint32_t count = policies.size();
+    if (count == 0) {
+        LOGE("The policies array is empty");
+        return OHOS::FileManagement::LibN::E_PARAMS;
+    }
     if (count > OHOS::AppFileService::MAX_ARRAY_SIZE) {
         LOGE("The length of the array is extra-long");
         return OHOS::FileManagement::LibN::E_PARAMS;
@@ -641,6 +650,132 @@ taihe::array<ohos::fileshare::fileShare::PolicyInfo> GetPersistentPolicySync(int
         taihe::copy_data_t{}, result.begin(), result.size());
 }
 
+static taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo> MakeEmptyStatusArray()
+{
+    std::vector<ohos::fileshare::fileShare::PermissionStatusInfo> emptyResult;
+    return taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo>(
+        taihe::copy_data_t{}, emptyResult.begin(), emptyResult.size());
+}
+
+static taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo> ReturnEmptyStatusResult(int32_t libErrCode)
+{
+    int32_t convertedCode = ErrorCodeConversion(libErrCode);
+    taihe::set_business_error(convertedCode, GetErrorMessage(convertedCode));
+    return MakeEmptyStatusArray();
+}
+
+static std::vector<ohos::fileshare::fileShare::PermissionStatusInfo> BuildStatusInfoResult(
+    const std::vector<OHOS::AppFileService::PermissionStatusInfo> &result)
+{
+    std::vector<ohos::fileshare::fileShare::PermissionStatusInfo> resultOut;
+    for (size_t i = 0; i < result.size(); i++) {
+        ohos::fileshare::fileShare::PolicyInfo policyInfo{
+            result[i].path, static_cast<int32_t>(result[i].mode)};
+        resultOut.push_back(ohos::fileshare::fileShare::PermissionStatusInfo{
+            static_cast<int32_t>(result[i].tokenId),
+            policyInfo,
+            ohos::fileshare::fileShare::GrantStatus::from_value(result[i].grantStatus)});
+    }
+    return resultOut;
+}
+
+taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo> GetStatusByPermissionSync(
+    taihe::array_view<int32_t> tokenIDList)
+{
+    LOGI("fileShare::GetStatusByPermissionSync begin, tokenIDList size: %{public}zu", tokenIDList.size());
+
+    uint32_t count = tokenIDList.size();
+    if (count == 0 || count > OHOS::AppFileService::MAX_ARRAY_SIZE) {
+        LOGE("Invalid tokenIDList array length: %{public}u", count);
+        return ReturnEmptyStatusResult(OHOS::FileManagement::LibN::E_PARAMS);
+    }
+
+    std::vector<uint32_t> tokenIdList;
+    for (uint32_t i = 0; i < count; i++) {
+        if (tokenIDList[i] == 0) {
+            LOGE("Invalid tokenID=0 at index %{public}u", i);
+            return ReturnEmptyStatusResult(EINVAL);
+        }
+        tokenIdList.emplace_back(static_cast<uint32_t>(tokenIDList[i]));
+    }
+
+    std::vector<OHOS::AppFileService::PermissionStatusInfo> result;
+    int32_t errCode = OHOS::AppFileService::FilePermission::GetStatusByPermission(
+        tokenIdList, result);
+    if (errCode != OHOS::FileManagement::LibN::ERRNO_NOERR) {
+        LOGE("GetStatusByPermission failed with error code: %{public}d", errCode);
+        GetErrorCodeConversion(errCode);
+        return MakeEmptyStatusArray();
+    }
+
+    auto taiheResult = BuildStatusInfoResult(result);
+    LOGI("fileShare::GetStatusByPermissionSync end successfully, result count: %{public}zu", taiheResult.size());
+    return taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo>(
+        taihe::copy_data_t{}, taiheResult.begin(), taiheResult.size());
+}
+
+void GrantPermissionByUserSync(int32_t tokenID,
+    taihe::array_view<ohos::fileshare::fileShare::PolicyInfo> policies)
+{
+    LOGI("fileShare::GrantPermissionByUserSync begin, tokenID: %{public}d, policy count: %{public}zu",
+        tokenID, policies.size());
+
+    if (tokenID == 0) {
+        LOGE("Invalid tokenID=0");
+        taihe::set_business_error(ErrorCodeConversion(EINVAL),
+            GetErrorMessage(ERR_EINVAL));
+        return;
+    }
+
+    std::vector<OHOS::AppFileService::UriPolicyInfo> uriPolicies;
+    if (GetUriPoliciesArg(policies, uriPolicies)) {
+        LOGE("Failed to get uriPolicies.");
+        taihe::set_business_error(ErrorCodeConversion(OHOS::FileManagement::LibN::E_PARAMS),
+            GetErrorMessage(OHOS::FileManagement::LibN::E_PARAMS));
+        return;
+    }
+
+    int32_t errCode = OHOS::AppFileService::FilePermission::GrantPermissionByUser(
+        static_cast<uint32_t>(tokenID), uriPolicies);
+    if (errCode != OHOS::FileManagement::LibN::ERRNO_NOERR) {
+        LOGE("GrantPermissionByUser failed with error code: %{public}d", errCode);
+        GetErrorCodeConversion(errCode);
+        return;
+    }
+    LOGI("fileShare::GrantPermissionByUserSync end successfully");
+}
+
+void RevokePermissionByUserSync(int32_t tokenID,
+    taihe::array_view<ohos::fileshare::fileShare::PolicyInfo> policies)
+{
+    LOGI("fileShare::RevokePermissionByUserSync begin, tokenID: %{public}d, policy count: %{public}zu",
+        tokenID, policies.size());
+
+    if (tokenID == 0) {
+        LOGE("Invalid tokenID=0");
+        taihe::set_business_error(ErrorCodeConversion(EINVAL),
+            GetErrorMessage(ERR_EINVAL));
+        return;
+    }
+
+    std::vector<OHOS::AppFileService::UriPolicyInfo> uriPolicies;
+    if (GetUriPoliciesArg(policies, uriPolicies)) {
+        LOGE("Failed to get uriPolicies.");
+        taihe::set_business_error(ErrorCodeConversion(OHOS::FileManagement::LibN::E_PARAMS),
+            GetErrorMessage(OHOS::FileManagement::LibN::E_PARAMS));
+        return;
+    }
+
+    int32_t errCode = OHOS::AppFileService::FilePermission::RevokePermissionByUser(
+        static_cast<uint32_t>(tokenID), uriPolicies);
+    if (errCode != OHOS::FileManagement::LibN::ERRNO_NOERR) {
+        LOGE("RevokePermissionByUser failed with error code: %{public}d", errCode);
+        GetErrorCodeConversion(errCode);
+        return;
+    }
+    LOGI("fileShare::RevokePermissionByUserSync end successfully");
+}
+
 
 void GrantSharedDirectoryPermissionSync()
 {
@@ -723,4 +858,7 @@ TH_EXPORT_CPP_API_GetPersistentPolicySync(ANI::FileShare::GetPersistentPolicySyn
 TH_EXPORT_CPP_API_GrantSharedDirectoryPermissionSync(ANI::FileShare::GrantSharedDirectoryPermissionSync);
 TH_EXPORT_CPP_API_RevokeSharedDirectoryPermissionSync(ANI::FileShare::RevokeSharedDirectoryPermissionSync);
 TH_EXPORT_CPP_API_GetSharedDirectoryInfoSync(ANI::FileShare::GetSharedDirectoryInfoSync);
+TH_EXPORT_CPP_API_GetStatusByPermissionSync(ANI::FileShare::GetStatusByPermissionSync);
+TH_EXPORT_CPP_API_GrantPermissionByUserSync(ANI::FileShare::GrantPermissionByUserSync);
+TH_EXPORT_CPP_API_RevokePermissionByUserSync(ANI::FileShare::RevokePermissionByUserSync);
  // NOLINTEND

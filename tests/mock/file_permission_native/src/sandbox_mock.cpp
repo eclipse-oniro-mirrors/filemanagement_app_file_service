@@ -87,5 +87,21 @@ int32_t SandboxManagerKit::GetSharedDirectoryInfo(std::vector<SharedDirectoryInf
 {
     return SandboxManagerKitMock::sandboxManagerKitMock->GetSharedDirectoryInfo(result);
 }
+
+int32_t SandboxManagerKit::GrantPermissionByUser(uint32_t tokenId, const std::vector<PolicyInfo> &policies)
+{
+    return SandboxManagerKitMock::sandboxManagerKitMock->GrantPermissionByUser(tokenId, policies);
+}
+
+int32_t SandboxManagerKit::RevokePermissionByUser(uint32_t tokenId, const std::vector<PolicyInfo> &policies)
+{
+    return SandboxManagerKitMock::sandboxManagerKitMock->RevokePermissionByUser(tokenId, policies);
+}
+
+int32_t SandboxManagerKit::GetStatusByPermission(const std::vector<uint32_t> &tokenIdList,
+    std::vector<PermissionStatusInfo> &result)
+{
+    return SandboxManagerKitMock::sandboxManagerKitMock->GetStatusByPermission(tokenIdList, result);
+}
 }
 #endif

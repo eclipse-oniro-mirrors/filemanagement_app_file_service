@@ -696,7 +696,11 @@ int32_t FilePermission::GetSharedDirectoryInfo(vector<SharedDirectoryInfo> &shar
 #ifdef SANDBOX_MANAGER
     std::vector<OHOS::AccessControl::SandboxManager::SharedDirectoryInfo> sandboxSharedDirectories;
     int32_t ret = SandboxManagerKit::GetSharedDirectoryInfo(sandboxSharedDirectories);
-    
+    if (sandboxSharedDirectories.size() > MAX_ARRAY_SIZE) {
+        LOGE("The number of shared directories exceeds the maximum");
+        return FileManagement::LibN::E_PARAMS;
+    }
+
     // Convert SandboxManager::SharedDirectoryInfo to AppFileService::SharedDirectoryInfo
     sharedDirectories.clear();
     for (const auto &info : sandboxSharedDirectories) {
@@ -709,6 +713,78 @@ int32_t FilePermission::GetSharedDirectoryInfo(vector<SharedDirectoryInfo> &shar
     
     int32_t errorCode = ConvertSandboxManagerError(ret);
     LOGI("SandboxManagerKit::GetSharedDirectoryInfo() returned: %{public}d, converted to: %{public}d", ret, errorCode);
+    return errorCode;
+#else
+    LOGW("Sandbox manager bundle not exist, device not support.");
+    return FileManagement::LibN::E_DEVICENOTSUPPORT;
+#endif
+}
+
+int32_t FilePermission::GrantPermissionByUser(uint32_t tokenId, const vector<UriPolicyInfo> &uriPolicies)
+{
+    LOGI("GrantPermissionByUser called, tokenId=%{public}u, count=%{public}zu", tokenId, uriPolicies.size());
+#ifdef SANDBOX_MANAGER
+    deque<struct PolicyErrorResult> errorResults;
+    vector<PolicyInfo> pathPolicies = GetPathPolicyInfoFromUriPolicyInfo(uriPolicies, errorResults, false);
+    if (pathPolicies.empty()) {
+        LOGE("pathPolicies is empty after conversion");
+        return EPERM;
+    }
+    int32_t ret = SandboxManagerKit::GrantPermissionByUser(tokenId, pathPolicies);
+    int32_t errorCode = ConvertSandboxManagerError(ret);
+    LOGI("SandboxManagerKit::GrantPermissionByUser() returned: %{public}d, converted to: %{public}d", ret, errorCode);
+    return errorCode;
+#else
+    LOGW("Sandbox manager bundle not exist, device not support.");
+    return FileManagement::LibN::E_DEVICENOTSUPPORT;
+#endif
+}
+
+int32_t FilePermission::RevokePermissionByUser(uint32_t tokenId, const vector<UriPolicyInfo> &uriPolicies)
+{
+    LOGI("RevokePermissionByUser called, tokenId=%{public}u, count=%{public}zu", tokenId, uriPolicies.size());
+#ifdef SANDBOX_MANAGER
+    if (uriPolicies.size() == 0 || uriPolicies.size() > MAX_ARRAY_SIZE) {
+        LOGE("The number of result codes exceeds the maximum");
+        return FileManagement::LibN::E_PARAMS;
+    }
+    deque<struct PolicyErrorResult> errorResults;
+    vector<PolicyInfo> pathPolicies = GetPathPolicyInfoFromUriPolicyInfo(uriPolicies, errorResults, false);
+    if (pathPolicies.empty()) {
+        LOGE("pathPolicies is empty after conversion");
+        return EPERM;
+    }
+    int32_t ret = SandboxManagerKit::RevokePermissionByUser(tokenId, pathPolicies);
+    int32_t errorCode = ConvertSandboxManagerError(ret);
+    LOGI("SandboxManagerKit::RevokePermissionByUser() returned: %{public}d, converted to: %{public}d", ret, errorCode);
+    return errorCode;
+#else
+    LOGW("Sandbox manager bundle not exist, device not support.");
+    return FileManagement::LibN::E_DEVICENOTSUPPORT;
+#endif
+}
+
+int32_t FilePermission::GetStatusByPermission(const vector<uint32_t> &tokenIdList,
+    vector<PermissionStatusInfo> &result)
+{
+    LOGI("GetStatusByPermission called, tokenIdList size=%{public}zu", tokenIdList.size());
+    result.clear();
+#ifdef SANDBOX_MANAGER
+    vector<AccessControl::SandboxManager::PermissionStatusInfo> sandboxResult;
+    int32_t ret = SandboxManagerKit::GetStatusByPermission(tokenIdList, sandboxResult);
+    int32_t errorCode = ConvertSandboxManagerError(ret);
+    LOGI("SandboxManagerKit::GetStatusByPermission() returned: %{public}d, converted to: %{public}d", ret, errorCode);
+    if (errorCode != 0) {
+        return errorCode;
+    }
+    for (const auto &item : sandboxResult) {
+        PermissionStatusInfo info;
+        info.tokenId = item.tokenId;
+        info.path = item.policyInfo.path;
+        info.mode = item.policyInfo.mode;
+        info.grantStatus = item.grantStatus;
+        result.emplace_back(info);
+    }
     return errorCode;
 #else
     LOGW("Sandbox manager bundle not exist, device not support.");
