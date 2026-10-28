@@ -1992,6 +1992,20 @@ public:
         return release(callback);
     }
 };
+
+// Enqueues a marker task behind every queued task. Each pool has a single worker,
+// so a finished marker proves the earlier tasks have already dropped their references
+// and the extension can be destroyed on the test thread. The pools must not be stopped
+// here: ~BackupExtExtension stops them again and OHOS::ThreadPool::Stop throws when it
+// joins threads that were already joined.
+bool DrainPool(OHOS::ThreadPool &pool)
+{
+    constexpr int drainPoolTimeoutSeconds = 2;
+    auto drained = std::make_shared<std::promise<void>>();
+    auto done = drained->get_future();
+    pool.AddTask([drained]() { drained->set_value(); });
+    return done.wait_for(std::chrono::seconds(drainPoolTimeoutSeconds)) == std::future_status::ready;
+}
 }
 
 // The release worker remains blocked; the control worker must still time out.
@@ -2027,6 +2041,7 @@ HWTEST_F(ExtExtensionSubTest, OnReleaseBlockedCallTimesOut, testing::ext::TestSi
     EXPECT_EQ(notification.wait_for(std::chrono::seconds(7)), std::future_status::ready);
     EXPECT_TRUE(ext->isOnReleased_.load());
     EXPECT_EQ(ended.wait_for(std::chrono::milliseconds(0)), std::future_status::timeout);
+    EXPECT_TRUE(DrainPool(ext->threadPool_));
     bool unlocked = ext->onReleaseLock_.try_lock();
     EXPECT_TRUE(unlocked);
     if (unlocked) {
@@ -2034,8 +2049,7 @@ HWTEST_F(ExtExtensionSubTest, OnReleaseBlockedCallTimesOut, testing::ext::TestSi
     }
     unblock.set_value();
     EXPECT_EQ(ended.wait_for(std::chrono::seconds(2)), std::future_status::ready);
-    ext->threadPool_.Stop();
-    ext->onReleaseTaskPool_.Stop();
+    EXPECT_TRUE(DrainPool(ext->onReleaseTaskPool_));
     EXPECT_EQ(calls.load(), 1);
     Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
 }
@@ -2059,8 +2073,8 @@ HWTEST_F(ExtExtensionSubTest, OnReleaseDuplicateCallbackFinishesOnce, testing::e
     ext->HandleExtOnRelease(false, ERR_OK);
     EXPECT_EQ(done.wait_for(std::chrono::seconds(2)), std::future_status::ready);
     ext->HandleExtOnRelease(false, ERR_OK);
-    ext->threadPool_.Stop();
-    ext->onReleaseTaskPool_.Stop();
+    EXPECT_TRUE(DrainPool(ext->threadPool_));
+    EXPECT_TRUE(DrainPool(ext->onReleaseTaskPool_));
     EXPECT_TRUE(ext->isOnReleased_.load());
     EXPECT_EQ(calls.load(), 1);
     Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
