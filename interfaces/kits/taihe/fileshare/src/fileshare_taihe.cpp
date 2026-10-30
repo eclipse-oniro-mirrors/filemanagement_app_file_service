@@ -77,9 +77,6 @@ static int32_t ErrorCodeConversion(int32_t errorCode)
         case EPERM:
             errCode = ERR_EPERM;
             break;
-        case EINVAL:
-            errCode = ERR_EINVAL;
-            break;
         default:
             break;
     }
@@ -137,10 +134,6 @@ static int32_t GetUriPoliciesArg(taihe::array_view<ohos::fileshare::fileShare::P
     std::vector<OHOS::AppFileService::UriPolicyInfo> &uriPolicies)
 {
     uint32_t count = policies.size();
-    if (count == 0) {
-        LOGE("The policies array is empty");
-        return OHOS::FileManagement::LibN::E_PARAMS;
-    }
     if (count > OHOS::AppFileService::MAX_ARRAY_SIZE) {
         LOGE("The length of the array is extra-long");
         return OHOS::FileManagement::LibN::E_PARAMS;
@@ -692,10 +685,6 @@ taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo> GetStatusByPermis
 
     std::vector<uint32_t> tokenIdList;
     for (uint32_t i = 0; i < count; i++) {
-        if (tokenIDList[i] == 0) {
-            LOGE("Invalid tokenID=0 at index %{public}u", i);
-            return ReturnEmptyStatusResult(EINVAL);
-        }
         tokenIdList.emplace_back(static_cast<uint32_t>(tokenIDList[i]));
     }
 
@@ -720,13 +709,6 @@ void GrantPermissionByUserSync(int32_t tokenID,
     LOGI("fileShare::GrantPermissionByUserSync begin, tokenID: %{public}d, policy count: %{public}zu",
         tokenID, policies.size());
 
-    if (tokenID == 0) {
-        LOGE("Invalid tokenID=0");
-        taihe::set_business_error(ErrorCodeConversion(EINVAL),
-            GetErrorMessage(ERR_EINVAL));
-        return;
-    }
-
     std::vector<OHOS::AppFileService::UriPolicyInfo> uriPolicies;
     if (GetUriPoliciesArg(policies, uriPolicies)) {
         LOGE("Failed to get uriPolicies.");
@@ -750,13 +732,6 @@ void RevokePermissionByUserSync(int32_t tokenID,
 {
     LOGI("fileShare::RevokePermissionByUserSync begin, tokenID: %{public}d, policy count: %{public}zu",
         tokenID, policies.size());
-
-    if (tokenID == 0) {
-        LOGE("Invalid tokenID=0");
-        taihe::set_business_error(ErrorCodeConversion(EINVAL),
-            GetErrorMessage(ERR_EINVAL));
-        return;
-    }
 
     std::vector<OHOS::AppFileService::UriPolicyInfo> uriPolicies;
     if (GetUriPoliciesArg(policies, uriPolicies)) {
