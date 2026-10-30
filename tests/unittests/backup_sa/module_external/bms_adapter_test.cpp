@@ -399,4 +399,278 @@ HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetUidGidForBundleName_test_0100, testi
     }
     GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetUidGidForBundleName_test_0100";
 }
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0100
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0100
+ * @tc.desc: 测试 GetExtName 接口 - GetCloneBundleInfo 失败时抛异常
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0100";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _)).WillOnce(Return(1));
+        bool hasException = false;
+        try {
+            BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        } catch (...) {
+            hasException = true;
+        }
+        EXPECT_TRUE(hasException);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0100";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0200
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0200
+ * @tc.desc: 测试 GetExtName 接口 - codePath 为 HAP_CODE_PATH 时返回默认值
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0200";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = HAP_CODE_PATH;
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "BackupExtensionAbility");
+
+        bundleInfo.applicationInfo.codePath = LINUX_HAP_CODE_PATH;
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "BackupExtensionAbility");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0200";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0300
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0300
+ * @tc.desc: 测试 GetExtName 接口 - 找到 BACKUP 类型 extension 时返回 ext.name
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0300";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+
+        AppExecFwk::ExtensionAbilityInfo extInfo;
+        extInfo.type = AppExecFwk::ExtensionAbilityType::BACKUP;
+        extInfo.name = "MyBackupExtAbility";
+        AppExecFwk::HapModuleInfo hapModuleInfo;
+        hapModuleInfo.extensionInfos.emplace_back(extInfo);
+
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = "normal_path";
+        bundleInfo.hapModuleInfos.emplace_back(hapModuleInfo);
+
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "MyBackupExtAbility");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0300";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0400
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0400
+ * @tc.desc: 测试 GetExtName 接口 - 未找到 BACKUP 类型 extension 时返回默认值
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0400";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+
+        AppExecFwk::ExtensionAbilityInfo extInfo;
+        extInfo.type = AppExecFwk::ExtensionAbilityType::FORM;
+        extInfo.name = "FormExtAbility";
+        AppExecFwk::HapModuleInfo hapModuleInfo;
+        hapModuleInfo.extensionInfos.emplace_back(extInfo);
+
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = "normal_path";
+        bundleInfo.hapModuleInfos.emplace_back(hapModuleInfo);
+
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "BackupExtensionAbility");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0400";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0500
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0500
+ * @tc.desc: 测试 GetExtName 接口 - 多个 hapModule 时正确找到 BACKUP extension
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0500";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+
+        AppExecFwk::ExtensionAbilityInfo extInfo1;
+        extInfo1.type = AppExecFwk::ExtensionAbilityType::FORM;
+        extInfo1.name = "FormExtAbility";
+        AppExecFwk::HapModuleInfo hapModuleInfo1;
+        hapModuleInfo1.extensionInfos.emplace_back(extInfo1);
+
+        AppExecFwk::ExtensionAbilityInfo extInfo2;
+        extInfo2.type = AppExecFwk::ExtensionAbilityType::BACKUP;
+        extInfo2.name = "SecondModuleBackupExt";
+        AppExecFwk::HapModuleInfo hapModuleInfo2;
+        hapModuleInfo2.extensionInfos.emplace_back(extInfo2);
+
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = "normal_path";
+        bundleInfo.hapModuleInfos.emplace_back(hapModuleInfo1);
+        bundleInfo.hapModuleInfos.emplace_back(hapModuleInfo2);
+
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "SecondModuleBackupExt");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0500";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0600
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0600
+ * @tc.desc: 测试 GetExtName 接口 - 克隆应用带 bundleIndex 时正确解析并查询
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0600, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0600";
+    try {
+        const std::string cloneBundleName = "+clone-1+" + BUNDLE_NAME;
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 1;
+
+        AppExecFwk::ExtensionAbilityInfo extInfo;
+        extInfo.type = AppExecFwk::ExtensionAbilityType::BACKUP;
+        extInfo.name = "CloneBackupExt";
+        AppExecFwk::HapModuleInfo hapModuleInfo;
+        hapModuleInfo.extensionInfos.emplace_back(extInfo);
+
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = "normal_path";
+        bundleInfo.hapModuleInfos.emplace_back(hapModuleInfo);
+
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(cloneBundleName)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(BUNDLE_NAME, _, 1, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(cloneBundleName, USER_ID);
+        EXPECT_EQ(extName, "CloneBackupExt");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0600";
+}
+
+/**
+ * @tc.number: SUB_bms_adapter_GetExtName_test_0700
+ * @tc.name: SUB_bms_adapter_GetExtName_test_0700
+ * @tc.desc: 测试 GetExtName 接口 - hapModuleInfos 为空时返回默认值
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BmsAdapterTest, SUB_bms_adapter_GetExtName_test_0700, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BmsAdapterTest-begin SUB_bms_adapter_GetExtName_test_0700";
+    try {
+        BJsonUtil::BundleDetailInfo bundleDetailInfo;
+        bundleDetailInfo.bundleName = BUNDLE_NAME;
+        bundleDetailInfo.bundleIndex = 0;
+
+        AppExecFwk::BundleInfo bundleInfo;
+        bundleInfo.applicationInfo.codePath = "normal_path";
+        // hapModuleInfos 为空，不进入循环
+
+        EXPECT_CALL(*sam, GetSystemAbility(_)).WillOnce(Return(bms));
+        EXPECT_CALL(*jsonUtil, ParseBundleNameIndexStr(_)).WillOnce(Return(bundleDetailInfo));
+        EXPECT_CALL(*bms, GetCloneBundleInfo(_, _, _, _, _))
+            .WillOnce(DoAll(SetArgReferee<3>(bundleInfo), Return(ERR_OK)));
+        std::string extName = BundleMgrAdapter::GetExtName(BUNDLE_NAME, USER_ID);
+        EXPECT_EQ(extName, "BackupExtensionAbility");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BmsAdapterTest-an exception occurred by GetExtName.";
+    }
+    GTEST_LOG_(INFO) << "BmsAdapterTest-end SUB_bms_adapter_GetExtName_test_0700";
+}
 } // namespace OHOS
