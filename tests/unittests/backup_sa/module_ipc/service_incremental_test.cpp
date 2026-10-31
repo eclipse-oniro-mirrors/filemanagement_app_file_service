@@ -731,8 +731,8 @@ public:
     static inline shared_ptr<ServiceMock> srvMock = nullptr;
     static inline shared_ptr<DirectoryFuncMock> directMock = nullptr;
 
-    static int gcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
-    static int gcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
+    static int GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
+    static int GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
 };
 
 void ServiceIncrementalTest::SetUpTestCase(void)
@@ -791,7 +791,7 @@ void ServiceIncrementalTest::TearDownTestCase()
     DlfcnMock::dlFunc_ = nullptr;
 }
 
-int ServiceIncrementalTest::gcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
+int ServiceIncrementalTest::GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
     thread mockFuncThread([argv4]() {
         int testStatus = 0;
@@ -804,7 +804,7 @@ int ServiceIncrementalTest::gcFuncMock1(int argv1, unsigned int argv2, unsigned 
     return 0;
 }
 
-int ServiceIncrementalTest::gcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
+int ServiceIncrementalTest::GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
     thread mockFuncThread([argv4]() {
         int testStatus = 1;
@@ -2584,7 +2584,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0104, Tes
     EXPECT_CALL(*srvMock, VerifyCaller()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
     EXPECT_CALL(*srvMock, GetCallerName()).WillOnce(Return(BConstants::BUNDLE_DATA_CLONE));
     EXPECT_CALL(*dlFuncMock, dlopen(_, _)).WillOnce(Return(handle));
-    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(gcFuncMock1)));
+    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(GcFuncMock1)));
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
     EXPECT_EQ(res, static_cast<ErrCode> (BError::BackupErrorCode::E_GC_FAILED));
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0104";
@@ -2609,7 +2609,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0105, Tes
     EXPECT_CALL(*srvMock, VerifyCaller()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
     EXPECT_CALL(*srvMock, GetCallerName()).WillOnce(Return(BConstants::BUNDLE_DATA_CLONE));
     EXPECT_CALL(*dlFuncMock, dlopen(_, _)).WillOnce(Return(handle));
-    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(gcFuncMock2)));
+    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(GcFuncMock2)));
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
     EXPECT_EQ(res, static_cast<ErrCode> (BError::BackupErrorCode::E_GC_FAILED));
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0105";
