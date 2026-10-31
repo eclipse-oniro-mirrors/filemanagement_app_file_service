@@ -21,6 +21,7 @@
 #include <dirent.h>
 #include <file_ex.h>
 #include <filesystem>
+#include <fstream>
 #include <unistd.h>
 
 #include "b_error/b_error.h"
@@ -84,54 +85,30 @@ static string CreateUnSplitTar(const string &rootPath, const string &rootPathSub
     return "";
 }
 
-static vector<string> CreateSplitTar(const string& rootPath, const string& rootPathSubPath)
+static void CreateSplitTar(const string &tarPath, const string &fileName, const string &data, char type)
 {
-    try {
-        const string testDir = rootPath + rootPathSubPath;
-        vector<string> needCreateDir = {testDir, testDir + "/dir1", testDir + "/dir1/dir2", testDir + "/dir3",
-                                        testDir + "/dir4"};
-        for (const auto &dir : needCreateDir) {
-            if (mkdir(dir.data(), S_IRWXU) && errno != EEXIST) {
-                throw BError(errno);
-            }
-        }
-        constexpr int32_t fileCount = 5;
-        for (auto i = 0; i < needCreateDir.size(); ++i) {
-            string file = needCreateDir[i] + "/" + to_string(i) + ".txt";
-            string data = "";
-            for (auto j = 0; j < fileCount * (i + 1); ++j) {
-                data += "test data 123456789";
-            }
-            SaveStringToFile(file, data);
-        }
-
-        string tarDir = rootPath + "testTar";
-        if (mkdir(tarDir.data(), S_IRWXU) && errno != EEXIST) {
-            throw BError(errno);
-        }
-
-        string tarPath = tarDir + "/test.tar";
-        string softlinkCmd = "cd " + testDir + "/dir4" + " && ln -s " + testDir + "/dir4/4.txt ./4_new.txt";
-        string tarCmd = "tar -cvf " + tarPath + " " + testDir;
-        string splitTarCmd = "cd " + tarDir + " && split -b 4k -a 2 test.tar test.tar.";
-        vector<string> cmds = {softlinkCmd, tarCmd, splitTarCmd};
-
-        for (const string& cmd : cmds) {
-            if (system(cmd.c_str()) != 0) {
-                throw BError(errno);
-            }
-        }
-        vector<string> res;
-        for (const auto& entry : std::filesystem::directory_iterator(tarDir)) {
-            if (entry.path().filename() != "test.tar") {
-                res.push_back(entry.path().string());
-            }
-        }
-        return res;
-    } catch (...) {
-        GTEST_LOG_(INFO) << "InstalldUnTarFileTest-an exception occurred by CreateSplitTar.";
+    TarHeader header = {};
+    ASSERT_EQ(strncpy_s(header.name, sizeof(header.name), fileName.c_str(), fileName.size()), EOK);
+    ASSERT_EQ(strncpy_s(header.magic, sizeof(header.magic), TMAGIC, strlen(TMAGIC)), EOK);
+    ASSERT_GE(snprintf_s(header.size, sizeof(header.size), sizeof(header.size) - 1, "%011o",
+        static_cast<unsigned int>(data.size())), 0);
+    header.typeflag = type;
+    ASSERT_EQ(memset_s(header.chksum, sizeof(header.chksum), ' ', sizeof(header.chksum)), EOK);
+    unsigned int checksum = 0;
+    const auto *bytes = reinterpret_cast<const unsigned char *>(&header);
+    for (size_t i = 0; i < BLOCK_SIZE; ++i) {
+        checksum += bytes[i];
     }
-    return {};
+    ASSERT_GE(snprintf_s(header.chksum, sizeof(header.chksum), sizeof(header.chksum) - 1, "%06o", checksum), 0);
+
+    std::ofstream archive(tarPath, std::ios::binary);
+    ASSERT_TRUE(archive.is_open());
+    archive.write(reinterpret_cast<const char *>(&header), BLOCK_SIZE);
+    archive.write(data.data(), data.size());
+    const string padding((BLOCK_SIZE - data.size() % BLOCK_SIZE) % BLOCK_SIZE, '\0');
+    archive.write(padding.data(), padding.size());
+    archive.close();
+    ASSERT_TRUE(archive.good());
 }
 
 /**
@@ -266,14 +243,20 @@ HWTEST_F(InstalldUnTarFileTest, Installd_Un_Tar_File_UnSplitTar_0100, testing::e
     try {
         TestManager tm("Installd_Un_Tar_File_UnSplitTar_0100");
         string rootPath = tm.GetRootDirCurTest();
-        vector<string> splitTarList = CreateSplitTar(rootPath, "testTarFile");
-        EXPECT_FALSE(splitTarList.empty());
-
+        const string fileName = "restored.txt";
+        const vector<char> splitTypes = {SPLIT_START_TYPE, SPLIT_CONTINUE_TYPE, SPLIT_END_TYPE};
+        const vector<string> contents = {"first part", " middle part", " last part"};
+        string expectedContent;
         installd::UnTarFile unTarFile(nullptr);
-        for (auto& tarName : splitTarList) {
-            GTEST_LOG_(INFO) << "InstalldUnTarFileTest-begin tarName: " << tarName;
-            auto ret = unTarFile.UnSplitTar(tarName, rootPath);
-            EXPECT_EQ(ret, 0);
+        for (size_t i = 0; i < splitTypes.size(); ++i) {
+            const string tarName = rootPath + "test.tar." + to_string(i);
+            ASSERT_NO_FATAL_FAILURE(CreateSplitTar(tarName, fileName, contents[i], splitTypes[i]));
+            ASSERT_TRUE(unTarFile.CheckIsSplitTar(tarName, rootPath));
+            ASSERT_EQ(unTarFile.UnSplitTar(tarName, rootPath), 0);
+            expectedContent += contents[i];
+            string restoredContent;
+            ASSERT_TRUE(LoadStringFromFile(rootPath + fileName, restoredContent));
+            EXPECT_EQ(restoredContent, expectedContent);
         }
     } catch (...) {
         EXPECT_TRUE(false);

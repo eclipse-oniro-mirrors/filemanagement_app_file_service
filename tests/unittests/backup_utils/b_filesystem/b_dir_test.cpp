@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
@@ -60,20 +61,22 @@ HWTEST_F(BDirTest, b_dir_GetDirFiles_0100, testing::ext::TestSize.Level1)
 
         string preparedDir = tm.GetRootDirCurTest();
         string touchFilePrefix = string("touch ") + preparedDir;
-        system(touchFilePrefix.append("a.txt").c_str());
-        system(touchFilePrefix.append("b.txt").c_str());
-        system(touchFilePrefix.append("c.txt").c_str());
+        ASSERT_EQ(system((touchFilePrefix + "a.txt").c_str()), 0);
+        ASSERT_EQ(system((touchFilePrefix + "b.txt").c_str()), 0);
+        ASSERT_EQ(system((touchFilePrefix + "c.txt").c_str()), 0);
 
         vector<string> out;
-        bool bSucc;
-        tie(bSucc, out) = BDir::GetDirFiles(preparedDir);
+        ErrCode ret;
+        tie(ret, out) = BDir::GetDirFiles(preparedDir);
 
-        vector<string> expectedRes = {preparedDir.append("a.txt"), preparedDir.append("b.txt"),
-                                      preparedDir.append("c.txt")};
+        vector<string> expectedRes = {preparedDir + "a.txt", preparedDir + "b.txt",
+                                      preparedDir + "c.txt"};
+        ASSERT_EQ(ret, ERR_OK);
+        std::sort(out.begin(), out.end());
         EXPECT_EQ(out, expectedRes);
 
-        tie(bSucc, out) = BDir::GetDirFiles("dev");
-        EXPECT_EQ(bSucc, true);
+        tie(ret, out) = BDir::GetDirFiles(preparedDir + "missing");
+        EXPECT_NE(ret, ERR_OK);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
@@ -96,22 +99,24 @@ HWTEST_F(BDirTest, b_dir_GetDirFiles_0104, testing::ext::TestSize.Level1)
     try {
         TestManager tm("b_dir_GetDirFiles_0104");
 
-        string preparedDir = "/data/app/";
+        string preparedDir = tm.GetRootDirCurTest();
         string touchFilePrefix = string("touch ") + preparedDir;
-        system(touchFilePrefix.append("d.txt").c_str());
-        system(touchFilePrefix.append("e.txt").c_str());
-        system(touchFilePrefix.append("f.txt").c_str());
+        ASSERT_EQ(system((touchFilePrefix + "d.txt").c_str()), 0);
+        ASSERT_EQ(system((touchFilePrefix + "e.txt").c_str()), 0);
+        ASSERT_EQ(system((touchFilePrefix + "f.txt").c_str()), 0);
 
-        bool bSucc;
+        ErrCode ret;
         vector<string> out;
-        tie(bSucc, out) = BDir::GetDirFiles(preparedDir);
+        tie(ret, out) = BDir::GetDirFiles(preparedDir);
 
-        vector<string> expectedRes = {preparedDir.append("d.txt"), preparedDir.append("e.txt"),
-                                      preparedDir.append("f.txt")};
+        vector<string> expectedRes = {preparedDir + "d.txt", preparedDir + "e.txt",
+                                      preparedDir + "f.txt"};
+        ASSERT_EQ(ret, ERR_OK);
+        std::sort(out.begin(), out.end());
         EXPECT_EQ(out, expectedRes);
 
-        tie(bSucc, out) = BDir::GetDirFiles("dev");
-        EXPECT_EQ(bSucc, true);
+        tie(ret, out) = BDir::GetDirFiles(preparedDir + "missing");
+        EXPECT_NE(ret, ERR_OK);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";

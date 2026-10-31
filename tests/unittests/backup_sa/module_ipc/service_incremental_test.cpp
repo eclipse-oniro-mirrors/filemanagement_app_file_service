@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <dlfcn.h>
+#include <future>
 #include <gtest/gtest.h>
 
 #include "backup_para_mock.h"
@@ -2279,8 +2280,15 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_Cancel_0100, TestSize.Le
         EXPECT_CALL(*srvMock, VerifyCaller(_)).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
         EXPECT_CALL(*session, GetImpl()).WillOnce(Return(impl));
         EXPECT_CALL(*session, GetServiceSchedAction(_)).WillOnce(Return(BConstants::ServiceSchedAction::RUNNING));
+        std::promise<void> cancelTaskStarted;
+        auto cancelTaskStartedFuture = cancelTaskStarted.get_future();
+        EXPECT_CALL(*session, GetExtConnection(bundleName)).WillOnce(Invoke([&cancelTaskStarted]() {
+            cancelTaskStarted.set_value();
+            return wptr<SvcBackupConnection>();
+        }));
         service->CancelForResult(bundleName, result);
         EXPECT_EQ(result, BError(BError::Codes::OK).GetCode());
+        EXPECT_EQ(cancelTaskStartedFuture.wait_for(std::chrono::seconds(2)), std::future_status::ready);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceIncrementalTest-an exception occurred by Cancel.";
