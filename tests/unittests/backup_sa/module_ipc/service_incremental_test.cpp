@@ -715,7 +715,12 @@ public:
             service->session_->SetSessionUserId(0);
         }
     };
-    void TearDown() {};
+    void TearDown()
+    {
+        if (gcMockThread.joinable()) {
+            gcMockThread.join();
+        }
+    };
 
     static inline shared_ptr<DlfcnMock> dlFuncMock = nullptr;
     static inline sptr<Service> service = nullptr;
@@ -730,6 +735,7 @@ public:
     static inline sptr<ServiceReverseProxyMock> srProxy = nullptr;
     static inline shared_ptr<ServiceMock> srvMock = nullptr;
     static inline shared_ptr<DirectoryFuncMock> directMock = nullptr;
+    static inline std::thread gcMockThread;
 
     static int GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
     static int GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
@@ -793,20 +799,19 @@ void ServiceIncrementalTest::TearDownTestCase()
 
 int ServiceIncrementalTest::GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
-    thread mockFuncThread([argv4]() {
+    gcMockThread = thread([argv4]() {
         int testStatus = 0;
         int testErrcode = 1;
         unsigned int testPercent = 2;
         unsigned int testGap = 3;
         argv4(testStatus, testErrcode, testPercent, testGap);
     });
-    mockFuncThread.detach();
     return 0;
 }
 
 int ServiceIncrementalTest::GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
-    thread mockFuncThread([argv4]() {
+    gcMockThread = thread([argv4]() {
         int testStatus = 1;
         int testErrcode = 1;
         unsigned int testPercent = 2;
@@ -815,7 +820,6 @@ int ServiceIncrementalTest::GcFuncMock2(int argv1, unsigned int argv2, unsigned 
         testStatus = 0;
         argv4(testStatus, testErrcode, testPercent, testGap);
     });
-    mockFuncThread.detach();
     int mockRes = -1;
     return mockRes;
 }
@@ -2191,7 +2195,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_CancelTask_0100, TestSiz
         service->CancelTask("", service);
         EXPECT_TRUE(true);
 
-        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr))).WillOnce(Return(nullptr));
+        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr)));
         EXPECT_CALL(*connect, GetBackupExtProxy()).WillOnce(Return(svcProxy));
         EXPECT_CALL(*svcProxy, HandleClear()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
         EXPECT_CALL(*session, StopFwkTimer(_)).WillOnce(Return(false));
@@ -2287,10 +2291,10 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_Cancel_0100, TestSize.Le
         EXPECT_CALL(*srvMock, VerifyCaller(_)).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
         EXPECT_CALL(*session, GetImpl()).WillOnce(Return(impl));
         EXPECT_CALL(*session, GetServiceSchedAction(_)).WillOnce(Return(BConstants::ServiceSchedAction::RUNNING));
-        std::promise<void> cancelTaskStarted;
-        auto cancelTaskStartedFuture = cancelTaskStarted.get_future();
-        EXPECT_CALL(*session, GetExtConnection(bundleName)).WillOnce(Invoke([&cancelTaskStarted]() {
-            cancelTaskStarted.set_value();
+        auto cancelTaskStarted = std::make_shared<std::promise<void>>();
+        auto cancelTaskStartedFuture = cancelTaskStarted->get_future();
+        EXPECT_CALL(*session, GetExtConnection(bundleName)).WillOnce(Invoke([cancelTaskStarted]() {
+            cancelTaskStarted->set_value();
             return wptr<SvcBackupConnection>();
         }));
         service->CancelForResult(bundleName, result);
@@ -2683,6 +2687,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0108, Tes
     unsigned int testWaitTime = 180;
     service->isOccupyingSession_.store(true);
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
+    service->isOccupyingSession_.store(false);
     EXPECT_EQ(res, BError(BError::Codes::SA_INVAL_ARG).GetCode());
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0108";
 }
