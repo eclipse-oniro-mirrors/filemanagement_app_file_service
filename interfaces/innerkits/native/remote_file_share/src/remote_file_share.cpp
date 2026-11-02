@@ -62,6 +62,9 @@ const std::string NETWORK_PARA = "?networkid=";
 const std::string MEDIA_BUNDLE_NAME = "com.ohos.medialibrary.medialibrarydata";
 const std::string FILE_MANAGER_URI_HEAD = "/storage/";
 const std::string REMOTE_SHARE_PATH_MID = "hmdfs/";
+const std::string FILE_MANAGER_BUNDLE_NAME = "com.ohos.filemanager";
+const std::string DOCS_PATH_SUFFIX = "/storage/Users/currentUser";
+const std::string DOCS_FILES_PATH = "Docs";
 const std::string SANDBOX_BASE_DIR = "/data/storage/el2/base";
 const std::string SANDBOX_CLOUD_DIR = "/data/storage/el2/cloud";
 const std::string MEDIA_PHOTO_PATH = "/Photo";
@@ -254,6 +257,7 @@ static int32_t SetPublicDirHmdfsInfo(const std::string &physicalPath, const std:
 
 static int32_t UriCategoryByType(const std::vector<std::string> &uriList,
                                  std::vector<std::string> &mediaUriList,
+                                 std::vector<std::string> &docsUriList,
                                  std::vector<std::string> &otherUriList)
 {
     LOGI("GetDfsUrisDirFromLocal UriCategoryByType start");
@@ -266,6 +270,8 @@ static int32_t UriCategoryByType(const std::vector<std::string> &uriList,
         std::string bundleName = uri.GetAuthority();
         if (bundleName == MEDIA_AUTHORITY) {
             mediaUriList.push_back(uriStr);
+        } else if (bundleName == FILE_MANAGER_AUTHORITY) {
+            docsUriList.push_back(uriStr);
         } else {
             otherUriList.push_back(uriStr);
         }
@@ -427,6 +433,86 @@ static int32_t GetMediaDfsUrisDirFromLocal(const std::vector<std::string> &uriLi
     return E_OK;
 }
 
+static int GetDocsDistributedDir(const int &userId, std::string &distributedDir, const std::string &networkId)
+{
+    distributedDir = DST_PATH_HEAD + std::to_string(userId) + DST_PATH_MID + FILE_MANAGER_BUNDLE_NAME +
+        REMOTE_SHARE_PATH_DIR + BACKSLASH + networkId + DOCS_PATH_SUFFIX;
+    if (distributedDir.size() >= PATH_MAX) {
+        LOGE("Path is too long with %{public}zu", distributedDir.size());
+        return -EINVAL;
+    }
+    LOGI("docs distributedDir: %{private}s", distributedDir.c_str());
+    return E_OK;
+}
+ 
+static int32_t GetDocsPhysicalDir(const int32_t &userId, std::string &physicalDir)
+{
+    physicalDir = DST_PATH_HEAD + std::to_string(userId) + DST_PATH_MID_FILES + DOCS_FILES_PATH;
+    if (physicalDir.size() >= PATH_MAX) {
+        LOGE("Path is too long with %{public}zu", physicalDir.size());
+        return -EINVAL;
+    }
+    LOGI("docs physicalDir: %{private}s", physicalDir.c_str());
+    return E_OK;
+}
+ 
+static int32_t SetDocsHmdfsUriDirInfo(struct HmdfsUriInfo &hui, Uri &uri, const std::string &physicalPath,
+    const std::string &networkId)
+{
+    std::string authority = uri.GetAuthority();
+    if (authority != FILE_MANAGER_AUTHORITY) {
+        LOGE("not docs authority.");
+        return -EINVAL;
+    }
+    hui.uriStr = FILE_SCHEME + "://" + FILE_MANAGER_BUNDLE_NAME + DISTRIBUTED_DIR_PATH + REMOTE_SHARE_PATH_DIR +
+        BACKSLASH + networkId + uri.GetPath() + NETWORK_PARA + networkId;
+    return SetFileSize(physicalPath, hui);
+}
+ 
+static int32_t GetDocsDfsUrisDirFromLocal(const std::vector<std::string> &uriList, const int32_t &userId,
+    std::unordered_map<std::string, HmdfsUriInfo> &uriToDfsUriMaps)
+{
+    if (uriList.size() <= 0) {
+        LOGE("Failed to uri GetDocsDfsUrisDirFromLocal, list is null or empty");
+        return -EINVAL;
+    }
+ 
+    std::string networkId = GetLocalNetworkId();
+    std::string distributedDir;
+    int ret = GetDocsDistributedDir(userId, distributedDir, networkId);
+    if (ret != E_OK) {
+        LOGE("Failed to get docs distribute dir.");
+        return ret;
+    }
+ 
+    std::string physicalDir = "";
+    ret = GetDocsPhysicalDir(userId, physicalDir);
+    if (ret != E_OK) {
+        LOGE("Failed to get docs physical dir.");
+        return ret;
+    }
+ 
+    ret = MountDisFileShare(userId, distributedDir, physicalDir);
+    if (ret != E_OK) {
+        LOGE("Failed to mount docs.");
+        return ret;
+    }
+ 
+    for (const auto &uriStr : uriList) {
+        Uri uri(uriStr);
+        std::string physicalPath = GetPhysicalPath(uri, std::to_string(userId));
+        if (physicalPath == "") {
+            LOGE("Failed to get physical path for docs uri");
+            return -EINVAL;
+        }
+        HmdfsUriInfo dfsUriInfo;
+        SetDocsHmdfsUriDirInfo(dfsUriInfo, uri, physicalPath, networkId);
+        uriToDfsUriMaps.insert({uriStr, dfsUriInfo});
+        LOGI("docs dfsUri: %{private}s", dfsUriInfo.uriStr.c_str());
+    }
+    return E_OK;
+}
+
 static int32_t DoMount(const int &userId, const std::string &bundleName, const std::string &networkId, Uri uri)
 {
     std::string distributedDir;
@@ -475,9 +561,13 @@ int32_t RemoteFileShare::GetDfsUrisDirFromLocal(const std::vector<std::string> &
 {
     std::vector<std::string> otherUriList;
     std::vector<std::string> mediaUriList;
-    int32_t ret = UriCategoryByType(uriList, mediaUriList, otherUriList);
+    std::vector<std::string> docsUriList;
+    int32_t ret = UriCategoryByType(uriList, mediaUriList, docsUriList, otherUriList);
     if (ret == E_OK && mediaUriList.size() != 0) {
         ret = GetMediaDfsUrisDirFromLocal(mediaUriList, userId, uriToDfsUriMaps);
+    }
+    if (ret == E_OK && docsUriList.size() != 0) {
+        ret = GetDocsDfsUrisDirFromLocal(docsUriList, userId, uriToDfsUriMaps);
     }
     if (ret != E_OK) {
         LOGE("uri category failed or process media uri failed.");

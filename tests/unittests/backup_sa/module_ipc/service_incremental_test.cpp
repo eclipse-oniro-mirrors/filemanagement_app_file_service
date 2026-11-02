@@ -31,8 +31,8 @@
 #include "svc_backup_connection_mock.h"
 #include "svc_extension_proxy_mock.h"
 #include "svc_session_manager_mock.h"
-
-#include "service_incremental.cpp"
+#include "module_ipc/service.h"
+#include "module_ipc/svc_restore_deps_manager.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -334,7 +334,7 @@ ErrCode Service::GetFileHandle(const string &bundleName, const string &fileName)
     return BService::serviceMock->GetFileHandle(bundleName, fileName);
 }
 
-void Service::OnBackupExtensionDied(const string&&, bool) {}
+void Service::OnBackupExtensionDied(const string&, bool) {}
 
 void Service::ExtConnectDied(const string&) {}
 
@@ -438,10 +438,6 @@ void Service::SetCurrentSessProperties(std::vector<BJsonEntityCaps::BundleInfo> 
                                        std::map<std::string, BJsonUtil::BundleSettingInfo> &,
                                        RestoreTypeEnum,
                                        std::string &) {}
-
-void Service::SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &,
-                                       std::map<std::string, BJsonUtil::BundleSettingInfo> &,
-                                       const std::string &) {}
 
 void Service::ReleaseOnException() {}
 
@@ -2108,8 +2104,8 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_CancelTask_0000, TestSiz
         EXPECT_TRUE(true);
 
         std::string bundleName = "123";
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, bundleName));
 
         EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr)));
@@ -2158,8 +2154,8 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_CancelTask_0100, TestSiz
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-begin SUB_ServiceIncremental_CancelTask_0100";
     try {
         std::string bundleName = "123";
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, bundleName));
 
         EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr)));

@@ -24,6 +24,7 @@
 #include <file_ex.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 
 #include "b_filesystem/b_dir.h"
@@ -154,6 +155,14 @@ HWTEST_F(BDirTest, b_dir_IsFilePathValid_0100, testing::ext::TestSize.Level1)
         result = BDir::IsFilePathValid("/test../test../test../");
         EXPECT_TRUE(result);
         result = BDir::IsFilePathValid("/test../test../test../..test");
+        EXPECT_TRUE(result);
+
+        // 空路径不包含 ../，校验通过
+        result = BDir::IsFilePathValid("");
+        EXPECT_TRUE(result);
+
+        // 含空字节路径中 ../ 前非 /，校验通过
+        result = BDir::IsFilePathValid(string("valid.txt\0../escape", 19));
         EXPECT_TRUE(result);
     } catch (...) {
         GTEST_LOG_(INFO) << "BDirTest-an exception occurred.";
@@ -344,6 +353,109 @@ HWTEST_F(BDirTest, b_dir_GetSubDir_0100, testing::ext::TestSize.Level1)
         EXPECT_TRUE(false);
     }
     GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDir_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0100
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0100
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface for empty and invalid path
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0100";
+    try {
+        std::set<std::string> result = GetSubDir("", true);
+        EXPECT_EQ(result.size(), 0);
+ 
+        result = GetSubDir("non_existent_path_for_test", true);
+        EXPECT_EQ(result.size(), 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0100";
+}
+ 
+/**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0200
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0200
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface with dirs and regular files
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0200";
+    try {
+        TestManager tm("b_dir_GetSubDirOnlyDirAndRegFile_0200");
+        std::string targetDir = tm.GetRootDirCurTest();
+ 
+        mkdir((targetDir + "subdir1").c_str(), 0755);
+        mkdir((targetDir + "subdir2").c_str(), 0755);
+ 
+        int fd = open((targetDir + "file1.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+        fd = open((targetDir + "file2.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+ 
+        std::set<std::string> result = GetSubDir(targetDir, true);
+        EXPECT_EQ(result.size(), 4); // 2 dirs + 2 regular files
+        EXPECT_TRUE(result.count(targetDir + "subdir1/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "subdir2/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file1.txt") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file2.txt") > 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0200";
+}
+ 
+/**
+ * @tc.number: SUB_backup_b_dir_GetSubDirOnlyDirAndRegFile_0300
+ * @tc.name: b_dir_GetSubDirOnlyDirAndRegFile_0300
+ * @tc.desc: Test function of GetSubDirOnlyDirAndRegFile interface filters out symlinks
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(BDirTest, b_dir_GetSubDirOnlyDirAndRegFile_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BDirTest-begin b_dir_GetSubDirOnlyDirAndRegFile_0300";
+    try {
+        TestManager tm("b_dir_GetSubDirOnlyDirAndRegFile_0300");
+        std::string targetDir = tm.GetRootDirCurTest();
+ 
+        mkdir((targetDir + "subdir").c_str(), 0755);
+ 
+        int fd = open((targetDir + "file.txt").c_str(), O_CREAT | O_RDWR, 0644);
+        close(fd);
+ 
+        symlink((targetDir + "file.txt").c_str(), (targetDir + "link_to_file").c_str());
+        symlink((targetDir + "subdir").c_str(), (targetDir + "link_to_dir").c_str());
+ 
+        // GetSubDir with onlyDirAndRegFile should only return dirs and regular files, not symlinks
+        std::set<std::string> result = GetSubDir(targetDir, true);
+        EXPECT_EQ(result.size(), 2); // 1 dir + 1 regular file, symlinks filtered out
+        EXPECT_TRUE(result.count(targetDir + "subdir/") > 0);
+        EXPECT_TRUE(result.count(targetDir + "file.txt") > 0);
+        EXPECT_EQ(result.count(targetDir + "link_to_file"), 0);
+        EXPECT_EQ(result.count(targetDir + "link_to_dir"), 0);
+ 
+        // GetSubDir without onlyDirAndRegFile should include symlinks
+        std::set<std::string> resultAll = GetSubDir(targetDir);
+        EXPECT_EQ(resultAll.size(), 4); // 1 dir + 1 regular file + 2 symlinks
+        EXPECT_TRUE(resultAll.count(targetDir + "link_to_file") > 0);
+        EXPECT_TRUE(resultAll.count(targetDir + "link_to_dir") > 0);
+    } catch (...) {
+        GTEST_LOG_(INFO) << "BDirTest-an GetSubDirOnlyDirAndRegFile exception occurred.";
+        EXPECT_TRUE(false);
+    }
+    GTEST_LOG_(INFO) << "BDirTest-end b_dir_GetSubDirOnlyDirAndRegFile_0300";
 }
 
 /**
@@ -651,5 +763,228 @@ HWTEST_F(BDirTest, b_dir_ClearDirectory_0400, testing::ext::TestSize.Level1)
         EXPECT_TRUE(false);
     }
     GTEST_LOG_(INFO) << "BDirTest-end b_dir_ClearDirectory_0400";
+}
+
+/**
+ * @tc.name: b_dir_InternalHelpers_Branches_001
+ * @tc.desc: Cover group, permission and empty-directory helper branches.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_InternalHelpers_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path emptyDir = root / "empty";
+    std::filesystem::path nonEmptyDir = root / "non_empty";
+    std::filesystem::create_directories(emptyDir);
+    std::filesystem::create_directories(nonEmptyDir);
+    {
+        std::ofstream file(nonEmptyDir / "file");
+        file << "data";
+    }
+
+    EXPECT_TRUE(IsInGroup(getegid()));
+    EXPECT_FALSE(CheckPermission((root / "missing").string()));
+    EXPECT_TRUE(CheckPermission((nonEmptyDir / "file").string()));
+    EXPECT_TRUE(IsEmptyDirectory(emptyDir.string()));
+    EXPECT_FALSE(IsEmptyDirectory(nonEmptyDir.string()));
+    EXPECT_FALSE(IsEmptyDirectory((root / "missing").string()));
+}
+
+/**
+ * @tc.name: b_dir_BasicPublicApis_Branches_001
+ * @tc.desc: Cover directory creation, listing, wildcard and matching APIs.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_BasicPublicApis_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path subDir = root / "sub";
+    std::filesystem::path nestedFile = root / "created/parent/file";
+    std::filesystem::create_directories(subDir);
+    {
+        std::ofstream file(root / "file.txt");
+        file << "data";
+    }
+
+    EXPECT_TRUE(BDir::CheckAndCreateDirectory("filename"));
+    EXPECT_TRUE(BDir::CheckAndCreateDirectory(nestedFile.string()));
+    EXPECT_TRUE(std::filesystem::is_directory(nestedFile.parent_path()));
+
+    auto [invalidCode, invalidFiles] = BDir::GetDirFiles((root / "missing").string());
+    EXPECT_NE(invalidCode, ERR_OK);
+    EXPECT_TRUE(invalidFiles.empty());
+    auto [code, files] = BDir::GetDirFiles(root.string());
+    EXPECT_EQ(code, ERR_OK);
+    EXPECT_NE(std::find(files.begin(), files.end(), (root / "file.txt").string()), files.end());
+    EXPECT_EQ(std::find(files.begin(), files.end(), subDir.string()), files.end());
+
+    EXPECT_FALSE(BDir::IsDirsMatch({"*excluded*"}, ""));
+    EXPECT_TRUE(BDir::IsDirsMatch({"*excluded*"}, "/tmp/excluded/file"));
+    EXPECT_FALSE(BDir::IsDirsMatch({"*excluded*"}, "/tmp/included/file"));
+
+    std::string wildcard = root.string() + "/*";
+    auto dirs = BDir::GetDirs({wildcard});
+    EXPECT_FALSE(dirs.empty());
+    auto allItems = BDir::ExpandPathWildcard({wildcard}, false);
+    EXPECT_FALSE(allItems.empty());
+}
+
+/**
+ * @tc.name: b_dir_GetUser0DirFilesDetail_Branches_001
+ * @tc.desc: Cover empty directories, regular files and recursive directory traversal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_GetUser0DirFilesDetail_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path emptyDir = root / "empty";
+    std::filesystem::path subDir = root / "sub";
+    std::filesystem::path smallFile = root / "small";
+    std::filesystem::path bigFile = subDir / "big";
+    std::filesystem::create_directories(emptyDir);
+    std::filesystem::create_directories(subDir);
+    {
+        std::ofstream small(smallFile);
+        small << "123";
+        std::ofstream big(bigFile);
+        big << "1234567890";
+    }
+
+    auto [emptyBig, emptySmall] = GetUser0DirFilesDetail(emptyDir.string(), 5);
+    EXPECT_TRUE(emptyBig.empty());
+    ASSERT_EQ(emptySmall.size(), 1);
+    EXPECT_EQ(emptySmall[0].back(), BConstants::FILE_SEPARATOR_CHAR);
+
+    auto [smallBig, smallSmall] = GetUser0DirFilesDetail(smallFile.string(), 5);
+    EXPECT_TRUE(smallBig.empty());
+    ASSERT_EQ(smallSmall.size(), 1);
+    auto [fileBig, fileSmall] = GetUser0DirFilesDetail(bigFile.string(), 5);
+    ASSERT_EQ(fileBig.size(), 1);
+    EXPECT_TRUE(fileSmall.empty());
+
+    auto [recursiveBig, recursiveSmall] = GetUser0DirFilesDetail(root.string(), 5);
+    EXPECT_EQ(recursiveBig.size(), 1);
+    EXPECT_GE(recursiveSmall.size(), 2);
+}
+
+/**
+ * @tc.name: b_dir_ProcessFileWithResultManager_Branches_001
+ * @tc.desc: Cover small and big file paths using the result-manager branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_ProcessFileWithResultManager_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path smallPath = root / "small";
+    std::filesystem::path bigPath = root / "big";
+    {
+        std::ofstream small(smallPath);
+        ASSERT_TRUE(small.is_open());
+        small << "123";
+        std::ofstream big(bigPath);
+        ASSERT_TRUE(big.is_open());
+        big << "1234567890";
+    }
+    ASSERT_EQ(std::filesystem::file_size(smallPath), 3);
+    ASSERT_EQ(std::filesystem::file_size(bigPath), 10);
+
+    auto resultManager = std::make_shared<ScanResultManager>();
+    AdvancedScanOption option(false, "", resultManager);
+    int64_t bigFileSize = 0;
+    int64_t smallFileSize = 0;
+    ProcessFile({smallPath.string(), "/restore/small", 5}, bigFileSize, smallFileSize, {}, option);
+    EXPECT_EQ(smallFileSize, 3);
+    auto smallFiles = resultManager->GetAllSmallFiles();
+    ASSERT_EQ(smallFiles.size(), 1);
+    EXPECT_EQ(smallFiles[0]->filePath_, smallPath.string());
+    EXPECT_EQ(smallFiles[0]->fileSize_, 3);
+    EXPECT_EQ(smallFiles[0]->GetRestorePath(), "/restore/small");
+
+    ProcessFile({bigPath.string(), "/restore/big", 5}, bigFileSize, smallFileSize, {}, option);
+    EXPECT_EQ(bigFileSize, 10);
+    auto bigFile = resultManager->GetFileInfo();
+    ASSERT_NE(bigFile, nullptr);
+    EXPECT_TRUE(bigFile->isBigFile_);
+    EXPECT_EQ(bigFile->filePath_, bigPath.string());
+    EXPECT_EQ(bigFile->sta_.st_size, 10);
+    EXPECT_EQ(bigFile->GetRestorePath(), "/restore/big");
+    EXPECT_FALSE(resultManager->HasFileReady());
+}
+
+/**
+ * @tc.name: b_dir_ScanAndBackupList_Branches_001
+ * @tc.desc: Cover real directory scanning, empty directories and excludes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_ScanAndBackupList_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path emptyDir = root / "empty";
+    std::filesystem::path subDir = root / "sub";
+    std::filesystem::path smallPath = root / "small";
+    std::filesystem::path bigPath = subDir / "big";
+    std::filesystem::create_directories(emptyDir);
+    std::filesystem::create_directories(subDir);
+    {
+        std::ofstream small(smallPath);
+        small << "123";
+        std::ofstream big(bigPath);
+        big << "1234567890";
+    }
+
+    DirScanner scanner;
+    auto [code, bigSize, smallSize] = scanner.ScanDir(root.string(), {}, 5);
+    EXPECT_EQ(code, ERR_OK);
+    EXPECT_EQ(bigSize, 10);
+    EXPECT_EQ(smallSize, 3);
+    auto [excludedCode, excludedBig, excludedSmall] = scanner.ScanDir(
+        root.string(), {root.string()}, 5);
+    EXPECT_EQ(excludedCode, ERR_OK);
+    EXPECT_EQ(excludedBig, 0);
+    EXPECT_EQ(excludedSmall, 0);
+
+    auto [backupBig, backupSmall] = BDir::GetBackupList(
+        {root.string() + "/*"}, {smallPath.string()});
+    EXPECT_EQ(std::find(backupSmall.begin(), backupSmall.end(), smallPath.string()), backupSmall.end());
+    EXPECT_TRUE(backupBig.empty());
+    EXPECT_FALSE(backupSmall.empty());
+}
+
+/**
+ * @tc.name: b_dir_GetUser0FileStat_Branches_001
+ * @tc.desc: Cover directory, small-file and big-file report generation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(BDirTest, b_dir_GetUser0FileStat_Branches_001, testing::ext::TestSize.Level1)
+{
+    TestManager tm(__func__);
+    std::filesystem::path root = tm.GetRootDirCurTest();
+    std::filesystem::path dirPath = root / "dir";
+    std::filesystem::path smallPath = root / "small";
+    std::filesystem::path bigPath = root / "big";
+    std::filesystem::create_directories(dirPath);
+    {
+        std::ofstream small(smallPath);
+        small << "small-data";
+        std::ofstream big(bigPath);
+        big << "big-data";
+    }
+
+    std::vector<ReportFileInfo> allFiles;
+    std::vector<ReportFileInfo> smallFiles;
+    std::vector<ReportFileInfo> bigFiles;
+    BDir::GetUser0FileStat({bigPath.string()}, {dirPath.string(), smallPath.string()},
+        allFiles, smallFiles, bigFiles);
+    EXPECT_EQ(allFiles.size(), 3);
+    EXPECT_EQ(smallFiles.size(), 2);
+    EXPECT_EQ(bigFiles.size(), 1);
+    EXPECT_TRUE(smallFiles[0].isDir);
+    EXPECT_FALSE(smallFiles[1].hash.empty());
+    EXPECT_FALSE(bigFiles[0].hash.empty());
 }
 } // namespace OHOS::FileManagement::Backup

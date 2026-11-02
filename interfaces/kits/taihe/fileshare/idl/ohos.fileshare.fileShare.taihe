@@ -55,6 +55,17 @@ enum PolicyType: i32 {
     PERSISTENT_TYPE = 1,
 }
 
+enum GrantStatus: i32 {
+    DENIED = -1,
+    GRANTED = 0,
+}
+
+struct PermissionStatusInfo {
+    tokenID: i32;
+    policyInfo: PolicyInfo;
+    grantStatus: GrantStatus;
+}
+
 function MakePolicyInfo(uri: String, operationMode: i32): PolicyInfo;
 
 function MakePathPolicyInfo(path: String, operationMode: OperationMode): PathPolicyInfo;
@@ -124,3 +135,20 @@ function RevokeSharedDirectoryPermissionSync(): void;
 
 @gen_promise("getSharedDirectoryInfo")
 function GetSharedDirectoryInfoSync(): Array<SharedDirectoryInfo>;
+
+@gen_promise("getStatusByPermission")
+function GetStatusByPermissionSync(
+    tokenIDList: Array<i32>,
+): Array<PermissionStatusInfo>;
+
+@gen_promise("grantPermissionByUser")
+function GrantPermissionByUserSync(
+    tokenID: i32,
+    policies: Array<PolicyInfo>,
+): void;
+
+@gen_promise("revokePermissionByUser")
+function RevokePermissionByUserSync(
+    tokenID: i32,
+    policies: Array<PolicyInfo>,
+): void;

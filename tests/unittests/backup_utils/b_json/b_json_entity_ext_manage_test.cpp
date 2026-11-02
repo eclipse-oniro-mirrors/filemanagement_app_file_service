@@ -817,4 +817,248 @@ HWTEST_F(BJsonEntityExtManageTest, CheckUserTar_Test_1001, testing::ext::TestSiz
 
     GTEST_LOG_(INFO) << "CheckUserTar_Test-end CheckUserTar_Test_1001";
 }
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_path_traversal_0100
+ * @tc.name: b_json_entity_ext_manage_path_traversal_0100
+ * @tc.desc: 测试 GetExtManageInfo 拒绝 hashName 含空字节的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_path_traversal_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_path_traversal_0100";
+    try {
+        // hashName 含 \u0000 空字节（JSON 转义后解码为 '\0'，用于 C 字符串截断绕过），应被拒绝
+        string_view sv =
+            R"([{"fileName":"valid.txt\u0000../../escape.txt",)"
+            R"("information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto infos = cache.GetExtManageInfo();
+        EXPECT_TRUE(infos.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_path_traversal_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_path_traversal_0200
+ * @tc.name: b_json_entity_ext_manage_path_traversal_0200
+ * @tc.desc: 测试 GetExtManageInfo 拒绝 hashName 含 ".." 分量的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_path_traversal_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_path_traversal_0200";
+    try {
+        // hashName 含 "../" 分量，应被拒绝
+        string_view sv =
+            R"([{"fileName":"../escape.txt",)"
+            R"("information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto infos = cache.GetExtManageInfo();
+        EXPECT_TRUE(infos.empty());
+
+        // hashName 含中间 ".." 分量，应被拒绝
+        string_view sv2 =
+            R"([{"fileName":"foo/../bar.txt",)"
+            R"("information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        auto infos2 = cache2.GetExtManageInfo();
+        EXPECT_TRUE(infos2.empty());
+
+        // hashName 尾部 ".." 分量，应被拒绝
+        string_view sv3 = R"([{"fileName":"foo/..","information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity3(sv3);
+        auto cache3 = cachedEntity3.Structuralize();
+        auto infos3 = cache3.GetExtManageInfo();
+        EXPECT_TRUE(infos3.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_path_traversal_0200";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_path_traversal_0300
+ * @tc.name: b_json_entity_ext_manage_path_traversal_0300
+ * @tc.desc: 测试 GetExtManageInfo 拒绝 information.path 含 ".." 分量的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_path_traversal_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_path_traversal_0300";
+    try {
+        // information.path 含 "../" 分量，hashName 合法，应被拒绝
+        string_view sv =
+            R"([{"fileName":"1234567890abcdef",)"
+            R"("information":{"path":"/data/storage/el2/base/../escape.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto infos = cache.GetExtManageInfo();
+        EXPECT_TRUE(infos.empty());
+
+        // information.path 中间 ".." 分量，应被拒绝
+        string_view sv2 =
+            R"([{"fileName":"1234567890abcdef",)"
+            R"("information":{"path":"foo/../bar.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        auto infos2 = cache2.GetExtManageInfo();
+        EXPECT_TRUE(infos2.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_path_traversal_0300";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_path_traversal_0400
+ * @tc.name: b_json_entity_ext_manage_path_traversal_0400
+ * @tc.desc: 测试 GetExtManageInfo 对合法路径不回归（含子目录的 hashName 与绝对目的路径）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 0
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_path_traversal_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_path_traversal_0400";
+    try {
+        // 合法：hashName 为纯哈希名，information.path 为绝对沙箱路径
+        string_view sv =
+            R"([{"fileName":"1234567890abcdef",)"
+            R"("information":{"path":"/data/storage/el2/base/haps/entry/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto infos = cache.GetExtManageInfo();
+        ASSERT_EQ(infos.size(), 1uL);
+        EXPECT_EQ(infos[0].hashName, "1234567890abcdef");
+        EXPECT_EQ(infos[0].fileName, "/data/storage/el2/base/haps/entry/files/test.txt");
+
+        // 合法：hashName 含子目录但不含 ".."
+        string_view sv2 =
+            R"([{"fileName":"data/storage/el2/base/1234567890abcdef",)"
+            R"("information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        auto infos2 = cache2.GetExtManageInfo();
+        ASSERT_EQ(infos2.size(), 1uL);
+        EXPECT_EQ(infos2[0].hashName, "data/storage/el2/base/1234567890abcdef");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_path_traversal_0400";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_path_traversal_0500
+ * @tc.name: b_json_entity_ext_manage_path_traversal_0500
+ * @tc.desc: 测试 GetExtManageInfo 对含 "a../b" 等合法子串不误判（".." 非独立分量）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_path_traversal_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_path_traversal_0500";
+    try {
+        // "a../b" 中 ".." 不是独立路径分量，应放行
+        string_view sv =
+            R"([{"fileName":"a../1234567890abcdef",)"
+            R"("information":{"path":"/data/storage/el2/base/files/test.txt"}}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto infos = cache.GetExtManageInfo();
+        ASSERT_EQ(infos.size(), 1uL);
+        EXPECT_EQ(infos[0].hashName, "a../1234567890abcdef");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_path_traversal_0500";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_get_set_traversal_0100
+ * @tc.name: b_json_entity_ext_manage_get_set_traversal_0100
+ * @tc.desc: 测试 GetExtManage（set 版本）拒绝含空字节 fileName 的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_get_set_traversal_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_get_set_traversal_0100";
+    try {
+        // fileName 含 \u0000 空字节（JSON 转义解码为 '\0'），应被拒绝
+        string_view sv = R"([{"fileName":"valid.txt\u0000../../escape.txt"}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        auto fileNames = cache.GetExtManage();
+        EXPECT_TRUE(fileNames.empty());
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_get_set_traversal_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_b_json_entity_ext_manage_get_set_traversal_0200
+ * @tc.name: b_json_entity_ext_manage_get_set_traversal_0200
+ * @tc.desc: 测试 GetExtManage（set 版本）拒绝含 ".." 分量的 fileName，保留合法条目
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtManageTest, b_json_entity_ext_manage_get_set_traversal_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-begin b_json_entity_ext_manage_get_set_traversal_0200";
+    try {
+        // 前导 "../" 应被拒绝
+        string_view sv = R"([{"fileName":"../escape.txt"}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+        EXPECT_TRUE(cache.GetExtManage().empty());
+
+        // 中间 ".." 分量应被拒绝
+        string_view sv2 = R"([{"fileName":"foo/../bar.txt"}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        EXPECT_TRUE(cache2.GetExtManage().empty());
+
+        // 合法 fileName 应保留
+        string_view sv3 = R"([{"fileName":"1234567890abcdef"},{"fileName":"data/storage/el2/base/abcd"}])";
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity3(sv3);
+        auto cache3 = cachedEntity3.Structuralize();
+        auto fileNames = cache3.GetExtManage();
+        ASSERT_EQ(fileNames.size(), 2uL);
+        EXPECT_EQ(fileNames.count("1234567890abcdef"), 1uL);
+        EXPECT_EQ(fileNames.count("data/storage/el2/base/abcd"), 1uL);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtManageTest-end b_json_entity_ext_manage_get_set_traversal_0200";
+}
 } // namespace OHOS::FileManagement::Backup

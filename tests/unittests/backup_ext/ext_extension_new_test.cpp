@@ -1222,8 +1222,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_BuildCompatibleDirMapping_Test_0500,
     extExtension_->compatibleDirs_ = {"/p1", "/p3"};
     auto mapping = extExtension_->BuildCompatibleDirMapping();
     EXPECT_EQ(mapping.size(), 1u);
-    EXPECT_NE(mapping.find("/bak/p1"), mapping.end());
-    EXPECT_EQ(mapping["/bak/p1"], "/p1");
+    EXPECT_NE(mapping.find("bak/p1"), mapping.end());
+    EXPECT_EQ(mapping["bak/p1"], "p1");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_BuildCompatibleDirMapping_Test_0500";
 }
 
@@ -1343,8 +1343,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_ApplyRestorePathMapping_Test_0400, t
     localFilesInfo.emplace("/bak/p1", info);
     extExtension_->ApplyRestorePathMapping(localFilesInfo);
     EXPECT_EQ(localFilesInfo.size(), 1u);
-    EXPECT_NE(localFilesInfo.find("/p1"), localFilesInfo.end());
-    EXPECT_EQ(localFilesInfo["/p1"].restorePath, "/p1");
+    EXPECT_NE(localFilesInfo.find("/p1/"), localFilesInfo.end());
+    EXPECT_EQ(localFilesInfo["/p1/"].restorePath, "/p1/");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_ApplyRestorePathMapping_Test_0400";
 }
 
@@ -1386,7 +1386,7 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0100, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0100";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/file.txt"), "/bak/p1/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/file.txt", false), "/bak/p1/file.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0100";
 }
 
@@ -1403,8 +1403,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0200, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0200";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt"), "/p1/sub/file.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1"), "/p1");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt", false), "/p1/sub/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1", true), "/p1/");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0200";
 }
 
@@ -1421,8 +1421,8 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0300, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0300";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt"), "/bak/p1other/file.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/data/other/file.txt"), "/data/other/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt", false), "/bak/p1other/file.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/data/other/file.txt", false), "/data/other/file.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0300";
 }
 
@@ -1439,9 +1439,33 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0400, test
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0400";
     ASSERT_TRUE(extExtension_ != nullptr);
     extExtension_->compatDirMapping_ = {{"/bak/p1", "/p1"}, {"/bak/p2", "/p2"}};
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p2/a.txt"), "/p2/a.txt");
-    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/b.txt"), "/p1/b.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p2/a.txt", false), "/p2/a.txt");
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/b.txt", false), "/p1/b.txt");
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0400";
+}
+
+/**
+ * @tc.number: Ext_Extension_MapPathWithCompatDir_Test_0500
+ * @tc.name: Ext_Extension_MapPathWithCompatDir_Test_0500
+ * @tc.desc: 测试MapPathWithCompatDir backupDir末尾带斜杠的场景
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(ExtExtensionNewTest, Ext_Extension_MapPathWithCompatDir_Test_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_MapPathWithCompatDir_Test_0500";
+    ASSERT_TRUE(extExtension_ != nullptr);
+    extExtension_->compatDirMapping_ = {{"/bak/p1/", "/p1"}};
+    // 文件: backupDir末尾带'/', 文件路径自然匹配子路径
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/sub/file.txt", false), "/p1/sub/file.txt");
+    // 目录: isDir=true补齐末尾'/', 与backupDir前缀匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1", true), "/p1/");
+    // 目录: 已有末尾'/', 直接匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1/", true), "/p1/");
+    // 文件: filePath不在backupDir下, 不匹配
+    EXPECT_EQ(extExtension_->MapPathWithCompatDir("/bak/p1other/file.txt", false), "/bak/p1other/file.txt");
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_MapPathWithCompatDir_Test_0500";
 }
 
 /**
@@ -1572,5 +1596,61 @@ HWTEST_F(ExtExtensionNewTest, Ext_Extension_BuildCompatibleDirMapping_Test_0900,
     auto mapping = extExtension_->BuildCompatibleDirMapping();
     EXPECT_TRUE(mapping.empty());
     GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_BuildCompatibleDirMapping_Test_0900";
+}
+
+/**
+ * @tc.number: Ext_Extension_BuildCompatibleDirMapping_Test_1000
+ * @tc.name: Ext_Extension_BuildCompatibleDirMapping_Test_1000
+ * @tc.desc: 测试BuildCompatibleDirMapping 验证去除前导'/'后的映射结果
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(ExtExtensionNewTest, Ext_Extension_BuildCompatibleDirMapping_Test_1000, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_BuildCompatibleDirMapping_Test_1000";
+    ASSERT_TRUE(extExtension_ != nullptr);
+    string_view sv1 =
+        R"({"includes": ["/p1", "/p2"],)"
+        R"("compatibleDirMapping": [{"backupDir": "/bak/p1", "restoreDir": "/p1"},)"
+        R"( {"backupDir": "/bak/p2", "restoreDir": "/p2"}]})";
+    EXPECT_CALL(*extBackupMock_, GetUsrConfig()).WillOnce(Return(string(sv1)));
+    extExtension_->compatibleDirs_ = {"/p1", "/p2"};
+    auto mapping = extExtension_->BuildCompatibleDirMapping();
+    EXPECT_EQ(mapping.size(), 2u);
+    // 验证映射key/value已去除前导'/'
+    EXPECT_NE(mapping.find("bak/p1"), mapping.end());
+    EXPECT_EQ(mapping["bak/p1"], "p1");
+    EXPECT_NE(mapping.find("bak/p2"), mapping.end());
+    EXPECT_EQ(mapping["bak/p2"], "p2");
+    // 验证原始带'/'的key不存在
+    EXPECT_EQ(mapping.find("/bak/p1"), mapping.end());
+    EXPECT_EQ(mapping.find("/bak/p2"), mapping.end());
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_BuildCompatibleDirMapping_Test_1000";
+}
+
+/**
+ * @tc.number: Ext_Extension_BuildCompatibleDirMapping_Test_1100
+ * @tc.name: Ext_Extension_BuildCompatibleDirMapping_Test_1100
+ * @tc.desc: 测试BuildCompatibleDirMapping 无前导'/'的路径不受影响
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(ExtExtensionNewTest, Ext_Extension_BuildCompatibleDirMapping_Test_1100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-begin Ext_Extension_BuildCompatibleDirMapping_Test_1100";
+    ASSERT_TRUE(extExtension_ != nullptr);
+    string_view sv1 =
+        R"({"includes": ["p1"],)"
+        R"("compatibleDirMapping": [{"backupDir": "bak/p1", "restoreDir": "p1"}]})";
+    EXPECT_CALL(*extBackupMock_, GetUsrConfig()).WillOnce(Return(string(sv1)));
+    extExtension_->compatibleDirs_ = {"p1"};
+    auto mapping = extExtension_->BuildCompatibleDirMapping();
+    EXPECT_EQ(mapping.size(), 1u);
+    // 无前导'/'的路径应保持不变
+    EXPECT_NE(mapping.find("bak/p1"), mapping.end());
+    EXPECT_EQ(mapping["bak/p1"], "p1");
+    GTEST_LOG_(INFO) << "ExtExtensionNewTest-end Ext_Extension_BuildCompatibleDirMapping_Test_1100";
 }
 }

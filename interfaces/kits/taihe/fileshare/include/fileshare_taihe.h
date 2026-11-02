@@ -39,6 +39,12 @@ namespace ANI::FileShare {
     void RevokePermissionWithTokenSync(int32_t tokenID,
         taihe::array_view<ohos::fileshare::fileShare::PolicyInfo> policies);
     taihe::array<ohos::fileshare::fileShare::PolicyInfo> GetPersistentPolicySync(int32_t tokenID);
+    taihe::array<ohos::fileshare::fileShare::PermissionStatusInfo> GetStatusByPermissionSync(
+        taihe::array_view<int32_t> tokenIDList);
+    void GrantPermissionByUserSync(int32_t tokenID,
+        taihe::array_view<ohos::fileshare::fileShare::PolicyInfo> policies);
+    void RevokePermissionByUserSync(int32_t tokenID,
+        taihe::array_view<ohos::fileshare::fileShare::PolicyInfo> policies);
     void GrantSharedDirectoryPermissionSync();
     void RevokeSharedDirectoryPermissionSync();
     taihe::array<ohos::fileshare::fileShare::SharedDirectoryInfo> GetSharedDirectoryInfoSync();

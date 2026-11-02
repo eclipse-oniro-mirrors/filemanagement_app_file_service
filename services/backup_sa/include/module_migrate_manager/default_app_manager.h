@@ -36,7 +36,6 @@ public:
     bool IsDefaultBundle(const std::string &bundleName);
     sptr<MigrateManager> GetMigrateInstance(const std::string &bundleName, int32_t userId);
     bool ClearDefaultAppData();
-    std::string GetCallerNameByFilePath(const std::string &filePath);
 
 private:
     std::map<std::string, sptr<MigrateManager>> defaultAppMap_;

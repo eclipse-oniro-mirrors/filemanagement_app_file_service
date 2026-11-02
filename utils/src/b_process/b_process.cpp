@@ -87,29 +87,29 @@ tuple<bool, ErrCode> BProcess::ExecuteCmd(vector<string_view> argvSv, function<b
     if (pipe(pipeFd) < 0) {
         throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, generic_category().message(errno));
     }
+    UniqueFd readEnd(pipeFd[0]);
+    UniqueFd writeEnd(pipeFd[1]);
 
     pid_t pid = 0;
     if ((pid = fork()) == 0) {
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
-        close(pipeFd[0]);
-        UniqueFd fd(pipeFd[1]);
-        if (dup2(pipeFd[1], STDERR_FILENO) == -1) {
+        readEnd = UniqueFd();
+        if (dup2(writeEnd.Get(), STDERR_FILENO) == -1) {
             throw BError(BError::Codes::UTILS_INTERRUPTED_PROCESS, generic_category().message(errno));
         }
         exit((execvp(argv[0], const_cast<char **>(argv.data())) == -1) ? errno : 0);
     }
 
-    UniqueFd fd(pipeFd[0]);
-    close(pipeFd[1]);
+    writeEnd = UniqueFd();
     if (pid == -1) {
         throw BError(BError::Codes::UTILS_INVAL_PROCESS_ARG, generic_category().message(errno));
     }
-    unique_ptr<FILE, function<void(FILE *)>> pipeStream {fdopen(pipeFd[0], "r"), fclose};
+    unique_ptr<FILE, function<void(FILE *)>> pipeStream {fdopen(readEnd.Get(), "r"), fclose};
     if (!pipeStream) {
         throw BError(errno);
     }
-    fd.Release();
+    readEnd.Release();
 
     return WaitForChild(pid, move(pipeStream), DetectFatalLog);
 }

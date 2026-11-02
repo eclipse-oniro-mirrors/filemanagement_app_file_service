@@ -14,7 +14,6 @@
  */
 
 #include "module_migrate_manager/default_app_manager.h"
-#include "b_resources/b_constants.h"
 #include "module_ipc/service.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -72,18 +71,6 @@ bool DefaultAppManager::ClearDefaultAppData()
         }
     }
     return true;
-}
-
-std::string DefaultAppManager::GetCallerNameByFilePath(const std::string &filePath)
-{
-    std::shared_lock<std::shared_mutex> lock(defaultAppMutex_);
-    for (const auto &[bundleName, manager] : defaultAppMap_) {
-        if (filePath.find(BConstants::GetBundleDir(BConstants::DEFAULT_USER_ID, bundleName)) == 0 ||
-            filePath.find(BConstants::GetBundleDir(BConstants::DEFAULT_USER_ID, bundleName, false)) == 0) {
-            return bundleName;
-        }
-    }
-    return "";
 }
 
 } // namespace OHOS::FileManagement::Backup

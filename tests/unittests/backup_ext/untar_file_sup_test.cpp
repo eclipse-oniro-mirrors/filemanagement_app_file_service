@@ -673,6 +673,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0100, testing::ext::T
             .WillOnce(Return(READ_BUFF_SIZE))
             .WillOnce(Return(READ_BUFF_SIZE >> 1))
             .WillOnce(Return((READ_BUFF_SIZE >> 1) - 1));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(3));
         EXPECT_CALL(*funcMock, fchmod(_, _)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fclose(_)).WillOnce(Return(0));
@@ -683,6 +684,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0100, testing::ext::T
         UntarFile::GetInstance().tarFileSize_ = 0;
         EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
         EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(3));
         EXPECT_CALL(*funcMock, fchmod(_, _)).WillOnce(Return(1));
         EXPECT_CALL(*funcMock, fclose(_)).WillOnce(Return(0));
@@ -715,6 +717,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0200, testing::ext::T
         UntarFile::GetInstance().tarFileSize_ = 0;
         EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
         EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(3));
         EXPECT_CALL(*funcMock, fchmod(_, _)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fclose(_)).WillOnce(Return(0));
@@ -725,6 +728,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0200, testing::ext::T
         info.mtime = 1;
         EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
         EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(3));
         EXPECT_CALL(*funcMock, fchmod(_, _)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fstat(_, _)).WillOnce(Return(0));
@@ -736,6 +740,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0200, testing::ext::T
 
         EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
         EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(3));
         EXPECT_CALL(*funcMock, fchmod(_, _)).WillOnce(Return(0));
         EXPECT_CALL(*funcMock, fstat(_, _)).WillOnce(Return(0));
@@ -768,6 +773,7 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0300, testing::ext::T
         FileStatInfo info;
         info.fullPath = "/test.txt";
         UntarFile::GetInstance().tarFileSize_ = READ_BUFF_SIZE - 1;
+        UntarFile::GetInstance().tarFilePtr_ = reinterpret_cast<FILE*>(&c);
         EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
         EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
         EXPECT_CALL(*funcMock, fread(_, _, _, _))
@@ -793,12 +799,60 @@ HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0300, testing::ext::T
         EXPECT_CALL(*funcMock, fseeko(_, _, _)).WillOnce(Return(0));
         ret = UntarFile::GetInstance().ParseRegularFile(info);
         EXPECT_EQ(ret[info.fullPath].size(), 1);
+        UntarFile::GetInstance().tarFilePtr_ = nullptr;
 
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "UntarFileSupTest-an exception occurred by ParseRegularFile.";
     }
     GTEST_LOG_(INFO) << "UntarFileSupTest-end SUB_Untar_File_ParseRegularFile_0300";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_0400
+ * @tc.name: SUB_Untar_File_ParseRegularFile_0400
+ * @tc.desc: 测试 ParseRegularFile 接口 fflush 失败的场景
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(UntarFileSupTest, SUB_Untar_File_ParseRegularFile_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileSupTest-begin SUB_Untar_File_ParseRegularFile_0400";
+    try {
+        char c = '\0';
+        FileStatInfo info;
+        info.fullPath = "/test.txt";
+        info.mtime = 1;
+        UntarFile::GetInstance().tarFileSize_ = 0;
+        UntarFile::GetInstance().tarFilePtr_ = reinterpret_cast<FILE*>(&c);
+        // fflush fails in UnTarFileInner → returns false → ParseRegularFile records ERR_INVALID_TAR
+        EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
+        EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(EOF));
+        EXPECT_CALL(*funcMock, fclose(_)).WillOnce(Return(0));
+        EXPECT_CALL(*funcMock, fseeko(_, _, _)).WillOnce(Return(0));
+        auto ret = UntarFile::GetInstance().ParseRegularFile(info);
+        EXPECT_EQ(ret[info.fullPath].size(), 1);
+        EXPECT_EQ(ret[info.fullPath][0], ERR_INVALID_TAR);
+
+        // fflush succeeds, fileno fails
+        info.mtime = 0;
+        EXPECT_CALL(*funcMock, realpath(_, _)).WillOnce(Return(&c));
+        EXPECT_CALL(*funcMock, fopen(_, _)).WillOnce(Return(reinterpret_cast<FILE*>(&c)));
+        EXPECT_CALL(*funcMock, fflush(_)).WillOnce(Return(0));
+        EXPECT_CALL(*funcMock, fileno(_)).WillOnce(Return(-1));
+        EXPECT_CALL(*funcMock, fclose(_)).WillOnce(Return(0));
+        EXPECT_CALL(*funcMock, fseeko(_, _, _)).WillOnce(Return(0));
+        ret = UntarFile::GetInstance().ParseRegularFile(info);
+        EXPECT_EQ(ret[info.fullPath].size(), 1);
+        UntarFile::GetInstance().tarFilePtr_ = nullptr;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "UntarFileSupTest-an exception occurred by ParseRegularFile.";
+    }
+    GTEST_LOG_(INFO) << "UntarFileSupTest-end SUB_Untar_File_ParseRegularFile_0400";
 }
 
 /**

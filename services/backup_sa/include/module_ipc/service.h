@@ -66,11 +66,11 @@ public:
     ErrCode PublishFile(const BFileInfo &fileInfo) override;
     ErrCode AppFileReady(const std::string &fileName, int fd, int32_t errCode) override;
     ErrCode DefaultAppFileReady(const std::string &fileName,
-        const std::string &filePath, int fd, int32_t errCode);
+        const std::string &bundleName, int fd, int32_t errCode);
     ErrCode DefaultAppFileReady(const std::string &fileName,
-        const std::string &filePath, UniqueFd fd, int32_t errCode);
+        const std::string &bundleName, UniqueFd fd, int32_t errCode);
     ErrCode AppFileReadyWithoutFd(const std::string &fileName, int32_t errCode) override;
-    ErrCode DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &filePath, int32_t errCode);
+    ErrCode DefaultAppFileReadyWithoutFd(const std::string &fileName, const std::string &bundleName, int32_t errCode);
     ErrCode AppFileReadys(const BStringRawData &fileNamesRD,
         const std::vector<int> &fds, const std::vector<int> &errCodes) override;
     ErrCode AppFileReadyWithoutFd(const std::string &fileName, const std::string &filePath,
@@ -192,11 +192,20 @@ public:
     ErrCode LaunchBackupSAExtension(const BundleName &bundleName);
 
     /**
+     * @brief 连接 backup extension（want 构造、连接复用检查、拉起）
+     *
+     * @param bundleName 应用名称
+     * @param action 执行动作 BACKUP/RESTORE
+     * @return ErrCode
+     */
+    ErrCode ConnectBackupExtension(const BundleName &bundleName, BConstants::ExtensionAction action);
+
+    /**
      * @brief backup extension died
      *
      * @param bundleName 应用名称
      */
-    void OnBackupExtensionDied(const std::string &&bundleName, bool isCleanCalled = false);
+    void OnBackupExtensionDied(const std::string &bundleName, bool isCleanCalled = false);
 
     /**
      * @brief extension启动连接成功
@@ -304,7 +313,7 @@ public:
      * @param bundleName 应用名称
      *
      */
-    std::function<void(const std::string &&)> GetBackupInfoConnectDone(wptr<Service> obj,
+    std::function<void(const std::string &)> GetBackupInfoConnectDone(wptr<Service> obj,
                                                                        const std::string &bundleName);
 
     /**
@@ -314,7 +323,7 @@ public:
      * @param bundleName 应用名称
      *
      */
-    std::function<void(const std::string &&, bool)> GetBackupInfoConnectDied(
+    std::function<void(const std::string &, bool)> GetBackupInfoConnectDied(
         wptr<Service> obj, const std::string &bundleName);
 
     /**
@@ -612,10 +621,6 @@ private:
     void SetCurrentSessProperties(std::vector<BJsonEntityCaps::BundleInfo> &restoreBundleInfos,
         std::vector<std::string> &restoreBundleNames, RestoreTypeEnum restoreType, std::string &backupVersion);
 
-    void SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &info,
-                                  std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos,
-                                  const std::string &bundleNameIndexInfo);
-
     void ApplyBundleSettings(const std::string &bundleNameIndexInfo,
                              const std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos);
 
@@ -717,10 +722,6 @@ private:
     vector<BIncrementalData> MakeDetailList(const vector<BundleName> &bundleNames);
 
     vector<string> GetBundleNameByDetails(const std::vector<BIncrementalData> &bundlesToBackup);
-
-    void HandleCurGroupBackupInfos(vector<BJsonEntityCaps::BundleInfo> &bundleInfos,
-        std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
-        std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos);
 
     void HandleCurGroupIncBackupInfos(vector<BJsonEntityCaps::BundleInfo> &bundleInfos,
         std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
@@ -886,6 +887,7 @@ private:
     ErrCode ProcessReadyFiles(const std::vector<std::string> &fileNames,
                               const std::vector<int> &errCodes,
                               const std::string &callerName);
+    bool HasInvalidFilePath(const std::vector<std::string> &fileNames);
     ErrCode SendIncrementalFileHandlesByEnhance(const std::string &bundleName,
                                                 const vector<std::string> &fileNames,
                                                 std::vector<FileOpenResult> &openResults);

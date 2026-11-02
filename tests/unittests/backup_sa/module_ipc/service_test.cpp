@@ -32,15 +32,14 @@
 #include "test_common.h"
 #include "test_manager.h"
 
-#include "service.cpp"
-#include "sub_service.cpp"
-#include "service_enhance.cpp"
 #include "ienhance_service_mock.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
 using namespace testing;
 using namespace PowerMgr;
+constexpr int ERR_NO_PERMISSION = 13;
+
 class ServiceTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -898,8 +897,8 @@ HWTEST_F(ServiceTest, SUB_Service_GetFileHandle_0101, testing::ext::TestSize.Lev
         SvcSessionManager::Impl impl_;
         impl_.clientToken = 1;
         BackupExtInfo extInfo {};
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         extInfo.backUpConnection = sptr(new SvcBackupConnection(callDied, callConnected, BUNDLE_NAME));
         extInfo.schedAction = BConstants::ServiceSchedAction::RUNNING;
         impl_.backupExtNameMap[BUNDLE_NAME] = extInfo;
@@ -930,12 +929,12 @@ HWTEST_F(ServiceTest, SUB_Service_OnBackupExtensionDied_0100, testing::ext::Test
         EXPECT_EQ(ret, BError(BError::Codes::OK));
         string bundleName = BUNDLE_NAME;
         EXPECT_TRUE(servicePtr_ != nullptr);
-        servicePtr_->OnBackupExtensionDied(move(bundleName));
+        servicePtr_->OnBackupExtensionDied(bundleName);
         GTEST_LOG_(INFO) << "SUB_Service_OnBackupExtensionDied_0100 BACKUP";
         ret = Init(IServiceReverseType::Scenario::BACKUP);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
         bundleName = BUNDLE_NAME;
-        servicePtr_->OnBackupExtensionDied(move(bundleName));
+        servicePtr_->OnBackupExtensionDied(bundleName);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by GetFileHandle.";
@@ -969,7 +968,7 @@ HWTEST_F(ServiceTest, SUB_Service_OnBackupExtensionDied_0101, testing::ext::Test
         impl_.backupExtNameMap[BUNDLE_NAME] = extInfo;
         impl_.scenario = IServiceReverseType::Scenario::RESTORE;
         EXPECT_TRUE(servicePtr_ != nullptr);
-        servicePtr_->OnBackupExtensionDied(move(bundleName));
+        servicePtr_->OnBackupExtensionDied(bundleName);
         GTEST_LOG_(INFO) << "SUB_Service_OnBackupExtensionDied_0101 BACKUP";
 
         ret = Init(IServiceReverseType::Scenario::BACKUP);
@@ -977,7 +976,7 @@ HWTEST_F(ServiceTest, SUB_Service_OnBackupExtensionDied_0101, testing::ext::Test
         impl_.restoreDataType = RESTORE_DATA_READDY;
         bundleName = "123456789";
         impl_.backupExtNameMap[bundleName] = extInfo;
-        servicePtr_->OnBackupExtensionDied(move(bundleName));
+        servicePtr_->OnBackupExtensionDied(bundleName);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by GetFileHandle.";
@@ -1055,8 +1054,8 @@ HWTEST_F(ServiceTest, SUB_Service_ExtStart_0101, testing::ext::TestSize.Level1)
         SvcSessionManager::Impl impl_;
         impl_.clientToken = 1;
         BackupExtInfo extInfo {};
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         extInfo.backUpConnection = sptr(new SvcBackupConnection(callDied, callConnected, BUNDLE_NAME));
         extInfo.backUpConnection->backupProxy_ = nullptr;
         impl_.backupExtNameMap[BUNDLE_NAME] = extInfo;
@@ -1099,8 +1098,8 @@ HWTEST_F(ServiceTest, SUB_Service_StartCurBundleBackupOrRestore_0100, testing::e
 
         GTEST_LOG_(INFO) << "2.StartCurBundleBackupOrRestore null2";
         BackupExtInfo extInfo {};
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         string bundleNameIndexInfo = "123456789";
         auto connection = sptr(new SvcBackupConnection(callDied, callConnected, bundleNameIndexInfo));
         extInfo.backUpConnection = connection;

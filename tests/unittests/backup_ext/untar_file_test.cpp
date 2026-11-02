@@ -16,8 +16,17 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+
 #include "b_error/b_error.h"
 #include "file_ex.h"
+#include "securec.h"
 #include "test_manager.h"
 #include "untar_file.h"
 
@@ -25,12 +34,221 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 using namespace testing;
 
+// Test constants for file sizes (bytes)
+constexpr size_t SMALL_FILE_SIZE = 100;
+constexpr size_t MEDIUM_FILE_SIZE = 200;
+constexpr size_t TINY_FILE_SIZE = 50;
+constexpr size_t LARGE_FILE_SIZE = 600 * 1024; // 600KB — spans multiple READ_BUFF_SIZE blocks
+
+// Test constants for timestamps (epoch seconds)
+constexpr off_t MTIME_0100 = 1000000000;       // 2001-09-09
+constexpr off_t MTIME_0200 = 1234567890;       // 2009-02-13
+constexpr off_t MTIME_0300 = 1111111111;       // 2005-03-18
+constexpr off_t ATIME_0300 = 2222222222;       // 2040-06-01
+constexpr off_t MTIME_0400 = 999999999;        // 2001-09-09
+constexpr off_t MTIME_PKT_0100 = 1500000000;   // 2017-07-14
+constexpr off_t ATIME_PKT_0100 = 1600000000;   // 2020-09-13
+constexpr off_t MTIME_PKT_0200_SMALL = 1400000000; // 2014-05-13
+constexpr off_t MTIME_PKT_0200_LARGE = 1700000000; // 2023-11-14
+constexpr off_t MTIME_PKT_0300 = 1300000000;   // 2011-03-13
+
+// Test constants for nanoseconds
+constexpr long NSEC_0100 = 500000000;          // 0.5s
+constexpr long NSEC_0300_MTIME = 123456789;
+constexpr long NSEC_0300_ATIME = 987654321;
+constexpr long NSEC_PKT_0100_MTIME = 250000000;
+constexpr long NSEC_PKT_0100_ATIME = 750000000;
+constexpr long NSEC_PKT_0200_SMALL = 100000000;
+constexpr long NSEC_PKT_0200_LARGE = 900000000;
+constexpr long NSEC_PKT_0300 = 333333333;
+
+// Test constants for file modes
+constexpr mode_t MODE_0644 = 0644;
+constexpr mode_t MODE_0640 = 0640;
+constexpr mode_t MODE_0600 = 0600;
+constexpr mode_t MODE_0666 = 0666;
+constexpr mode_t MODE_0660 = 0660;
+constexpr mode_t MODE_PERMISSION_MASK = 0777;
+
+// Tar checksum field indices (within CHKSUM_LEN=8 field)
+constexpr size_t CHKSUM_NULL_TERM_IDX = 6;
+constexpr size_t CHKSUM_SPACE_IDX = 7;
+
+constexpr const char *TEST_DIR = "/data/local/tmp/untar_real_test";
+
+static void ClearCache();
+
 class UntarFileTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase();
     void SetUp() override {};
     void TearDown() override {};
+
+    static void SetUpTestDir()
+    {
+        filesystem::remove_all(TEST_DIR);
+        filesystem::create_directories(TEST_DIR);
+    }
+
+    static void TearDownTestDir()
+    {
+        filesystem::remove_all(TEST_DIR);
+    }
+
+    /**
+     * Build a minimal tar file containing one regular file.
+     * The tar has: 512-byte header + file data (padded to 512) + two 512-byte zero blocks.
+     * Sets tarFilePtr_, tarFileSize_, pos_, tarFileBlockCnt_ on the UntarFile singleton
+     * so that ParseRegularFile can read the file data portion.
+     */
+    static void BuildTarAndPrepare(const string &tarPath, const string &fileName,
+                                   const string &content, off_t mtime, mode_t mode,
+                                   const string &destPath)
+    {
+        TarHeader header;
+        EXPECT_EQ(memset_s(&header, sizeof(header), 0, sizeof(header)), EOK);
+        EXPECT_EQ(strncpy_s(header.name, sizeof(header.name), fileName.c_str(), fileName.length()), EOK);
+        EXPECT_GE(snprintf_s(header.mode, sizeof(header.mode), sizeof(header.mode) - 1, "%07o", mode), 0);
+        EXPECT_GE(snprintf_s(header.uid, sizeof(header.uid), sizeof(header.uid) - 1, "%07o", 0), 0);
+        EXPECT_GE(snprintf_s(header.gid, sizeof(header.gid), sizeof(header.gid) - 1, "%07o", 0), 0);
+        EXPECT_GE(snprintf_s(header.size, sizeof(header.size), sizeof(header.size) - 1, "%011zo", content.size()), 0);
+        EXPECT_GE(snprintf_s(header.mtime, sizeof(header.mtime), sizeof(header.mtime) - 1, "%011llo",
+                             static_cast<long long>(mtime)),
+                  0);
+        header.typeFlag = REGTYPE;
+        EXPECT_EQ(strncpy_s(header.magic, sizeof(header.magic), TMAGIC.c_str(), TMAGIC_LEN - 1), EOK);
+        header.version[0] = '0';
+        header.version[1] = '0';
+
+        // Calculate checksum (checksum field treated as spaces)
+        EXPECT_EQ(memset_s(header.chksum, sizeof(header.chksum), ' ', CHKSUM_LEN), EOK);
+        uint32_t chksum = 0;
+        const uint8_t *p = reinterpret_cast<const uint8_t *>(&header);
+        for (size_t i = 0; i < sizeof(header); i++) {
+            chksum += p[i];
+        }
+        EXPECT_GE(snprintf_s(header.chksum, sizeof(header.chksum), sizeof(header.chksum) - 1, "%06o", chksum), 0);
+        header.chksum[CHKSUM_NULL_TERM_IDX] = '\0';
+        header.chksum[CHKSUM_SPACE_IDX] = ' ';
+
+        // Write tar file: header + data (padded) + two zero blocks
+        ofstream tar(tarPath, ios::binary);
+        ASSERT_TRUE(tar.is_open());
+        tar.write(reinterpret_cast<const char *>(&header), sizeof(header));
+
+        tar.write(content.data(), content.size());
+        size_t paddedSize = ((content.size() + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+        size_t padding = paddedSize - content.size();
+        string pad(padding, '\0');
+        tar.write(pad.data(), padding);
+
+        string zeroBlock(BLOCK_SIZE, '\0');
+        tar.write(zeroBlock.data(), BLOCK_SIZE);
+        tar.write(zeroBlock.data(), BLOCK_SIZE);
+        tar.close();
+
+        // Prepare UntarFile singleton: open tar file, position at data start
+        auto &untar = UntarFile::GetInstance();
+        untar.rootPath_ = "";
+
+        untar.tarFilePtr_ = fopen(tarPath.c_str(), "rb");
+        ASSERT_NE(untar.tarFilePtr_, nullptr);
+
+        fseeko(untar.tarFilePtr_, sizeof(header), SEEK_SET);
+        untar.pos_ = ftello(untar.tarFilePtr_);
+        untar.tarFileSize_ = static_cast<off_t>(content.size());
+        untar.tarFileBlockCnt_ = (static_cast<off_t>(content.size()) + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        untar.readCnt_ = BLOCK_SIZE;
+    }
+
+    static void CleanupUntar()
+    {
+        auto &untar = UntarFile::GetInstance();
+        if (untar.tarFilePtr_ != nullptr) {
+            fclose(untar.tarFilePtr_);
+            untar.tarFilePtr_ = nullptr;
+        }
+        untar.tarFileSize_ = 0;
+        untar.tarFileBlockCnt_ = 0;
+        untar.pos_ = 0;
+        untar.readCnt_ = 0;
+        untar.rootPath_.clear();
+    }
+
+    struct FileProps {
+        string content;
+        mode_t mode {0644};
+        off_t mtime {0};
+        long mtimeNsec {0};
+        off_t atime {0};
+        long atimeNsec {0};
+    };
+
+    static void MakeSourceFile(const string &path, const FileProps &props)
+    {
+        {
+            ofstream ofs(path, ios::binary);
+            ofs.write(props.content.data(), props.content.size());
+            ofs.close();
+        }
+        EXPECT_EQ(chmod(path.c_str(), props.mode), 0);
+        struct timespec ts[2] = {{props.atime, props.atimeNsec}, {props.mtime, props.mtimeNsec}};
+        EXPECT_EQ(utimensat(AT_FDCWD, path.c_str(), ts, 0), 0);
+    }
+
+    static void VerifyRestoredFile(const string &path, const FileProps &expected, bool checkAtime)
+    {
+        ifstream ifs(path, ios::binary);
+        ASSERT_TRUE(ifs.is_open());
+        string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+        ifs.close();
+        EXPECT_EQ(readContent, expected.content);
+        struct stat st;
+        ASSERT_EQ(stat(path.c_str(), &st), 0);
+        EXPECT_EQ(st.st_mtim.tv_sec, expected.mtime) << "mtime should be preserved";
+        EXPECT_EQ(st.st_mtim.tv_nsec, expected.mtimeNsec) << "mtime nsec should be preserved";
+        if (checkAtime) {
+            EXPECT_EQ(st.st_atim.tv_sec, expected.atime) << "atime should be preserved";
+            EXPECT_EQ(st.st_atim.tv_nsec, expected.atimeNsec) << "atime nsec should be preserved";
+        }
+        EXPECT_EQ(st.st_size, static_cast<off_t>(expected.content.size()));
+        EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expected.mode) << "mode should be preserved";
+    }
+
+    static string DoPacketAndUnPacket(const vector<pair<string, string>> &srcFiles,
+                                      const string &pkgName, const string &srcDir,
+                                      const string &restoreDir)
+    {
+        TarMap tarMap {};
+        auto reportCb = [](std::string msg, int err) {};
+        EXPECT_TRUE(TarFile::GetInstance().Packet(srcFiles, pkgName, srcDir, tarMap, reportCb));
+        string tarFile = srcDir + "/" + pkgName + ".0.tar";
+        auto [ret, fileInfos, errFileInfos] = UntarFile::GetInstance().UnPacket(tarFile, restoreDir);
+        EXPECT_EQ(ret, 0);
+        ClearCache();
+        return tarFile;
+    }
+
+    /**
+     * GenRealPath strips the leading '/' from absolute paths, so the restored
+     * file may be created at a relative path (relative to CWD) instead of the
+     * expected absolute path. This helper checks both the absolute path and
+     * the relative path (with leading '/' stripped) and returns whichever exists.
+     */
+    static string ResolveRestoredPath(const string &absPath)
+    {
+        if (access(absPath.c_str(), F_OK) == 0) {
+            return absPath;
+        }
+        if (absPath[0] == '/') {
+            string relPath = absPath.substr(1);
+            if (access(relPath.c_str(), F_OK) == 0) {
+                return relPath;
+            }
+        }
+        return absPath;
+    }
 };
 
 void UntarFileTest::SetUpTestCase()
@@ -547,5 +765,405 @@ HWTEST_F(UntarFileTest, SUB_Untar_File_IncrementalUnPacket_0500, testing::ext::T
         GTEST_LOG_(INFO) << "UntarFileTest-an exception occurred by UntarFile.";
     }
     GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_IncrementalUnPacket_0500";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_Real_0100
+ * @tc.name: SUB_Untar_File_ParseRegularFile_Real_0100
+ * @tc.desc: 测试 ParseRegularFile 真实解包后 mtime 正确恢复（小文件，缓冲区内）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0100";
+    SetUpTestDir();
+    string tarPath = string(TEST_DIR) + "/test.tar";
+    string destPath = string(TEST_DIR) + "/dest.txt";
+    // Small file: 100 bytes — will be buffered in C library buffer (<= st_blksize)
+    // This is the exact scenario that triggers the bug without fflush
+    string content(SMALL_FILE_SIZE, 'X');
+    off_t expectedMtime = MTIME_0100; // 2001-09-09
+    long expectedMtimeNsec = NSEC_0100; // 0.5s
+    mode_t expectedMode = MODE_0644;
+
+    BuildTarAndPrepare(tarPath, "dest.txt", content, expectedMtime, expectedMode, destPath);
+
+    FileStatInfo info {};
+    info.fullPath = destPath;
+    info.mode = expectedMode;
+    info.mtime = expectedMtime;
+    info.mtimeNsec = expectedMtimeNsec;
+    info.atime = 0;
+    info.atimeNsec = 0;
+
+    ErrFileInfo errFileInfo = UntarFile::GetInstance().ParseRegularFile(info);
+    EXPECT_EQ(errFileInfo.find(destPath), errFileInfo.end())
+        << "ParseRegularFile should not report errors";
+
+    // Verify file content
+    ifstream ifs(destPath, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    // Verify mtime — this is the key assertion
+    struct stat st;
+    ASSERT_EQ(stat(destPath.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime)
+        << "mtime should be preserved, not overwritten by fclose's implicit flush";
+    EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec)
+        << "mtime nsec should be preserved";
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode);
+
+    CleanupUntar();
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_ParseRegularFile_Real_0100";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_Real_0200
+ * @tc.name: SUB_Untar_File_ParseRegularFile_Real_0200
+ * @tc.desc: 测试 ParseRegularFile 真实解包后 mtime 正确恢复（大文件，跨缓冲区）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0200";
+    SetUpTestDir();
+    string tarPath = string(TEST_DIR) + "/test_large.tar";
+    string destPath = string(TEST_DIR) + "/dest_large.txt";
+    // Large file: 600KB — spans multiple READ_BUFF_SIZE blocks, last chunk > st_blksize
+    string content(LARGE_FILE_SIZE, 'Y');
+    off_t expectedMtime = MTIME_0200;
+    mode_t expectedMode = MODE_0644;
+
+    BuildTarAndPrepare(tarPath, "dest_large.txt", content, expectedMtime, expectedMode, destPath);
+
+    FileStatInfo info {};
+    info.fullPath = destPath;
+    info.mode = expectedMode;
+    info.mtime = expectedMtime;
+    info.mtimeNsec = 0;
+    info.atime = 0;
+    info.atimeNsec = 0;
+
+    ErrFileInfo errFileInfo = UntarFile::GetInstance().ParseRegularFile(info);
+    EXPECT_EQ(errFileInfo.find(destPath), errFileInfo.end());
+
+    // Verify file content
+    ifstream ifs(destPath, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    struct stat st;
+    ASSERT_EQ(stat(destPath.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime)
+        << "mtime should be preserved even for large files";
+    EXPECT_EQ(st.st_size, static_cast<off_t>(content.size()));
+
+    CleanupUntar();
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_ParseRegularFile_Real_0200";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_Real_0300
+ * @tc.name: SUB_Untar_File_ParseRegularFile_Real_0300
+ * @tc.desc: 测试 ParseRegularFile 真实解包后 atime 和 mtime 均正确恢复
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0300";
+    SetUpTestDir();
+    string tarPath = string(TEST_DIR) + "/test_atime.tar";
+    string destPath = string(TEST_DIR) + "/dest_atime.txt";
+    string content(MEDIUM_FILE_SIZE, 'Z');
+    off_t expectedMtime = MTIME_0300;
+    off_t expectedAtime = ATIME_0300;
+    long expectedMtimeNsec = NSEC_0300_MTIME;
+    long expectedAtimeNsec = NSEC_0300_ATIME;
+    mode_t expectedMode = MODE_0600;
+
+    BuildTarAndPrepare(tarPath, "dest_atime.txt", content, expectedMtime, expectedMode, destPath);
+
+    FileStatInfo info {};
+    info.fullPath = destPath;
+    info.mode = expectedMode;
+    info.mtime = expectedMtime;
+    info.mtimeNsec = expectedMtimeNsec;
+    info.atime = expectedAtime;
+    info.atimeNsec = expectedAtimeNsec;
+
+    ErrFileInfo errFileInfo = UntarFile::GetInstance().ParseRegularFile(info);
+    EXPECT_EQ(errFileInfo.find(destPath), errFileInfo.end());
+
+    // Verify file content
+    ifstream ifs(destPath, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    struct stat st;
+    ASSERT_EQ(stat(destPath.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime) << "mtime should be preserved";
+    EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec) << "mtime nsec should be preserved";
+    EXPECT_EQ(st.st_atim.tv_sec, expectedAtime) << "atime should be preserved";
+    EXPECT_EQ(st.st_atim.tv_nsec, expectedAtimeNsec) << "atime nsec should be preserved";
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode);
+
+    CleanupUntar();
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_ParseRegularFile_Real_0300";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_Real_0400
+ * @tc.name: SUB_Untar_File_ParseRegularFile_Real_0400
+ * @tc.desc: 测试 ParseRegularFile 真实解包空文件后 mtime 正确恢复
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0400";
+    SetUpTestDir();
+    string tarPath = string(TEST_DIR) + "/test_empty.tar";
+    string destPath = string(TEST_DIR) + "/dest_empty.txt";
+    string content; // empty file
+    off_t expectedMtime = MTIME_0400;
+    mode_t expectedMode = MODE_0666;
+
+    BuildTarAndPrepare(tarPath, "dest_empty.txt", content, expectedMtime, expectedMode, destPath);
+
+    FileStatInfo info {};
+    info.fullPath = destPath;
+    info.mode = expectedMode;
+    info.mtime = expectedMtime;
+    info.mtimeNsec = 0;
+    info.atime = 0;
+    info.atimeNsec = 0;
+
+    ErrFileInfo errFileInfo = UntarFile::GetInstance().ParseRegularFile(info);
+    EXPECT_EQ(errFileInfo.find(destPath), errFileInfo.end());
+
+    // Verify file content (empty)
+    ifstream ifs(destPath, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    struct stat st;
+    ASSERT_EQ(stat(destPath.c_str(), &st), 0);
+    EXPECT_EQ(st.st_size, 0);
+    EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime) << "mtime should be preserved for empty files";
+
+    CleanupUntar();
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_ParseRegularFile_Real_0400";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_ParseRegularFile_Real_0500
+ * @tc.name: SUB_Untar_File_ParseRegularFile_Real_0500
+ * @tc.desc: 测试 ParseRegularFile mtime=0 时跳过时间设置
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_ParseRegularFile_Real_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_ParseRegularFile_Real_0500";
+    SetUpTestDir();
+    string tarPath = string(TEST_DIR) + "/test_zero_mtime.tar";
+    string destPath = string(TEST_DIR) + "/dest_zero_mtime.txt";
+    string content(TINY_FILE_SIZE, 'W');
+    mode_t expectedMode = MODE_0644;
+
+    BuildTarAndPrepare(tarPath, "dest_zero_mtime.txt", content, 0, expectedMode, destPath);
+
+    FileStatInfo info {};
+    info.fullPath = destPath;
+    info.mode = expectedMode;
+    info.mtime = 0; // SetFileTime should return early
+    info.mtimeNsec = 0;
+    info.atime = 0;
+    info.atimeNsec = 0;
+
+    ErrFileInfo errFileInfo = UntarFile::GetInstance().ParseRegularFile(info);
+    EXPECT_EQ(errFileInfo.find(destPath), errFileInfo.end());
+
+    // Verify file content
+    ifstream ifs(destPath, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    // File should still be created with correct content
+    struct stat st;
+    ASSERT_EQ(stat(destPath.c_str(), &st), 0);
+    EXPECT_EQ(st.st_size, static_cast<off_t>(content.size()));
+    // mtime should NOT be 0 (it should be the current time since SetFileTime was skipped)
+    EXPECT_NE(st.st_mtim.tv_sec, 0);
+
+    CleanupUntar();
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_ParseRegularFile_Real_0500";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_PacketUnPacket_Real_0100
+ * @tc.name: SUB_Untar_File_PacketUnPacket_Real_0100
+ * @tc.desc: TarFile::Packet 打包单个文件后 UntarFile::UnPacket 解包，验证内容、时间戳（含纳秒）、权限均正确
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0100";
+    SetUpTestDir();
+    string srcDir = string(TEST_DIR) + "/src";
+    filesystem::create_directories(srcDir);
+    string restoreDir = string(TEST_DIR) + "/restore";
+    filesystem::create_directories(restoreDir);
+
+    string srcFile = srcDir + "/hello.txt";
+    FileProps props;
+    props.content = "Hello, Packet+UnPacket!";
+    props.mode = MODE_0640;
+    props.mtime = MTIME_PKT_0100;
+    props.mtimeNsec = NSEC_PKT_0100_MTIME;
+    props.atime = ATIME_PKT_0100;
+    props.atimeNsec = NSEC_PKT_0100_ATIME;
+    MakeSourceFile(srcFile, props);
+
+    vector<pair<string, string>> srcFiles = {{srcFile, "src/hello.txt"}};
+    DoPacketAndUnPacket(srcFiles, "pkt", srcDir, restoreDir);
+
+    VerifyRestoredFile(ResolveRestoredPath(restoreDir + "/src/hello.txt"), props, true);
+
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_PacketUnPacket_Real_0100";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_PacketUnPacket_Real_0200
+ * @tc.name: SUB_Untar_File_PacketUnPacket_Real_0200
+ * @tc.desc: TarFile::Packet 打包多个文件（小文件+大文件）后 UntarFile::UnPacket 解包，验证内容、时间戳、权限均正确
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0200";
+    SetUpTestDir();
+    string srcDir = string(TEST_DIR) + "/src";
+    filesystem::create_directories(srcDir);
+    string restoreDir = string(TEST_DIR) + "/restore";
+    filesystem::create_directories(restoreDir);
+
+    FileProps props1;
+    props1.content = string(SMALL_FILE_SIZE, 'A');
+    props1.mode = MODE_0600;
+    props1.mtime = MTIME_PKT_0200_SMALL;
+    props1.mtimeNsec = NSEC_PKT_0200_SMALL;
+    MakeSourceFile(srcDir + "/small.txt", props1);
+
+    FileProps props2;
+    props2.content = string(LARGE_FILE_SIZE, 'B');
+    props2.mode = MODE_0644;
+    props2.mtime = MTIME_PKT_0200_LARGE;
+    props2.mtimeNsec = NSEC_PKT_0200_LARGE;
+    MakeSourceFile(srcDir + "/large.bin", props2);
+
+    vector<pair<string, string>> srcFiles = {
+        {srcDir + "/small.txt", "src/small.txt"},
+        {srcDir + "/large.bin", "src/large.bin"},
+    };
+    DoPacketAndUnPacket(srcFiles, "multi", srcDir, restoreDir);
+
+    VerifyRestoredFile(ResolveRestoredPath(restoreDir + "/src/small.txt"), props1, false);
+    VerifyRestoredFile(ResolveRestoredPath(restoreDir + "/src/large.bin"), props2, false);
+
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_PacketUnPacket_Real_0200";
+}
+
+/**
+ * @tc.number: SUB_Untar_File_PacketUnPacket_Real_0300
+ * @tc.name: SUB_Untar_File_PacketUnPacket_Real_0300
+ * @tc.desc: TarFile::Packet 打包嵌套目录中的文件后 UntarFile::UnPacket 解包，验证内容、时间戳、权限均正确
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ */
+HWTEST_F(UntarFileTest, SUB_Untar_File_PacketUnPacket_Real_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "UntarFileTest-begin SUB_Untar_File_PacketUnPacket_Real_0300";
+    SetUpTestDir();
+    string srcDir = string(TEST_DIR) + "/src";
+    string nestedDir = srcDir + "/dir1/dir2";
+    filesystem::create_directories(nestedDir);
+    string restoreDir = string(TEST_DIR) + "/restore";
+    filesystem::create_directories(restoreDir);
+
+    // Create nested file
+    string srcFile = nestedDir + "/deep.txt";
+    string content = "Deep nested file content";
+    mode_t expectedMode = MODE_0660;
+    off_t expectedMtime = MTIME_PKT_0300;
+    long expectedMtimeNsec = NSEC_PKT_0300;
+    {
+        ofstream ofs(srcFile, ios::binary);
+        ofs.write(content.data(), content.size());
+        ofs.close();
+    }
+    chmod(srcFile.c_str(), expectedMode);
+    struct timespec ts[2] = {{expectedMtime, 0}, {expectedMtime, expectedMtimeNsec}};
+    utimensat(AT_FDCWD, srcFile.c_str(), ts, 0);
+
+    // Packet — use pair<physicalPath, restorePath> to control tar entry name
+    TarMap tarMap {};
+    vector<pair<string, string>> srcFiles = {{srcFile, "src/dir1/dir2/deep.txt"}};
+    auto reportCb = [](std::string msg, int err) {};
+    ASSERT_TRUE(TarFile::GetInstance().Packet(srcFiles, "nested", srcDir, tarMap, reportCb));
+    string tarFile = srcDir + "/nested.0.tar";
+
+    // UnPacket
+    auto [ret, fileInfos, errFileInfos] = UntarFile::GetInstance().UnPacket(tarFile, restoreDir);
+    EXPECT_EQ(ret, 0);
+    ClearCache();
+
+    // Verify restored file
+    string restoredFile = ResolveRestoredPath(restoreDir + "/src/dir1/dir2/deep.txt");
+    ifstream ifs(restoredFile, ios::binary);
+    ASSERT_TRUE(ifs.is_open());
+    string readContent((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
+    ifs.close();
+    EXPECT_EQ(readContent, content);
+
+    struct stat st;
+    ASSERT_EQ(stat(restoredFile.c_str(), &st), 0);
+    EXPECT_EQ(st.st_mtim.tv_sec, expectedMtime) << "mtime should be preserved";
+    EXPECT_EQ(st.st_mtim.tv_nsec, expectedMtimeNsec) << "mtime nsec should be preserved";
+    EXPECT_EQ(st.st_mode & MODE_PERMISSION_MASK, expectedMode) << "mode should be preserved";
+
+    TearDownTestDir();
+    GTEST_LOG_(INFO) << "UntarFileTest-end SUB_Untar_File_PacketUnPacket_Real_0300";
 }
 } // namespace OHOS::FileManagement::Backup

@@ -302,8 +302,8 @@ ErrCode MigrateManager::ReportAppFileReady(const std::string &bundleName,
     if (errCode != 0) {
         HILOGE("GetFileHandle fail err:%{public}d", errCode);
     }
-    int reportRs = fd.Get() < 0 ? servicePtr_->DefaultAppFileReadyWithoutFd(fileName, newPath, errCode) :
-        servicePtr_->DefaultAppFileReady(fileName, newPath, move(fd), errCode);
+    int reportRs = fd.Get() < 0 ? servicePtr_->DefaultAppFileReadyWithoutFd(fileName, bundleName, errCode) :
+        servicePtr_->DefaultAppFileReady(fileName, bundleName, move(fd), errCode);
     if (SUCCEEDED(reportRs)) {
         HILOGD("Report app file ready success, fileName: %{public}s", fileName.c_str());
         if (needDelete) {

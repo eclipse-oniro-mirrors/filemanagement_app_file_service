@@ -37,6 +37,9 @@ napi_value GrantDecUriPermission(napi_env env, FileManagement::LibN::NFuncArg &f
 napi_value GrantSharedDirectoryPermission(napi_env env, napi_callback_info info);
 napi_value RevokeSharedDirectoryPermission(napi_env env, napi_callback_info info);
 napi_value GetSharedDirectoryInfo(napi_env env, napi_callback_info info);
+napi_value GrantPermissionByUser(napi_env env, napi_callback_info info);
+napi_value RevokePermissionByUser(napi_env env, napi_callback_info info);
+napi_value GetStatusByPermission(napi_env env, napi_callback_info info);
 
 struct PolicyErrorArgs {
     deque<PolicyErrorResult> errorResults;

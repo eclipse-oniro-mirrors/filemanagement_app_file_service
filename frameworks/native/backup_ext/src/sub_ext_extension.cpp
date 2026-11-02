@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+// LCOV_EXCL_BR_START
+#include "b_resources/b_constants.h"
 #include "ext_extension.h"
 
 #include <algorithm>
@@ -121,12 +123,9 @@ void BackupExtExtension::HandleIncBackupExSuccess(const std::string &backupExRet
 ErrCode BackupExtExtension::HandleIncrementalBackup(int incrementalFd, int manifestFd)
 {
     HILOGI("Start HandleIncrementalBackup. incrementalFd:%{public}d, manifestFd:%{public}d", incrementalFd, manifestFd);
-    UniqueFd incrementalFdUnique(dup(incrementalFd));
-    UniqueFd manifestFdUnique(dup(manifestFd));
-    ErrCode ret = HandleIncrementalBackup(std::move(incrementalFdUnique), std::move(manifestFdUnique));
-    close(incrementalFd);
-    close(manifestFd);
-    return ret;
+    UniqueFd incrementalFdUnique(incrementalFd);
+    UniqueFd manifestFdUnique(manifestFd);
+    return HandleIncrementalBackup(std::move(incrementalFdUnique), std::move(manifestFdUnique));
 }
 
 ErrCode BackupExtExtension::HandleIncrementalBackup(UniqueFd incrementalFd, UniqueFd manifestFd)
@@ -1541,24 +1540,47 @@ std::unordered_map<std::string, std::string> BackupExtExtension::BuildCompatible
         }
         if (compatibleDirs_.find(restoreDir) != compatibleDirs_.end() &&
             includeSet.find(restoreDir) != includeSet.end()) {
-            mapping.emplace(backupDir, restoreDir);
+            std::string normalizedBackupDir = StringUtils::RemoveLeadingSlash(backupDir);
+            std::string normalizedRestoreDir = StringUtils::RemoveLeadingSlash(restoreDir);
+            mapping.emplace(normalizedBackupDir, normalizedRestoreDir);
             HILOGI("compatDir enabled, backupDir=%{public}s, restoreDir=%{public}s",
-                GetAnonyPath(backupDir).c_str(), GetAnonyPath(restoreDir).c_str());
+                   GetAnonyPath(normalizedBackupDir).c_str(), GetAnonyPath(normalizedRestoreDir).c_str());
         }
     }
     HILOGI("compatDirMapping size=%{public}zu", mapping.size());
     return mapping;
 }
 
-std::string BackupExtExtension::MapPathWithCompatDir(const std::string &filePath) const
+std::string BackupExtExtension::MapPathWithCompatDir(const std::string &filePath, bool isDir) const
 {
+    std::string normalizedPath = filePath;
+    if (isDir && !normalizedPath.empty() && normalizedPath.back() != '/') {
+        normalizedPath += '/';
+    }
     for (const auto &mapEntry : compatDirMapping_) {
         const std::string &backupDir = mapEntry.first;
         const std::string &restoreDir = mapEntry.second;
-        if (filePath.compare(0, backupDir.length(), backupDir) == 0 &&
-            (filePath.length() == backupDir.length() || filePath[backupDir.length()] == '/')) {
-            return restoreDir + filePath.substr(backupDir.length());
+        // 前缀不匹配, 跳过
+        if (normalizedPath.compare(0, backupDir.length(), backupDir) != 0) {
+            continue;
         }
+        // backupDir 末尾带 '/', 前缀已包含分隔符, 匹配成功
+        // 需保证 restoreDir 末尾也有 '/', 否则拼接后缺少分隔符
+        if (!backupDir.empty() && backupDir.back() == '/') {
+            if (!restoreDir.empty() && restoreDir.back() != '/') {
+                return restoreDir + '/' + normalizedPath.substr(backupDir.length());
+            }
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // backupDir 末尾不带 '/', filePath 精确匹配 backupDir, 匹配成功
+        if (normalizedPath.length() == backupDir.length()) {
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // backupDir 末尾不带 '/', 紧跟分隔符 '/', 匹配成功
+        if (normalizedPath[backupDir.length()] == '/') {
+            return restoreDir + normalizedPath.substr(backupDir.length());
+        }
+        // 前缀匹配但边界不对, 跳过 (如 "/bak/p1" 误匹配 "/bak/p12/file.txt")
     }
     return filePath;
 }
@@ -1571,7 +1593,7 @@ void BackupExtExtension::ApplyRestorePathMapping(
     }
     std::vector<std::pair<std::string, struct ReportFileInfo>> remappedEntries;
     for (auto it = localFilesInfo.begin(); it != localFilesInfo.end();) {
-        std::string restorePath = MapPathWithCompatDir(it->first);
+        std::string restorePath = MapPathWithCompatDir(it->first, it->second.isDir);
         if (restorePath != it->first) {
             it->second.restorePath = restorePath;
             remappedEntries.emplace_back(std::move(restorePath), std::move(it->second));
@@ -2037,11 +2059,16 @@ void BackupExtExtension::HandleExtOnRelease(bool isAppResultReport, ErrCode errC
                 return;
             }
             auto callback = extPtr->OnReleaseCallback(obj);
-            ErrCode ret = extPtr->extension_->OnRelease(callback, scenario);
-            if (ret != ERR_OK) {
-                HILOGE("Call onRelease failed, ret = %{public}d", ret);
-                return;
-            }
+            // Keep the application call separate from the thread waiting for its timeout.
+            extPtr->onReleaseTaskPool_.AddTask([extPtr, callback, scenario]() {
+                if (extPtr->stopWaitOnRelease_.load()) {
+                    return;
+                }
+                ErrCode ret = extPtr->extension_->OnRelease(callback, scenario);
+                if (ret != ERR_OK) {
+                    HILOGE("Call onRelease failed, ret = %{public}d", ret);
+                }
+            });
             std::unique_lock<std::mutex> lock(extPtr->execOnReleaseLock_);
             extPtr->execOnReleaseCon_.wait_for(lock, std::chrono::milliseconds(BConstants::APP_ON_RELEASE_MAX_TIMEOUT),
                 [extPtr] { return extPtr->stopWaitOnRelease_.load(); });
@@ -2050,7 +2077,7 @@ void BackupExtExtension::HandleExtOnRelease(bool isAppResultReport, ErrCode errC
         }
         extPtr->HandleExtDisconnect(isAppResultReport, errCode);
     };
-    onReleaseTaskPool_.AddTask([task]() { task(); });
+    threadPool_.AddTask([task]() { task(); });
 }
 
 std::function<void(ErrCode, const std::string)> BackupExtExtension::GetComInfoCallback(wptr<BackupExtExtension> obj)
@@ -2248,7 +2275,7 @@ bool BackupExtExtension::InitManageJsonFd()
     ssize_t writeLen = write(manageJsonFd_.Get(), "[", 1);
     if (writeLen < 0 || writeLen != 1) {
         HILOGE("InitManageJsonFd: faild write [ , err=%{public}d", errno);
-        close(manageJsonFd_.Release());
+        manageJsonFd_ = UniqueFd();
         return false;
     }
     HILOGI("InitManageJsonFd: successfully opened fd=%{public}d", rawFd);
@@ -2263,7 +2290,7 @@ void BackupExtExtension::CloseManageJsonFd()
         if (writeLen < 0 || writeLen != 1) {
             HILOGE("CloseManageJsonFd: faild write end symbol ] , err=%{public}d", errno);
         }
-        close(manageJsonFd_.Release());
+        manageJsonFd_ = UniqueFd();
         HILOGD("CloseManageJsonFd: closed fd");
     } else {
         HILOGW("CloseManageJsonFd: file not find");
@@ -2348,3 +2375,4 @@ void BackupExtExtension::WaitforFdAppendComplete(std::vector<std::shared_ptr<IFi
     CloseManageJsonFd();
 }
 } // namespace OHOS::FileManagement::Backup
+// LCOV_EXCL_BR_STOP

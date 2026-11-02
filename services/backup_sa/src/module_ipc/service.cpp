@@ -788,6 +788,7 @@ void Service::SetCurrentSessProperties(
             HILOGI("current bundle, unicast info:%{public}s", GetAnonyString(uniCastInfo.detail).c_str());
             session_->SetBackupExtInfo(bundleNameIndexInfo, uniCastInfo.detail);
         }
+        session_->SetIsReadyLaunch(bundleNameIndexInfo);
     }
 }
 
@@ -801,39 +802,6 @@ void Service::ApplyBundleSettings(const std::string &bundleNameIndexInfo,
         session_->SetExcludeInfos(bundleNameIndexInfo, iterSet->second.excludeInfos);
         session_->SetBatchSize(bundleNameIndexInfo, iterSet->second.batchSize);
         session_->SetRestoreScene(bundleNameIndexInfo, iterSet->second.restoreScene);
-    }
-}
-
-void Service::HandleCurGroupBackupInfos(
-    std::vector<BJsonEntityCaps::BundleInfo> &backupInfos,
-    std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
-    std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos)
-{
-    for (auto &info : backupInfos) {
-        HILOGI("Current backupInfo bundleName:%{public}s, extName:%{public}s, appIndex:%{public}d", info.name.c_str(),
-               info.extensionName.c_str(), info.appIndex);
-        std::string bundleNameIndexInfo = BJsonUtil::BuildBundleNameIndexInfo(info.name, info.appIndex);
-        SetCurrentSessProperties(info, bundleSettingInfos, bundleNameIndexInfo);
-        BJsonUtil::BundleDetailInfo uniCastInfo;
-        if (BJsonUtil::FindBundleInfoByName(bundleNameDetailMap, bundleNameIndexInfo, UNICAST_TYPE, uniCastInfo)) {
-            HILOGI("current bundle:%{public}s, unicast info:%{public}s, unicast info size:%{public}zu",
-                   bundleNameIndexInfo.c_str(), GetAnonyString(uniCastInfo.detail).c_str(), uniCastInfo.detail.size());
-            session_->SetBackupExtInfo(bundleNameIndexInfo, uniCastInfo.detail);
-        }
-        session_->SetBundleUserId(bundleNameIndexInfo, session_->GetSessionUserId());
-        session_->SetBackupExtName(bundleNameIndexInfo, info.extensionName);
-        session_->SetIsReadyLaunch(bundleNameIndexInfo);
-        std::string backupScene = "";
-        if (BJsonUtil::FindBackupSceneByName(bundleNameDetailMap, bundleNameIndexInfo, backupScene)) {
-            session_->SetBackupScene(bundleNameIndexInfo, backupScene);
-        }
-        auto iterSet = bundleSettingInfos.find(bundleNameIndexInfo);
-        if (iterSet != bundleSettingInfos.end()) {
-            session_->SetSupportWithoutTar(bundleNameIndexInfo, iterSet->second.isSupportWithoutTar);
-            session_->SetExcludeInfos(bundleNameIndexInfo, iterSet->second.excludeInfos);
-            session_->SetBatchSize(bundleNameIndexInfo, iterSet->second.batchSize);
-            session_->SetRestoreScene(bundleNameIndexInfo, iterSet->second.restoreScene);
-        }
     }
 }
 
@@ -1369,10 +1337,10 @@ void Service::SessionDeactive()
     }
 }
 
-std::function<void(const std::string &&)> Service::GetBackupInfoConnectDone(wptr<Service> obj,
-                                                                            const std::string &bundleName)
+std::function<void(const std::string &)> Service::GetBackupInfoConnectDone(wptr<Service> obj,
+                                                                           const std::string &bundleName)
 {
-    return [obj](const string &&bundleName) {
+    return [obj](const string &bundleName) {
         HILOGI("GetBackupInfoConnectDone, bundleName: %{public}s", bundleName.c_str());
         auto thisPtr = obj.promote();
         if (!thisPtr) {
@@ -1411,10 +1379,10 @@ void Service::ProcessDeactiveCleanup(std::vector<std::string> &bundleNameList, E
     }
 }
 
-std::function<void(const std::string &&, bool)> Service::GetBackupInfoConnectDied(wptr<Service> obj,
-                                                                                  const std::string &bundleName)
+std::function<void(const std::string &, bool)> Service::GetBackupInfoConnectDied(wptr<Service> obj,
+                                                                                 const std::string &bundleName)
 {
-    return [obj](const string &&bundleName, bool isCleanCalled) {
+    return [obj](const string &bundleName, bool isCleanCalled) {
         HILOGI("GetBackupInfoConnectDied, bundleName: %{public}s", bundleName.c_str());
         auto thisPtr = obj.promote();
         if (!thisPtr) {
@@ -1469,8 +1437,8 @@ ErrCode Service::GetBackupInfoCmdHandle(const BundleName &bundleName, std::strin
     }
     auto callConnected = GetBackupInfoConnectDone(wptr(this), bundleName);
     auto callDied = GetBackupInfoConnectDied(wptr(this), bundleName);
-    backupConnection->SetCallback(callConnected);
-    backupConnection->SetCallDied(callDied);
+    backupConnection->SetOnConnectedCb(callConnected);
+    backupConnection->SetOnDiedCb(callDied);
     AAFwk::Want want = CreateConnectWant(bundleName);
     auto ret = backupConnection->ConnectBackupExtAbility(want, GetUserIdDefault(), false);
     if (ret) {

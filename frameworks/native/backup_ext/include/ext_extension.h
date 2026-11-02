@@ -294,7 +294,7 @@ private:
                       unordered_map<string, struct ReportFileInfo> &localFilesInfo);
     void ApplyRestorePathMapping(unordered_map<string, struct ReportFileInfo> &localFilesInfo);
     std::unordered_map<std::string, std::string> BuildCompatibleDirMapping();
-    std::string MapPathWithCompatDir(const std::string &filePath) const;
+    std::string MapPathWithCompatDir(const std::string &filePath, bool isDir) const;
 
     void AsyncTaskDoIncrementalBackup(UniqueFd incrementalFd, UniqueFd manifestFd);
     void AsyncTaskOnIncrementalBackup();

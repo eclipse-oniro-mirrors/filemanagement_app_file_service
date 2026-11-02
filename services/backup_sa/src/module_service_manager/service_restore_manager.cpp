@@ -46,7 +46,8 @@ ErrCode Service::SetSessPropertiesRestore(const std::vector<std::string> &restor
     std::vector<std::string> strategies = {
         "RestoreBasePropertyStrategy",
         "DefaultPropertyStrategy",
-        "DataSizePropertyStrategy"
+        "DataSizePropertyStrategy",
+        "ReadyLaunchStrategy"
     };
     for (const auto &restoreInfo : restoreBundleInfos) {
         auto it = find_if(restoreBundleNames.begin(), restoreBundleNames.end(), [&restoreInfo](const auto &bundleName) {
@@ -106,7 +107,7 @@ ErrCode Service::SetSessPropertiesWithDetailRestore(const std::vector<std::strin
     session_->SetOldBackupVersion(oldBackupVersion_);
     std::vector<std::string> strategies = {
         "RestoreBasePropertyStrategy", "DefaultPropertyStrategy", "DataSizePropertyStrategy",
-        "ClearDataFlagPropertyStrategy", "RestoreExtraPropertyStrategy"
+        "ClearDataFlagPropertyStrategy", "RestoreExtraPropertyStrategy", "ReadyLaunchStrategy"
     };
     std::map<std::string, bool> isClearDataFlags = {};
     for (const auto [bundle, info] : bundleSettingInfos) {

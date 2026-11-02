@@ -445,6 +445,9 @@ ErrCode Service::AppFileReadysWithoutFd(const BStringRawData &abnormalfileNamesR
             HILOGE("AppFileReady error, Inconsistent array lengths. errCodes size: %{public}zu", errCodes.size());
             return BError(BError::Codes::SA_INVAL_ARG);
         }
+        if (HasInvalidFilePath(abnormalfileNames)) {
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
         session_->GetServiceReverseProxy()->BackupOnFileReadysWithoutFd(callerName, abnormalfileNamesRD, errCodes);
         ret = ProcessReadyFiles(abnormalfileNames, errCodes, callerName);
         if (ret != ERR_OK) {
@@ -458,6 +461,18 @@ ErrCode Service::AppFileReadysWithoutFd(const BStringRawData &abnormalfileNamesR
         HILOGE("Unexpected exception");
         return EPERM;
     }
+}
+
+bool Service::HasInvalidFilePath(const vector<string> &fileNames)
+{
+    for (const auto &fileName : fileNames) {
+        string filePath = BJsonUtil::GetPath(fileName);
+        if (!BDir::IsFilePathValid(filePath)) {
+            HILOGE("Path is forbidden, path: %{public}s", filePath.c_str());
+            return true;
+        }
+    }
+    return false;
 }
 
 ErrCode Service::ProcessReadyFiles(
@@ -508,6 +523,9 @@ ErrCode Service::AppFileReadys(const BStringRawData &fileNamesRD,
         if (fileNames.size() != fds.size() || fileNames.size() != errCodes.size()) {
             HILOGE("AppFileReady error, Inconsistent array lengths. fds size: %{public}zu, errCodes size: %{public}zu",
                    fds.size(), errCodes.size());
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
+        if (HasInvalidFilePath(fileNames)) {
             return BError(BError::Codes::SA_INVAL_ARG);
         }
         session_->GetServiceReverseProxy()->BackupOnFileReadys(callerName, fileNamesRD, fds, errCodes);
@@ -562,8 +580,6 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
     HILOGI("begin %{public}s", bundleName.data());
-    IServiceReverseType::Scenario scenario = session_->GetScenario();
-    BConstants::ExtensionAction action;
     if (defaultAppManager_->IsDefaultBundle(bundleName)) {
         HILOGI("enter DefaultAPP clone, bundleName:%{public}s", bundleName.c_str());
         // 移除拉起超时定时器，进入下一阶段状态机
@@ -571,6 +587,8 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
         ExtConnectDone(bundleName);
         return BError(BError::Codes::OK);
     }
+    IServiceReverseType::Scenario scenario = session_->GetScenario();
+    BConstants::ExtensionAction action;
     if (scenario == IServiceReverseType::Scenario::BACKUP || scenario == IServiceReverseType::Scenario::CLEAN) {
         action = BConstants::ExtensionAction::BACKUP;
     } else if (scenario == IServiceReverseType::Scenario::RESTORE) {
@@ -584,6 +602,12 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
     if (SAUtils::IsSABundleName(bundleName)) {
         return LaunchBackupSAExtension(bundleName);
     }
+    return ConnectBackupExtension(bundleName, action);
+}
+ 
+ErrCode Service::ConnectBackupExtension(const BundleName &bundleName, BConstants::ExtensionAction action)
+{
+    IServiceReverseType::Scenario scenario = session_->GetScenario();
     AAFwk::Want want;
     SetWant(want, bundleName, action);
     auto backUpConnection = session_->GetExtConnection(bundleName);
@@ -591,9 +615,18 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
         HILOGE("LaunchBackupExtension error, backUpConnection is empty");
         return BError(BError::Codes::SA_INVAL_ARG);
     }
-    if (backUpConnection->IsExtAbilityConnected() && !backUpConnection->WaitDisconnectDone()) {
-        HILOGE("LaunchBackupExtension error, WaitDisconnectDone failed");
-        return BError(BError::Codes::SA_INVAL_ARG);
+    if (backUpConnection->GetWasEverConnected()) {
+        if (backUpConnection->IsExtAbilityConnected() && !backUpConnection->WaitDisconnectDone()) {
+            HILOGE("LaunchBackupExtension error, WaitDisconnectDone failed");
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
+        session_->ReplaceExtConnection(bundleName);
+        backUpConnection = session_->GetExtConnection(bundleName);
+        if (backUpConnection == nullptr) {
+            HILOGE("LaunchBackupExtension error, backUpConnection is empty after replace, bundle:%{public}s",
+                   bundleName.c_str());
+            return BError(BError::Codes::SA_INVAL_ARG);
+        }
     }
     BConstants::ServiceSchedAction bundleAction = session_->GetServiceSchedAction(bundleName);
     if (bundleAction == BConstants::ServiceSchedAction::UNKNOWN) {
@@ -669,22 +702,6 @@ std::vector<std::string> Service::GetSupportBackupBundleNames(vector<BJsonEntity
     HandleNotSupportBundleNames(srcBundleNames, supportBackupNames, isIncBackup);
     HILOGI("End");
     return supportBackupNames;
-}
-
-void Service::SetCurrentSessProperties(BJsonEntityCaps::BundleInfo &info,
-    std::map<std::string, BJsonUtil::BundleSettingInfo> &bundleSettingInfos, const std::string &bundleNameIndexInfo)
-{
-    HILOGI("Begin");
-    if (session_ == nullptr) {
-        HILOGE("Set currrent session properties error, session is empty");
-        return;
-    }
-    session_->SetBundleDataSize(bundleNameIndexInfo, info.spaceOccupied);
-    auto iter = bundleSettingInfos.find(bundleNameIndexInfo);
-    if (iter != bundleSettingInfos.end()) {
-        session_->SetClearDataFlag(bundleNameIndexInfo, iter->second.isClearData);
-    }
-    HILOGI("End");
 }
 
 ErrCode Service::RefreshDataSize(int64_t totalDataSize)
@@ -848,7 +865,7 @@ void Service::ExtConnectDied(const string &callName)
             BError connectErr = backupConnection->GetError();
             errCode = connectErr.GetCode();
             AppStatReportErr(callName, "ExtConnectDied", RadarError(MODULE_ABILITY_MGR_SVC, connectErr));
-            hasConnected = backupConnection->hasConnected_.load();
+            hasConnected = backupConnection->GetWasEverConnected();
             if (backupConnection->IsExtAbilityConnected()) {
                 backupConnection->DisconnectBackupExtAbility();
             }
@@ -876,7 +893,7 @@ void Service::ExtConnectDied(const string &callName)
     RemoveExtensionMutex(callName);
 }
 
-void Service::OnBackupExtensionDied(const string &&bundleName, bool isCleanCalled)
+void Service::OnBackupExtensionDied(const string &bundleName, bool isCleanCalled)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
     if (isCleanCalled) {
@@ -1459,8 +1476,8 @@ ErrCode Service::TryToConnectExt(const std::string& bundleName, sptr<SvcBackupCo
     }
     auto callConnected = GetBackupInfoConnectDone(wptr(this), bundleName);
     auto callDied = GetBackupInfoConnectDied(wptr(this), bundleName);
-    extConnection->SetCallback(callConnected);
-    extConnection->SetCallDied(callDied);
+    extConnection->SetOnConnectedCb(callConnected);
+    extConnection->SetOnDiedCb(callDied);
     AAFwk::Want want;
     try {
         want = CreateConnectWant(bundleName);
@@ -1859,7 +1876,6 @@ void Service::SetBundleParam(const BJsonEntityCaps::BundleInfo &restoreInfo, std
     session_->SetBundleDataSize(bundleNameIndexInfo, restoreInfo.spaceOccupied);
     session_->SetBundleUserId(bundleNameIndexInfo, session_->GetSessionUserId());
     session_->SetBackupExtName(bundleNameIndexInfo, restoreInfo.extensionName);
-    session_->SetIsReadyLaunch(bundleNameIndexInfo);
 }
 
 void Service::TryToClearDispose(const BundleName &bundleName)

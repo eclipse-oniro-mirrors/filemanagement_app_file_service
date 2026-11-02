@@ -186,6 +186,10 @@ void BackupExtExtension::VerifyCaller()
 static UniqueFd GetFileHandleForSpecialCloneCloud(const string &fileName)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
+    if (!BDir::IsFilePathValid(fileName)) {
+        HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+        return UniqueFd(BConstants::INVALID_FD_NUM);
+    }
     string filePath = fileName;
     if (fileName.front() != BConstants::FILE_SEPARATOR_CHAR) {
         filePath = BConstants::FILE_SEPARATOR_CHAR + fileName;
@@ -249,6 +253,10 @@ UniqueFd BackupExtExtension::GetFileHandle(const string &fileName, int32_t &errC
             throw BError(BError::Codes::EXT_INVAL_ARG, str);
         }
 
+        if (!BDir::IsFilePathValid(fileName)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+            throw BError(BError::Codes::EXT_INVAL_ARG, "Path is forbidden");
+        }
         string tarName = path + fileName;
         if (access(tarName.c_str(), F_OK) == 0) {
             throw BError(BError::Codes::EXT_INVAL_ARG, string("The file already exists"));
@@ -378,6 +386,11 @@ tuple<ErrCode, UniqueFd, UniqueFd> BackupExtExtension::GetIncreFileHandleForNorm
     UniqueFd fd(BConstants::INVALID_FD_NUM);
     UniqueFd reportFd(BConstants::INVALID_FD_NUM);
     do {
+        if (!BDir::IsFilePathValid(fileName)) {
+            HILOGE("Path is forbidden, path: %{public}s", GetAnonyPath(fileName).c_str());
+            errCode = BError(BError::Codes::EXT_INVAL_ARG).GetCode();
+            break;
+        }
         errCode = GetIncrementalFileHandlePath(fileName, bundleName_, tarName);
         if (errCode != ERR_OK) {
             HILOGE("GetIncrementalFileHandlePath failed, err = %{public}d", errCode);
@@ -2387,23 +2400,24 @@ void BackupExtExtension::CheckAppIncrementalFileReadyResult(int32_t ret, std::st
 ErrCode BackupExtExtension::IncrementalAllFileReady(const TarMap &pkgInfo,
     const vector<struct ReportFileInfo> &srcFiles, sptr<IService> proxy)
 {
-    UniqueFd fdIndex(open(INDEX_FILE_BACKUP.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
-    if (fdIndex < 0) {
-        HILOGE("Failed to open index json file = %{private}s, err = %{public}d", INDEX_FILE_BACKUP.c_str(), errno);
-        return BError::GetCodeByErrno(errno);
-    }
-
     // 构建修正后的 TarMap, 用 compatDirMapping_ 替换物理路径前缀
     TarMap correctedPkgInfo;
     for (const auto &item : pkgInfo) {
         auto [filePath, sta, isBeforeTar] = item.second;
-        correctedPkgInfo.emplace(item.first, std::make_tuple(MapPathWithCompatDir(filePath), sta, isBeforeTar));
+        correctedPkgInfo.emplace(
+            item.first, std::make_tuple(MapPathWithCompatDir(filePath, S_ISDIR(sta.st_mode)), sta, isBeforeTar));
     }
-    BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(std::move(fdIndex));
-    auto cache = cachedEntity.Structuralize();
-    cache.SetExtManage(correctedPkgInfo, isSupportWithoutTar_);
-    cachedEntity.Persist();
-    close(cachedEntity.GetFd().Release());
+    {
+        UniqueFd fdIndex(open(INDEX_FILE_BACKUP.data(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
+        if (fdIndex < 0) {
+            HILOGE("Failed to open index json file = %{private}s, err = %{public}d", INDEX_FILE_BACKUP.c_str(), errno);
+            return BError::GetCodeByErrno(errno);
+        }
+        BJsonCachedEntity<BJsonEntityExtManage> cachedEntity(std::move(fdIndex));
+        auto cache = cachedEntity.Structuralize();
+        cache.SetExtManage(correctedPkgInfo, isSupportWithoutTar_);
+        cachedEntity.Persist();
+    }
 
     string file = GetReportFileName(string(INDEX_FILE_INCREMENTAL_BACKUP).append("all"));
     BFile::WriteFile(file, srcFiles);

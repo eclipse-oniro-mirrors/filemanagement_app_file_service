@@ -71,6 +71,13 @@ struct PathPolicyInfo {
     uint32_t mode = OperationMode::READ_MODE;
 };
 
+struct PermissionStatusInfo {
+    uint32_t tokenId = 0;
+    string path = "";
+    uint64_t mode = 0;
+    int32_t grantStatus = -1;
+};
+
 struct PolicyErrorResult {
     string uri = "";
     PolicyErrorCode code = PolicyErrorCode::PERSISTENCE_FORBIDDEN;
@@ -105,6 +112,10 @@ public:
     static int32_t GrantSharedDirectoryPermission();
     static int32_t RevokeSharedDirectoryPermission();
     static int32_t GetSharedDirectoryInfo(vector<SharedDirectoryInfo> &sharedDirectories);
+    static int32_t GrantPermissionByUser(uint32_t tokenId, const vector<UriPolicyInfo> &uriPolicies);
+    static int32_t RevokePermissionByUser(uint32_t tokenId, const vector<UriPolicyInfo> &uriPolicies);
+    static int32_t GetStatusByPermission(const vector<uint32_t> &tokenIdList,
+        vector<PermissionStatusInfo> &result);
 #ifdef SANDBOX_MANAGER
 private:
     static void ParseErrorResults(const vector<uint32_t> &resultCodes,

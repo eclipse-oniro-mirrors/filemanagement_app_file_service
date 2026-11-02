@@ -840,6 +840,202 @@ napi_value GetSharedDirectoryInfo(napi_env env, napi_callback_info info)
     return NAsyncWorkPromise(env, thisVar).Schedule(procedureName, cbExec, cbCompl).val_;
 }
 
+napi_value GrantPermissionByUser(napi_env env, napi_callback_info info)
+{
+    LOGI("GrantPermissionByUser called via NAPI");
+
+    NFuncArg funcArg(env, info);
+    if (!funcArg.InitArgs(NARG_CNT::TWO)) {
+        LOGE("GrantPermissionByUser Number of arguments unmatched");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    auto [succToken, tokenId] = NVal(env, funcArg[NARG_POS::FIRST]).ToUint32();
+    if (!succToken) {
+        LOGE("GrantPermissionByUser invalid tokenId");
+        NError(EINVAL).ThrowErr(env);
+        return nullptr;
+    }
+
+    vector<UriPolicyInfo> uriPolicies;
+    if (GetUriPoliciesArg(env, funcArg[NARG_POS::SECOND], uriPolicies) != napi_ok || uriPolicies.empty()) {
+        LOGE("GrantPermissionByUser invalid policies");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    auto cbExec = [tokenId {move(tokenId)}, uriPolicies {move(uriPolicies)}]() -> NError {
+        int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
+        return NError(ret);
+    };
+    auto cbCompl = [](napi_env env, NError err) -> NVal {
+        if (err) {
+            return {env, err.GetNapiErr(env)};
+        }
+        return NVal::CreateUndefined(env);
+    };
+    const string procedureName = "grant_permission_by_user";
+    NVal thisVar(env, funcArg.GetThisVar());
+    return NAsyncWorkPromise(env, thisVar).Schedule(procedureName, cbExec, cbCompl).val_;
+}
+
+napi_value RevokePermissionByUser(napi_env env, napi_callback_info info)
+{
+    LOGI("RevokePermissionByUser called via NAPI");
+
+    NFuncArg funcArg(env, info);
+    if (!funcArg.InitArgs(NARG_CNT::TWO)) {
+        LOGE("RevokePermissionByUser Number of arguments unmatched");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    auto [succToken, tokenId] = NVal(env, funcArg[NARG_POS::FIRST]).ToUint32();
+    if (!succToken) {
+        LOGE("RevokePermissionByUser invalid tokenId");
+        NError(EINVAL).ThrowErr(env);
+        return nullptr;
+    }
+
+    vector<UriPolicyInfo> uriPolicies;
+    if (GetUriPoliciesArg(env, funcArg[NARG_POS::SECOND], uriPolicies) != napi_ok || uriPolicies.empty()) {
+        LOGE("RevokePermissionByUser invalid policies");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    auto cbExec = [tokenId {move(tokenId)}, uriPolicies {move(uriPolicies)}]() -> NError {
+        int32_t ret = FilePermission::RevokePermissionByUser(tokenId, uriPolicies);
+        return NError(ret);
+    };
+    auto cbCompl = [](napi_env env, NError err) -> NVal {
+        if (err) {
+            return {env, err.GetNapiErr(env)};
+        }
+        return NVal::CreateUndefined(env);
+    };
+    const string procedureName = "revoke_permission_by_user";
+    NVal thisVar(env, funcArg.GetThisVar());
+    return NAsyncWorkPromise(env, thisVar).Schedule(procedureName, cbExec, cbCompl).val_;
+}
+
+static bool ParseTokenIdList(napi_env env, napi_value arrayArg, vector<uint32_t> &tokenIdList)
+{
+    uint32_t count = 0;
+    napi_status status = napi_get_array_length(env, arrayArg, &count);
+    if (status != napi_ok || count == 0 || count > MAX_ARRAY_SIZE) {
+        LOGE("GetStatusByPermission invalid array length");
+        return false;
+    }
+
+    tokenIdList.reserve(count);
+    for (uint32_t i = 0; i < count; i++) {
+        napi_value element = nullptr;
+        status = napi_get_element(env, arrayArg, i, &element);
+        if (status != napi_ok) {
+            LOGE("GetStatusByPermission get element failed at index=%{public}u", i);
+            return false;
+        }
+        auto [succ, tokenId] = NVal(env, element).ToUint32();
+        if (!succ) {
+            LOGE("GetStatusByPermission invalid tokenId at index=%{public}u", i);
+            return false;
+        }
+        tokenIdList.emplace_back(tokenId);
+    }
+    return true;
+}
+
+static napi_value BuildStatusResultArray(napi_env env,
+    const vector<PermissionStatusInfo> &result)
+{
+    napi_value res = nullptr;
+    napi_status status = napi_create_array(env, &res);
+    if (status != napi_ok) {
+        LOGE("Failed to create array for GetStatusByPermission");
+        return NError(ENOMEM).GetNapiErr(env);
+    }
+
+    size_t resultCount = result.size();
+    for (size_t i = 0; i < resultCount; i++) {
+        NVal obj = NVal::CreateObject(env);
+        obj.AddProp("tokenID", NVal::CreateUint32(env, result[i].tokenId).val_);
+
+        NVal policyObj = NVal::CreateObject(env);
+        napi_value pathValue = nullptr;
+        status = napi_create_string_utf8(env, result[i].path.c_str(), NAPI_AUTO_LENGTH, &pathValue);
+        if (status == napi_ok) {
+            napi_set_named_property(env, policyObj.val_, "uri", pathValue);
+        }
+        napi_value modeValue = nullptr;
+        status = napi_create_uint32(env, static_cast<uint32_t>(result[i].mode), &modeValue);
+        if (status == napi_ok) {
+            napi_set_named_property(env, policyObj.val_, "operationMode", modeValue);
+        }
+        obj.AddProp("policyInfo", policyObj.val_);
+
+        obj.AddProp("grantStatus", NVal::CreateInt32(env, result[i].grantStatus).val_);
+
+        status = napi_set_element(env, res, i, obj.val_);
+        if (status != napi_ok) {
+            LOGE("Failed to set element for GetStatusByPermission");
+            return NError(ENOMEM).GetNapiErr(env);
+        }
+    }
+    return res;
+}
+
+napi_value GetStatusByPermission(napi_env env, napi_callback_info info)
+{
+    LOGI("GetStatusByPermission called via NAPI");
+
+    NFuncArg funcArg(env, info);
+    if (!funcArg.InitArgs(NARG_CNT::ONE)) {
+        LOGE("GetStatusByPermission Number of arguments unmatched");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    napi_value arrayArg = funcArg[NARG_POS::FIRST];
+    bool isArray = false;
+    napi_status status = napi_is_array(env, arrayArg, &isArray);
+    if (status != napi_ok || !isArray) {
+        LOGE("GetStatusByPermission first argument is not an array");
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    vector<uint32_t> tokenIdList;
+    if (!ParseTokenIdList(env, arrayArg, tokenIdList)) {
+        NError(E_PARAMS).ThrowErr(env);
+        return nullptr;
+    }
+
+    shared_ptr<vector<PermissionStatusInfo>> result = make_shared<vector<PermissionStatusInfo>>();
+    if (result == nullptr) {
+        LOGE("GetStatusByPermission make_shared is failed");
+        NError(E_NOMEM).ThrowErr(env);
+        return nullptr;
+    }
+
+    auto cbExec = [tokenIdList {move(tokenIdList)}, result]() -> NError {
+        int32_t ret = FilePermission::GetStatusByPermission(tokenIdList, *result);
+        return NError(ret);
+    };
+    auto cbCompl = [result](napi_env env, NError err) -> NVal {
+        if (err) {
+            return {env, err.GetNapiErr(env)};
+        }
+        napi_value res = BuildStatusResultArray(env, *result);
+        return NVal(env, res);
+    };
+
+    const string procedureName = "get_status_by_permission";
+    NVal thisVar(env, funcArg.GetThisVar());
+    return NAsyncWorkPromise(env, thisVar).Schedule(procedureName, cbExec, cbCompl).val_;
+}
+
 } // namespace ModuleFileShare
 } // namespace AppFileService
 } // namespace OHOS

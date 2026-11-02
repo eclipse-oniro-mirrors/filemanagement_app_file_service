@@ -1518,4 +1518,174 @@ HWTEST_F(BJsonEntityExtensionConfigTest, EXT_CONFIG_GET_COMPAT_DIR_MAPPING_010, 
     EXPECT_GT(cache2.GetCompatibleDirMapping().size(), 0);
     GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end EXT_CONFIG_GET_COMPAT_DIR_MAPPING_010";
 }
+
+/**
+ * @tc.number: SUB_backup_ext_config_path_traversal_0100
+ * @tc.name: ext_config_path_traversal_0100
+ * @tc.desc: 测试 GetIncludes 拒绝含 ".." 分量及空字节的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, ext_config_path_traversal_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin ext_config_path_traversal_0100";
+    try {
+        // 含 "../" 前缀的条目应被拒绝，全部被拒后 GetIncludes 返回 {""}
+        string_view sv1 = R"({"includes":["../escape/data"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity1(sv1);
+        auto cache1 = cachedEntity1.Structuralize();
+        vector<string> includes = cache1.GetIncludes();
+        EXPECT_EQ(includes, vector<string>({""}));
+
+        // 中间含 ".." 分量应被拒绝
+        string_view sv2 = R"({"includes":["data/../escape"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        EXPECT_EQ(cache2.GetIncludes(), vector<string>({""}));
+
+        // 尾部 ".." 分量应被拒绝
+        string_view sv3 = R"({"includes":["data/.."]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity3(sv3);
+        auto cache3 = cachedEntity3.Structuralize();
+        EXPECT_EQ(cache3.GetIncludes(), vector<string>({""}));
+
+        // 含空字节条目中 ../ 前非 /，不构成路径分量，应保留
+        string_view sv4 = R"({"includes":["data\u0000../escape"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity4(sv4);
+        auto cache4 = cachedEntity4.Structuralize();
+        EXPECT_EQ(cache4.GetIncludes(), vector<string>({string("data\0../escape", 14)}));
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end ext_config_path_traversal_0100";
+}
+
+/**
+ * @tc.number: SUB_backup_ext_config_path_traversal_0200
+ * @tc.name: ext_config_path_traversal_0200
+ * @tc.desc: 测试 GetExcludes 拒绝含 ".." 分量及空字节的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, ext_config_path_traversal_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin ext_config_path_traversal_0200";
+    try {
+        // 含 "../" 前缀条目应被拒绝，全部被拒后 GetExcludes 返回空
+        string_view sv1 = R"({"excludes":["../escape/data"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity1(sv1);
+        auto cache1 = cachedEntity1.Structuralize();
+        EXPECT_TRUE(cache1.GetExcludes().empty());
+
+        // 合法条目应保留
+        string_view sv2 = R"({"excludes":["data/storage/el2/cache/"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        vector<string> excludes = cache2.GetExcludes();
+        ASSERT_EQ(excludes.size(), 1u);
+        EXPECT_EQ(excludes[0], "data/storage/el2/cache/");
+
+        // 混合合法与非法条目：仅保留合法项
+        string_view sv3 = R"({"excludes":["data/storage/el2/cache/","../escape"]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity3(sv3);
+        auto cache3 = cachedEntity3.Structuralize();
+        excludes = cache3.GetExcludes();
+        ASSERT_EQ(excludes.size(), 1u);
+        EXPECT_EQ(excludes[0], "data/storage/el2/cache/");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end ext_config_path_traversal_0200";
+}
+
+/**
+ * @tc.number: SUB_backup_ext_config_path_traversal_0300
+ * @tc.name: ext_config_path_traversal_0300
+ * @tc.desc: 测试 GetDirList 拒绝含 ".." 分量及空字节的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, ext_config_path_traversal_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin ext_config_path_traversal_0300";
+    try {
+        string_view sv = R"({})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity(sv);
+        auto cache = cachedEntity.Structuralize();
+
+        // 含 "../" 条目应被拒绝，全部被拒后 GetDirList 返回 {""}
+        Json::Value jv;
+        jv.append("../escape");
+        jv.append("data/../escape");
+        EXPECT_EQ(cache.GetDirList(jv), vector<string>({""}));
+
+        // 含空字节条目中 ../ 前非 /，不构成路径分量，应保留
+        Json::Value jvNull;
+        jvNull.append(string("data\0../escape", 14));
+        EXPECT_EQ(cache.GetDirList(jvNull), vector<string>({string("data\0../escape", 14)}));
+
+        // 合法条目应保留
+        Json::Value jvOk;
+        jvOk.append("data/storage/el2/files");
+        jvOk.append("../escape");
+        vector<string> dirs = cache.GetDirList(jvOk);
+        ASSERT_EQ(dirs.size(), 1u);
+        EXPECT_EQ(dirs[0], "data/storage/el2/files");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end ext_config_path_traversal_0300";
+}
+
+/**
+ * @tc.number: SUB_backup_ext_config_path_traversal_0400
+ * @tc.name: ext_config_path_traversal_0400
+ * @tc.desc: 测试 GetCompatibleDirMapping 拒绝含 ".." 分量及空字节的条目（路径穿越防御）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: VRB-C-2026-0052
+ */
+HWTEST_F(BJsonEntityExtensionConfigTest, ext_config_path_traversal_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-begin ext_config_path_traversal_0400";
+    try {
+        // backupDir 含 "../" 应被拒绝
+        string_view sv1 = R"({"compatibleDirMapping": [{"backupDir": "../escape", "restoreDir": "/data/p1"}]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity1(sv1);
+        auto cache1 = cachedEntity1.Structuralize();
+        EXPECT_EQ(cache1.GetCompatibleDirMapping().size(), 0);
+
+        // restoreDir 含 ".." 分量应被拒绝
+        string_view sv2 = R"({"compatibleDirMapping": [{"backupDir": "/bak/p1", "restoreDir": "/data/../escape"}]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity2(sv2);
+        auto cache2 = cachedEntity2.Structuralize();
+        EXPECT_EQ(cache2.GetCompatibleDirMapping().size(), 0);
+
+        // restoreDir 以 "/.." 结尾应被拒绝
+        string_view sv3 = R"({"compatibleDirMapping": [{"backupDir": "/bak/p1", "restoreDir": "/data/p1/.."}]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity3(sv3);
+        auto cache3 = cachedEntity3.Structuralize();
+        EXPECT_EQ(cache3.GetCompatibleDirMapping().size(), 0);
+
+        // 合法映射应保留
+        string_view sv4 = R"({"compatibleDirMapping": [{"backupDir": "/bak/p1", "restoreDir": "/data/p1"}]})";
+        BJsonCachedEntity<BJsonEntityExtensionConfig> cachedEntity4(sv4);
+        auto cache4 = cachedEntity4.Structuralize();
+        EXPECT_EQ(cache4.GetCompatibleDirMapping().size(), 1);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BJsonEntityExtensionConfigTest-end ext_config_path_traversal_0400";
+}
 } // namespace OHOS::FileManagement::Backup

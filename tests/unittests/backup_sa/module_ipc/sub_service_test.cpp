@@ -14,46 +14,6 @@
  */
 
 /**
- * @tc.number: SUB_Service_HandleCurGroupBackupInfos_0000
- * @tc.name: SUB_Service_HandleCurGroupBackupInfos_0000
- * @tc.desc: 测试 HandleCurGroupBackupInfos 的正常/异常分支
- * @tc.size: MEDIUM
- * @tc.type: FUNC
- * @tc.level Level 1
- * @tc.require: issueIAKC3I
- */
-HWTEST_F(ServiceTest, SUB_Service_HandleCurGroupBackupInfos_0000, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_HandleCurGroupBackupInfos_0000";
-    try {
-        vector<BJsonEntityCaps::BundleInfo> backupInfos = {
-            {.name = "bundleName", .appIndex = 0, .allToBackup = false, .versionName = ""} };
-        map<string, vector<BJsonUtil::BundleDetailInfo>> bundleNameDetailMap;
-        map<string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(false));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-
-        backupInfos[0].allToBackup = true;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(false));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-
-        backupInfos[0].allToBackup = true;
-        EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return(""));
-        EXPECT_CALL(*jsonUtil, FindBundleInfoByName(_, _, _, _)).WillOnce(Return(true));
-        service->HandleCurGroupBackupInfos(backupInfos, bundleNameDetailMap, bundleSettingInfos);
-        EXPECT_TRUE(true);
-    } catch (...) {
-        EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by HandleCurGroupBackupInfos.";
-    }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_HandleCurGroupBackupInfos_0000";
-}
-
-/**
  * @tc.number: SUB_Service_ServiceResultReport_0000
  * @tc.name: SUB_Service_ServiceResultReport_0000
  * @tc.desc: 测试 ServiceResultReport 的正常/异常分支
@@ -366,8 +326,8 @@ HWTEST_F(ServiceTest, SUB_Service_OnBackupExtensionDied_0001, TestSize.Level1)
         EXPECT_CALL(*session, GetIsRestoreEnd(_)).WillOnce(Return(true));
         EXPECT_CALL(*cdConfig, DeleteClearBundleRecord(_)).WillOnce(Return(true));
         EXPECT_CALL(*session, IsOnAllBundlesFinished()).WillOnce(Return(false));
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, "OnBackupExtensionDied2"));
         connectPtr->error_ = BError(BError::Codes::OK);
         EXPECT_CALL(*session, GetExtConnection(_)).WillRepeatedly(Return(wptr(connectPtr)));
@@ -463,17 +423,18 @@ HWTEST_F(ServiceTest, SUB_Service_ExtConnectDied_0001, TestSize.Level1)
     service->isOccupyingSession_ = false;
     EXPECT_CALL(*session, StopFwkTimer(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*session, StopExtTimer(_)).WillRepeatedly(Return(true));
-    auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-    auto callConnected = [](const string &&bundleName) {};
+    auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+    auto callConnected = [](const string &bundleName) {};
     auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, callName));
-    connectPtr->hasConnected_.store(true);
+    connectPtr->connState_ = SvcBackupConnection::ConnState::DISCONNECTED;
     EXPECT_CALL(*session, GetExtConnection(_)).WillRepeatedly(Return(wptr(connectPtr)));
-    EXPECT_CALL(*connect, IsExtAbilityConnected()).WillOnce(Return(false));
+    EXPECT_CALL(*connect, GetWasEverConnected()).WillOnce(Return(true)).RetiresOnSaturation();
+    EXPECT_CALL(*connect, IsExtAbilityConnected()).WillOnce(Return(false)).RetiresOnSaturation();
     EXPECT_CALL(*session, GetClearDataFlag(_)).WillRepeatedly(Return(false));
     EXPECT_CALL(*session, GetIsRestoreEnd(_)).WillOnce(Return(false));
     EXPECT_CALL(*session, GetScenario()).WillOnce(Return(IServiceReverseType::Scenario::UNDEFINED))
         .WillOnce(Return(IServiceReverseType::Scenario::UNDEFINED));
-    EXPECT_CALL(*saUtils, IsSABundleName(_)).WillOnce(Return(true));
+    EXPECT_CALL(*saUtils, IsSABundleName(_)).WillOnce(Return(true)).RetiresOnSaturation();
     EXPECT_CALL(*session, IsOnAllBundlesFinished()).WillOnce(Return(false));
     EXPECT_CALL(*cdConfig, DeleteClearBundleRecord(_)).WillOnce(Return(true));
     service->ExtConnectDied(callName);
@@ -498,12 +459,13 @@ HWTEST_F(ServiceTest, SUB_Service_ExtConnectDied_0002, TestSize.Level1)
     service->isOccupyingSession_ = false;
     EXPECT_CALL(*session, StopFwkTimer(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*session, StopExtTimer(_)).WillRepeatedly(Return(true));
-    auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-    auto callConnected = [](const string &&bundleName) {};
+    auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+    auto callConnected = [](const string &bundleName) {};
     auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, callName));
-    connectPtr->hasConnected_.store(true);
-    EXPECT_CALL(*saUtils, IsSABundleName(_)).WillOnce(Return(true)).WillOnce(Return(true));
+    connectPtr->connState_ = SvcBackupConnection::ConnState::DISCONNECTED;
+    EXPECT_CALL(*saUtils, IsSABundleName(_)).WillOnce(Return(true)).WillOnce(Return(true)).RetiresOnSaturation();
     EXPECT_CALL(*session, GetExtConnection(_)).WillRepeatedly(Return(wptr(connectPtr)));
+    EXPECT_CALL(*connect, GetWasEverConnected()).WillOnce(Return(true)).RetiresOnSaturation();
     EXPECT_CALL(*connect, IsExtAbilityConnected()).WillRepeatedly(Return(false));
     EXPECT_CALL(*session, GetClearDataFlag(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*session, GetIsRestoreEnd(_)).WillOnce(Return(false)).WillOnce(Return(false));
@@ -532,12 +494,14 @@ HWTEST_F(ServiceTest, SUB_Service_ExtConnectDied_0003, TestSize.Level1)
     string callName = "ExtConnectDied_0003";
     EXPECT_CALL(*session, StopFwkTimer(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*session, StopExtTimer(_)).WillRepeatedly(Return(true));
-    auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-    auto callConnected = [](const string &&bundleName) {};
+    auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+    auto callConnected = [](const string &bundleName) {};
     auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, callName));
-    connectPtr->hasConnected_.store(true);
+    connectPtr->connState_ = SvcBackupConnection::ConnState::CONNECTED;
     EXPECT_CALL(*saUtils, IsSABundleName(_)).WillRepeatedly(Return(false));
-    EXPECT_CALL(*connect, IsExtAbilityConnected()).WillOnce(Return(true));
+    EXPECT_CALL(*connect, GetWasEverConnected()).WillOnce(Return(true)).RetiresOnSaturation();
+    EXPECT_CALL(*connect, IsExtAbilityConnected()).WillOnce(Return(true)).RetiresOnSaturation();
+    EXPECT_CALL(*connect, DisconnectBackupExtAbility()).WillOnce(Return(ERR_OK)).RetiresOnSaturation();
     EXPECT_CALL(*session, GetExtConnection(_)).WillRepeatedly(Return(wptr(connectPtr)));
     EXPECT_CALL(*session, GetClearDataFlag(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*session, GetScenario()).WillRepeatedly(Return(IServiceReverseType::Scenario::UNDEFINED));
@@ -2481,8 +2445,8 @@ HWTEST_F(ServiceTest, SUB_Service_GetCompatibilityInfo_0200, testing::ext::TestS
             .WillRepeatedly(Return(make_pair<bool, int32_t>(true, DEBUG_ID + 1)));
         EXPECT_CALL(*saUtils, IsSABundleName(_)).WillRepeatedly(Return(false));
 
-        auto callDied = [](const string &&bundleName, bool isCleanCalled) {};
-        auto callConnected = [](const string &&bundleName) {};
+        auto callDied = [](const string &bundleName, bool isCleanCalled) {};
+        auto callConnected = [](const string &bundleName) {};
         auto connectPtr = sptr(new SvcBackupConnection(callDied, callConnected, bundleName));
         EXPECT_CALL(*session, GetExtConnection(_)).WillRepeatedly(Return(wptr(connectPtr)));
         EXPECT_CALL(*connect, IsExtAbilityConnected()).WillRepeatedly(Return(true));

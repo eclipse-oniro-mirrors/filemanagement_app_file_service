@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include <future>
 #include <gtest/gtest.h>
 
 #include "b_error/b_error.h"
@@ -185,8 +186,6 @@ HWTEST_F(ExtExtensionSubTest, Ext_Extension_Sub_HandleIncrementalBackup_Test_010
         int manifestFd = open(manifestFile.data(), O_RDWR | O_TRUNC, S_IRWXU);
         EXPECT_GT(manifestFd, 0);
         EXPECT_EQ(extExtension->HandleIncrementalBackup(incrementalFd, manifestFd), BError::E_FORBID);
-        close(incrementalFd);
-        close(manifestFd);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ExtExtensionSubTest-an exception occurred by construction.";
@@ -1901,5 +1900,184 @@ HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_DoClearInner_0003, testing::ext:
     }
     GTEST_LOG_(INFO) << "ExtExtensionSubTest-end SUB_Ext_Extension_DoClearInner_0003";
 }
+
+HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_Accessors_0400, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(extExtension, nullptr);
+    extExtension->SetSupportWithoutTar(true);
+    EXPECT_TRUE(extExtension->GetSupportWithoutTar());
+    extExtension->SetSupportWithoutTar(false);
+    EXPECT_FALSE(extExtension->GetSupportWithoutTar());
+
+    extExtension->SetBatchSize(8);
+    EXPECT_EQ(extExtension->GetBatchSize(), 8);
+    extExtension->SetCallerBundleName("com.example.whitebox");
+    EXPECT_EQ(extExtension->GetCallerBundleName(), "com.example.whitebox");
+    extExtension->SetRestoreScene(BConstants::ExtensionRestoreScene::WITHOUT_RP);
+    EXPECT_EQ(extExtension->GetRestoreScene(), BConstants::ExtensionRestoreScene::WITHOUT_RP);
+}
+
+HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_DfxAndFinish_0400, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(extExtension, nullptr);
+    EXPECT_EQ(extExtension->UpdateDfxInfo(12345, 67, "caller.bundle"), ERR_OK);
+    EXPECT_EQ(extExtension->appStatistic_->uniqId_, 12345);
+    EXPECT_EQ(extExtension->appStatistic_->extConnectSpend_, 67U);
+    EXPECT_EQ(extExtension->appStatistic_->appCaller_, "caller.bundle");
+
+    extExtension->DoBackupStart();
+    extExtension->DoBackupEnd();
+    extExtension->OnBackupFinish();
+    extExtension->OnBackupExFinish();
+    extExtension->OnRestoreFinish();
+    extExtension->OnRestoreExFinish();
+    extExtension->stopCallJsOnProcess_.store(true);
+    extExtension->FinishOnProcessTask();
+    EXPECT_FALSE(extExtension->isFirstCallOnProcess_.load());
+    EXPECT_FALSE(extExtension->isExecAppDone_.load());
+}
+
+HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_ReportAndHandle_0400, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(extExtension, nullptr);
+    auto oldProxy = ServiceClient::serviceProxy_;
+    ServiceClient::serviceProxy_ = nullptr;
+    extExtension->ReportAppProcessInfo("process", BackupRestoreScenario::FULL_BACKUP);
+    ServiceClient::serviceProxy_ = proxy;
+    extExtension->ReportAppProcessInfo("process", BackupRestoreScenario::FULL_BACKUP);
+    ServiceClient::serviceProxy_ = oldProxy;
+
+    int fd = 0;
+    int reportFd = 0;
+    EXPECT_EQ(extExtension->GetIncrementalBackupFileHandle(fd, reportFd), ERR_OK);
+    EXPECT_EQ(fd, BConstants::INVALID_FD_NUM);
+    EXPECT_EQ(reportFd, BConstants::INVALID_FD_NUM);
+    auto [incrementalFd, manifestFd] = extExtension->GetIncrementalBackupFileHandle();
+    EXPECT_EQ(incrementalFd.Get(), BConstants::INVALID_FD_NUM);
+    EXPECT_EQ(manifestFd.Get(), BConstants::INVALID_FD_NUM);
+}
+
+HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_CleanBundleTempDir_0400, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(extExtension, nullptr);
+    auto oldExtension = extExtension->extension_;
+    extExtension->extension_ = nullptr;
+    EXPECT_NE(extExtension->CleanBundleTempDir(), ERR_OK);
+
+    extExtension->extension_ = extension;
+    EXPECT_CALL(*extBackupMock, GetExtensionAction())
+        .WillOnce(Return(BConstants::ExtensionAction::INVALID));
+    EXPECT_NE(extExtension->CleanBundleTempDir(), ERR_OK);
+    extExtension->extension_ = oldExtension;
+}
+
+HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_ManageJsonFd_0400, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(extExtension, nullptr);
+    extExtension->CloseManageJsonFd();
+    EXPECT_TRUE(extExtension->InitManageJsonFd());
+    EXPECT_GE(extExtension->manageJsonFd_.Get(), 0);
+    EXPECT_TRUE(extExtension->InitManageJsonFd());
+    extExtension->CloseManageJsonFd();
+    EXPECT_LT(extExtension->manageJsonFd_.Get(), 0);
+    extExtension->CloseManageJsonFd();
+}
 #include "ext_extension_sub_ext_test.cpp"
+namespace {
+class ReleaseTestBackup : public ExtBackup {
+public:
+    std::function<ErrCode(std::function<void(ErrCode, std::string)>)> release;
+    ErrCode OnRelease(std::function<void(ErrCode, std::string)> callback, int32_t scenario) override
+    {
+        return release(callback);
+    }
+};
+
+// Enqueues a marker task behind every queued task. Each pool has a single worker,
+// so a finished marker proves the earlier tasks have already dropped their references
+// and the extension can be destroyed on the test thread. The pools must not be stopped
+// here: ~BackupExtExtension stops them again and OHOS::ThreadPool::Stop throws when it
+// joins threads that were already joined.
+bool DrainPool(OHOS::ThreadPool &pool)
+{
+    constexpr int drainPoolTimeoutSeconds = 2;
+    auto drained = std::make_shared<std::promise<void>>();
+    auto done = drained->get_future();
+    pool.AddTask([drained]() { drained->set_value(); });
+    return done.wait_for(std::chrono::seconds(drainPoolTimeoutSeconds)) == std::future_status::ready;
+}
+}
+
+// The release worker remains blocked; the control worker must still time out.
+HWTEST_F(ExtExtensionSubTest, OnReleaseBlockedCallTimesOut, testing::ext::TestSize.Level1)
+{
+    auto backup = std::make_shared<ReleaseTestBackup>();
+    sptr<BackupExtExtension> ext = new BackupExtExtension(nullptr, BUNDLE_NAME);
+    ext->extension_ = backup;
+    std::atomic<int> calls {0};
+    std::promise<void> notified;
+    auto notification = notified.get_future();
+    std::promise<void> entered;
+    std::promise<void> unblock;
+    std::promise<void> exited;
+    auto started = entered.get_future();
+    auto gate = unblock.get_future();
+    auto ended = exited.get_future();
+    backup->release = [&](auto callback) {
+        ++calls;
+        entered.set_value();
+        gate.wait();
+        callback(ERR_OK, "late callback");
+        exited.set_value();
+        return ERR_OK;
+    };
+    EXPECT_CALL(*proxy, HandleExtDisconnect(_, false, ERR_OK)).Times(1).WillOnce(Invoke([&](auto, auto, auto) {
+        notified.set_value();
+        return ERR_OK;
+    }));
+    ext->HandleExtOnRelease(false, ERR_OK);
+    EXPECT_EQ(started.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ext->HandleExtOnRelease(false, ERR_OK); // Repeat while application release is blocked.
+    EXPECT_EQ(notification.wait_for(std::chrono::seconds(7)), std::future_status::ready);
+    EXPECT_TRUE(ext->isOnReleased_.load());
+    EXPECT_EQ(ended.wait_for(std::chrono::milliseconds(0)), std::future_status::timeout);
+    EXPECT_TRUE(DrainPool(ext->threadPool_));
+    bool unlocked = ext->onReleaseLock_.try_lock();
+    EXPECT_TRUE(unlocked);
+    if (unlocked) {
+        ext->onReleaseLock_.unlock();
+    }
+    unblock.set_value();
+    EXPECT_EQ(ended.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    EXPECT_TRUE(DrainPool(ext->onReleaseTaskPool_));
+    EXPECT_EQ(calls.load(), 1);
+    Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
+}
+
+HWTEST_F(ExtExtensionSubTest, OnReleaseDuplicateCallbackFinishesOnce, testing::ext::TestSize.Level1)
+{
+    auto backup = std::make_shared<ReleaseTestBackup>();
+    sptr<BackupExtExtension> ext = new BackupExtExtension(nullptr, BUNDLE_NAME);
+    ext->extension_ = backup;
+    std::atomic<int> calls {0};
+    std::promise<void> returned;
+    auto done = returned.get_future();
+    backup->release = [&](auto callback) {
+        ++calls;
+        callback(ERR_OK, "");
+        callback(ERR_OK, "duplicate");
+        returned.set_value();
+        return ERR_OK;
+    };
+    EXPECT_CALL(*proxy, HandleExtDisconnect(_, false, ERR_OK)).Times(1).WillOnce(Return(ERR_OK));
+    ext->HandleExtOnRelease(false, ERR_OK);
+    EXPECT_EQ(done.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ext->HandleExtOnRelease(false, ERR_OK);
+    EXPECT_TRUE(DrainPool(ext->threadPool_));
+    EXPECT_TRUE(DrainPool(ext->onReleaseTaskPool_));
+    EXPECT_TRUE(ext->isOnReleased_.load());
+    EXPECT_EQ(calls.load(), 1);
+    Mock::VerifyAndClearExpectations(proxy.GetRefPtr());
+}
+
 } // namespace OHOS::FileManagement::Backup
