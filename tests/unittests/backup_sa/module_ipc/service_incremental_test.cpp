@@ -1047,8 +1047,15 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_GetAppLocalListAndDoIncr
 
         EXPECT_CALL(*srvMock, GetUserIdDefault()).WillOnce(Return(0));
         EXPECT_CALL(*srvMock, VerifyCallerAndGetCallerName(_, _)).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
-        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(nullptr));
+        auto getFdTaskStarted = std::make_shared<std::promise<void>>();
+        auto getFdTaskStartedFuture = getFdTaskStarted->get_future();
+        // Consume this expectation before later tests replace the shared session mock expectations.
+        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Invoke([getFdTaskStarted]() {
+            getFdTaskStarted->set_value();
+            return wptr<SvcBackupConnection>();
+        }));
         EXPECT_EQ(service->GetAppLocalListAndDoIncrementalBackup(emptyRD), BError(BError::Codes::OK).GetCode());
+        EXPECT_EQ(getFdTaskStartedFuture.wait_for(std::chrono::seconds(2)), std::future_status::ready);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceIncrementalTest-an exception occurred by GetAppLocalListAndDoIncrementalBackup.";
