@@ -383,6 +383,10 @@ ErrCode MigrateManager::ScanAllDirs(int64_t &totalSize, const string &bundleName
         return BError(BError::Codes::OK);
     }
     auto ret = enhanceService->MakeDir(bundleName);
+    if (ret != ERR_OK) {
+        HILOGE("MakeDir failed, ret:%{public}d", ret);
+        return ret;
+    }
 
     auto instance = GetScanInstance(bundleName);
     if (instance == nullptr) {

@@ -516,7 +516,10 @@ bool TarFile::CompleteBlock(off_t size)
         int append = BLOCK_SIZE - (size % BLOCK_SIZE);
         vector<uint8_t> buff {};
         buff.resize(append);
-        WriteAll(buff, append);
+        if (static_cast<size_t>(WriteAll(buff, append)) != static_cast<size_t>(append)) {
+            HILOGE("CompleteBlock write failed");
+            return false;
+        }
     }
     return true;
 }
