@@ -846,7 +846,7 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesRestoreSession_0100, testing::
 
         GTEST_LOG_(INFO) << "4. AppendBundlesRestoreSessionData succ 1";
         UniqueFd fd3 = servicePtr_->GetLocalCapabilities();
-        ret = servicePtr_->AppendBundlesRestoreSessionData(fd3.Get(), bundleNames, restoreType, userId);
+        ret = servicePtr_->AppendBundlesRestoreSessionData(fd3.Release(), bundleNames, restoreType, userId);
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -891,7 +891,7 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesRestoreSession_0101, testing::
         EXPECT_EQ(ret, 0);
         UniqueFd fd4 = servicePtr_->GetLocalCapabilities();
         ret = servicePtr_->AppendBundlesRestoreSessionDataByDetail(
-            fd4.Get(), bundleNames, detailInfos, restoreType, userId);
+            fd4.Release(), bundleNames, detailInfos, restoreType, userId);
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);
@@ -966,7 +966,7 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesRestoreSessionData_ValidRestor
 
         GTEST_LOG_(INFO) << "1. AppendBundlesRestoreSessionData with restoreType=RESTORE_DATA_WAIT_SEND";
         UniqueFd fd = servicePtr_->GetLocalCapabilities();
-        int ret = servicePtr_->AppendBundlesRestoreSessionData(fd.Get(), bundleNames,
+        int ret = servicePtr_->AppendBundlesRestoreSessionData(fd.Release(), bundleNames,
             RESTORE_DATA_WAIT_SEND, userId);
         EXPECT_EQ(ret, 0);
     } catch (...) {
@@ -1921,7 +1921,7 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesRestoreSessionData_VerifyCalle
         EXPECT_CALL(*skeleton_, GetCallingTokenID())
             .WillRepeatedly(Return(0));
         UniqueFd fd = servicePtr_->GetLocalCapabilities();
-        int ret = servicePtr_->AppendBundlesRestoreSessionData(fd.Get(), bundleNames, restoreType, userId);
+        int ret = servicePtr_->AppendBundlesRestoreSessionData(fd.Release(), bundleNames, restoreType, userId);
         // With static stub AccessTokenKit mock (TOKEN_HAP, permission granted, system app),
         // VerifyCaller should pass, so the flow continues normally
         EXPECT_EQ(ret, 0);
@@ -1959,7 +1959,7 @@ HWTEST_F(ServiceSubTest, SUB_Service_AppendBundlesRestoreSessionDataByDetail_Ver
             .WillRepeatedly(Return(0));
         UniqueFd fd = servicePtr_->GetLocalCapabilities();
         int ret = servicePtr_->AppendBundlesRestoreSessionDataByDetail(
-            fd.Get(), bundleNames, detailInfos, restoreType, userId);
+            fd.Release(), bundleNames, detailInfos, restoreType, userId);
         EXPECT_EQ(ret, 0);
     } catch (...) {
         EXPECT_TRUE(false);

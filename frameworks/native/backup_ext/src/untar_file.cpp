@@ -172,12 +172,15 @@ std::tuple<int, EndFileInfo, ErrFileInfo> UntarFile::IncrementalUnPacket(
         HILOGE("Failed to open tar file %{public}s, err = %{public}d", tarFile.c_str(), errno);
         return {errno, {}, {}};
     }
-    tarFilePtr_ = fdopen(fd.Get(), "rb");
+    // fdopen takes ownership, so detach the UniqueFd before it tags the descriptor.
+    int rawFd = fd.Release();
+    tarFilePtr_ = fdopen(rawFd, "rb");
     if (tarFilePtr_ == nullptr) {
-        HILOGE("Failed to fdopen , err = %{public}d", errno);
-        return {errno, {}, {}};
+        int err = errno;
+        fd = UniqueFd(rawFd);
+        HILOGE("Failed to fdopen , err = %{public}d", err);
+        return {err, {}, {}};
     }
-    fd.Release();
 
     auto [ret, fileInfos, errFileInfos] = ParseIncrementalTarFile(rootPath);
     if (ret != 0) {

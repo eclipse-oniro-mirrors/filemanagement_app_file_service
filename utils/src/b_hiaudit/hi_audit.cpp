@@ -137,7 +137,10 @@ void HiAudit::GetWriteFilePath()
     if (writeLogSize_ < hiAuditConfig_.fileSize) {
         return;
     }
-    fdsan_close_with_tag(writeFd_, BConstants::FDSAN_UTIL_TAG);
+    if (writeFd_ >= 0) {
+        fdsan_close_with_tag(writeFd_, BConstants::FDSAN_UTIL_TAG);
+        writeFd_ = -1;
+    }
     ZipAuditLog();
     CleanOldAuditFile();
     if (!MkLogDirSuccess()) {

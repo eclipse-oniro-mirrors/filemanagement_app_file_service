@@ -494,7 +494,7 @@ HWTEST_F(ServiceThrowTest, SUB_Service_throw_AppFileReady_0100, testing::ext::Te
         EXPECT_CALL(*token, GetHapTokenInfo(_, _)).WillRepeatedly(Return(0));
         EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return("bundleName"));
         EXPECT_CALL(*sessionMock, VerifyBundleName(_, _)).WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
-        int fd = 1;
+        int fd = BConstants::INVALID_FD_NUM;
         auto ret = service->AppFileReady(fileName, fd, 0);
         EXPECT_EQ(ret, BError(BError::Codes::SA_INVAL_ARG).GetCode());
 
@@ -1142,7 +1142,7 @@ HWTEST_F(ServiceThrowTest, SUB_Service_throw_AppIncrementalFileReady_0100, testi
         EXPECT_CALL(*token, GetHapTokenInfo(_, _)).WillRepeatedly(Return(0));
         EXPECT_CALL(*jsonUtil, BuildBundleNameIndexInfo(_, _)).WillOnce(Return("bundleName"));
         EXPECT_CALL(*sessionMock, VerifyBundleName(_, _)).WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
-        int fd = 1;
+        int fd = BConstants::INVALID_FD_NUM;
         auto ret = service->AppIncrementalFileReady(fileName, fd, fd, 0);
         EXPECT_EQ(ret, BError(BError::Codes::SA_INVAL_ARG).GetCode());
 
