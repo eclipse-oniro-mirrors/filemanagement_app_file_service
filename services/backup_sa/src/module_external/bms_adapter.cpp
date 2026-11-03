@@ -497,26 +497,29 @@ vector<BJsonEntityCaps::BundleInfo> BundleMgrAdapter::GetFullBundleInfos(int32_t
 
 string BundleMgrAdapter::GetExtName(string bundleName, int32_t userId)
 {
-    vector<AppExecFwk::BundleInfo> installedBundles;
     auto bms = GetBundleManager();
-    if (!bms->GetBundleInfos(AppExecFwk::GET_BUNDLE_WITH_EXTENSION_INFO, installedBundles, userId)) {
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle infos");
+    BJsonUtil::BundleDetailInfo bundleDetailInfo = BJsonUtil::ParseBundleNameIndexStr(bundleName);
+    int32_t flags = static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_HAP_MODULE) |
+        static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_EXTENSION_ABILITY);
+    AppExecFwk::BundleInfo bundleInfo;
+    ErrCode ret = bms->GetCloneBundleInfo(bundleDetailInfo.bundleName, flags, bundleDetailInfo.bundleIndex,
+        bundleInfo, userId);
+    if (ret != ERR_OK) {
+        HILOGE("GetExtName: GetCloneBundleInfo failed, bundleName:%{public}s, ret:%{public}d",
+            bundleName.c_str(), ret);
+        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle info");
     }
-    for (const auto &installedBundle : installedBundles) {
-        if (installedBundle.applicationInfo.codePath == HAP_CODE_PATH ||
-            installedBundle.applicationInfo.codePath == LINUX_HAP_CODE_PATH) {
-            HILOGI("Unsupported applications, name : %{public}s", installedBundle.name.data());
-            continue;
-        }
-        for (const auto &ext : installedBundle.extensionInfos) {
-            if (ext.bundleName != bundleName) {
-                continue;
+    if (bundleInfo.applicationInfo.codePath == HAP_CODE_PATH ||
+        bundleInfo.applicationInfo.codePath == LINUX_HAP_CODE_PATH) {
+        HILOGI("Unsupported applications, name : %{public}s", bundleInfo.name.data());
+        return "BackupExtensionAbility";
+    }
+    for (const auto &hapModuleInfo : bundleInfo.hapModuleInfos) {
+        for (const auto &ext : hapModuleInfo.extensionInfos) {
+            if (ext.type == AppExecFwk::ExtensionAbilityType::BACKUP) {
+                HILOGI("bundleName: %{public}s, find extName: %{public}s", bundleName.c_str(), ext.name.c_str());
+                return ext.name;
             }
-            if (ext.type != AppExecFwk::ExtensionAbilityType::BACKUP) {
-                continue;
-            }
-            HILOGI("bundleName: %{public}s, find extName: %{public}s", bundleName.c_str(), ext.name.c_str());
-            return ext.name;
         }
     }
     HILOGI("bundleName: %{public}s , find extName failed", bundleName.c_str());
