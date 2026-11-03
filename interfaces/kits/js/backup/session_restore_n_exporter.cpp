@@ -1333,7 +1333,8 @@ napi_value SessionRestoreNExporter::MigrateFile(napi_env env, napi_callback_info
     };
     HILOGI("Called SessionRestore::MigrateFile end, srcPath: %{public}s, destPath: %{public}s, "
         "bundleName: %{public}s, fileName: %{public}s.",
-        pathInfo.srcPath.c_str(), pathInfo.destPath.c_str(), bundleName.c_str(), fileName.c_str());
+        GetAnonyPath(pathInfo.srcPath).c_str(), GetAnonyPath(pathInfo.destPath).c_str(),
+        bundleName.c_str(), fileName.c_str());
 
     NVal thisVar(env, funcArg.GetThisVar());
     return NAsyncWorkPromise(env, thisVar).Schedule(className, cbExec, cbCompl).val_;

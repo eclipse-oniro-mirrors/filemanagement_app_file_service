@@ -353,10 +353,10 @@ ErrCode Service::AppAncoFileReady(const std::string &fileName, const std::string
         auto fd = UniqueFd(enhanceService->OpenAncoFileReadOnly(filePath));
         if (fd < 0) {
             errCode = errno;
-            HILOGE("open file failed, filename: %{public}s, err: %{public}d", GetAnonyString(filePath).c_str(),
+            HILOGE("open file failed, filename: %{public}s, err: %{public}d", GetAnonyPath(filePath).c_str(),
                 errCode);
             if (errCode == ERR_NO_PERMISSION) {
-                HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyString(filePath).c_str());
+                HILOGW("noPermissionFile, don't need to backup, path: %{public}s", GetAnonyPath(filePath).c_str());
                 return errCode;
             }
         }
@@ -366,7 +366,7 @@ ErrCode Service::AppAncoFileReady(const std::string &fileName, const std::string
             HILOGD("Report app file ready success, filename: %{public}s", fileName.c_str());
             if (needDelete) {
                 auto ret = enhanceService->RemoveAncoFile(filePath);
-                HILOGD("RemoveFile result:%{public}d, filepath:%{public}s", ret, filePath.c_str());
+                HILOGD("RemoveFile result:%{public}d, filepath:%{public}s", ret, GetAnonyPath(filePath).c_str());
             }
         } else {
             HILOGW("Report app file ready failed, ret: %{public}d, filename: %{public}s", reportRs, fileName.c_str());
@@ -908,22 +908,22 @@ void Service::OnBackupExtensionDied(const string &bundleName, bool isCleanCalled
         OnAllBundlesFinished(BError(BError::Codes::OK));
         return;
     }
+    string callName = std::move(bundleName);
     try {
-        string callName = bundleName;
         HILOGE("Backup <%{public}s> Extension Process Died", callName.c_str());
         ErrCode ret = session_->VerifyBundleName(callName);
         if (ret != ERR_OK) {
             HILOGE("Backup Extension died error, verify bundleName failed, bundleName:%{public}s, ret:%{public}d",
-                bundleName.c_str(), ret);
-            ExtConnectDied(bundleName);
+                callName.c_str(), ret);
+            ExtConnectDied(callName);
             return;
         }
         // 重新连接清理缓存
         HILOGI("Clear backup extension data, bundleName: %{public}s", callName.c_str());
         ExtConnectDied(callName);
     } catch (...) {
-        HILOGE("Unexpected exception, bundleName: %{public}s", bundleName.c_str());
-        ExtConnectDied(bundleName);
+        HILOGE("Unexpected exception, bundleName: %{public}s", callName.c_str());
+        ExtConnectDied(callName);
         return;
     }
 }
