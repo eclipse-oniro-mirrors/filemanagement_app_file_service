@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <dlfcn.h>
+#include <future>
 #include <gtest/gtest.h>
 
 #include "backup_para_mock.h"
@@ -714,7 +715,12 @@ public:
             service->session_->SetSessionUserId(0);
         }
     };
-    void TearDown() {};
+    void TearDown()
+    {
+        if (gcMockThread.joinable()) {
+            gcMockThread.join();
+        }
+    };
 
     static inline shared_ptr<DlfcnMock> dlFuncMock = nullptr;
     static inline sptr<Service> service = nullptr;
@@ -729,9 +735,10 @@ public:
     static inline sptr<ServiceReverseProxyMock> srProxy = nullptr;
     static inline shared_ptr<ServiceMock> srvMock = nullptr;
     static inline shared_ptr<DirectoryFuncMock> directMock = nullptr;
+    static inline std::thread gcMockThread;
 
-    static int gcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
-    static int gcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
+    static int GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
+    static int GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4);
 };
 
 void ServiceIncrementalTest::SetUpTestCase(void)
@@ -790,22 +797,21 @@ void ServiceIncrementalTest::TearDownTestCase()
     DlfcnMock::dlFunc_ = nullptr;
 }
 
-int ServiceIncrementalTest::gcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
+int ServiceIncrementalTest::GcFuncMock1(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
-    thread mockFuncThread([argv4]() {
+    gcMockThread = thread([argv4]() {
         int testStatus = 0;
         int testErrcode = 1;
         unsigned int testPercent = 2;
         unsigned int testGap = 3;
         argv4(testStatus, testErrcode, testPercent, testGap);
     });
-    mockFuncThread.detach();
     return 0;
 }
 
-int ServiceIncrementalTest::gcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
+int ServiceIncrementalTest::GcFuncMock2(int argv1, unsigned int argv2, unsigned int argv3, CallbackFunc argv4)
 {
-    thread mockFuncThread([argv4]() {
+    gcMockThread = thread([argv4]() {
         int testStatus = 1;
         int testErrcode = 1;
         unsigned int testPercent = 2;
@@ -814,7 +820,6 @@ int ServiceIncrementalTest::gcFuncMock2(int argv1, unsigned int argv2, unsigned 
         testStatus = 0;
         argv4(testStatus, testErrcode, testPercent, testGap);
     });
-    mockFuncThread.detach();
     int mockRes = -1;
     return mockRes;
 }
@@ -1046,8 +1051,15 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_GetAppLocalListAndDoIncr
 
         EXPECT_CALL(*srvMock, GetUserIdDefault()).WillOnce(Return(0));
         EXPECT_CALL(*srvMock, VerifyCallerAndGetCallerName(_, _)).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
-        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(nullptr));
+        auto getFdTaskStarted = std::make_shared<std::promise<void>>();
+        auto getFdTaskStartedFuture = getFdTaskStarted->get_future();
+        // Consume this expectation before later tests replace the shared session mock expectations.
+        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Invoke([getFdTaskStarted]() {
+            getFdTaskStarted->set_value();
+            return wptr<SvcBackupConnection>();
+        }));
         EXPECT_EQ(service->GetAppLocalListAndDoIncrementalBackup(emptyRD), BError(BError::Codes::OK).GetCode());
+        EXPECT_EQ(getFdTaskStartedFuture.wait_for(std::chrono::seconds(2)), std::future_status::ready);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceIncrementalTest-an exception occurred by GetAppLocalListAndDoIncrementalBackup.";
@@ -2183,7 +2195,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_CancelTask_0100, TestSiz
         service->CancelTask("", service);
         EXPECT_TRUE(true);
 
-        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr))).WillOnce(Return(nullptr));
+        EXPECT_CALL(*session, GetExtConnection(_)).WillOnce(Return(wptr(connectPtr)));
         EXPECT_CALL(*connect, GetBackupExtProxy()).WillOnce(Return(svcProxy));
         EXPECT_CALL(*svcProxy, HandleClear()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
         EXPECT_CALL(*session, StopFwkTimer(_)).WillOnce(Return(false));
@@ -2279,8 +2291,15 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_Cancel_0100, TestSize.Le
         EXPECT_CALL(*srvMock, VerifyCaller(_)).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
         EXPECT_CALL(*session, GetImpl()).WillOnce(Return(impl));
         EXPECT_CALL(*session, GetServiceSchedAction(_)).WillOnce(Return(BConstants::ServiceSchedAction::RUNNING));
+        auto cancelTaskStarted = std::make_shared<std::promise<void>>();
+        auto cancelTaskStartedFuture = cancelTaskStarted->get_future();
+        EXPECT_CALL(*session, GetExtConnection(bundleName)).WillOnce(Invoke([cancelTaskStarted]() {
+            cancelTaskStarted->set_value();
+            return wptr<SvcBackupConnection>();
+        }));
         service->CancelForResult(bundleName, result);
         EXPECT_EQ(result, BError(BError::Codes::OK).GetCode());
+        EXPECT_EQ(cancelTaskStartedFuture.wait_for(std::chrono::seconds(2)), std::future_status::ready);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "ServiceIncrementalTest-an exception occurred by Cancel.";
@@ -2576,7 +2595,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0104, Tes
     EXPECT_CALL(*srvMock, VerifyCaller()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
     EXPECT_CALL(*srvMock, GetCallerName()).WillOnce(Return(BConstants::BUNDLE_DATA_CLONE));
     EXPECT_CALL(*dlFuncMock, dlopen(_, _)).WillOnce(Return(handle));
-    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(gcFuncMock1)));
+    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(GcFuncMock1)));
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
     EXPECT_EQ(res, static_cast<ErrCode> (BError::BackupErrorCode::E_GC_FAILED));
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0104";
@@ -2601,7 +2620,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0105, Tes
     EXPECT_CALL(*srvMock, VerifyCaller()).WillOnce(Return(BError(BError::Codes::OK).GetCode()));
     EXPECT_CALL(*srvMock, GetCallerName()).WillOnce(Return(BConstants::BUNDLE_DATA_CLONE));
     EXPECT_CALL(*dlFuncMock, dlopen(_, _)).WillOnce(Return(handle));
-    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(gcFuncMock2)));
+    EXPECT_CALL(*dlFuncMock, dlsym(_, _)).WillOnce(Return(reinterpret_cast<void *>(GcFuncMock2)));
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
     EXPECT_EQ(res, static_cast<ErrCode> (BError::BackupErrorCode::E_GC_FAILED));
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0105";
@@ -2668,6 +2687,7 @@ HWTEST_F(ServiceIncrementalTest, SUB_ServiceIncremental_StartCleanData_0108, Tes
     unsigned int testWaitTime = 180;
     service->isOccupyingSession_.store(true);
     auto res = service->StartCleanData(testTriggerType, testWriteSize, testWaitTime);
+    service->isOccupyingSession_.store(false);
     EXPECT_EQ(res, BError(BError::Codes::SA_INVAL_ARG).GetCode());
     GTEST_LOG_(INFO) << "ServiceIncrementalTest-end SUB_ServiceIncremental_StartCleanData_0108";
 }

@@ -327,7 +327,6 @@ HWTEST_F(HiAuditTest, Hi_Audit_FDSan_GetWriteFilePath_Fail_Test_0107, testing::e
     try {
         HiAudit& hiAudit = HiAudit::GetInstance(false);
         hiAudit.Init();
-        int oldFd = hiAudit.writeFd_;
         string testLogDir = "/data/storage/el2/log/hiaudit/";
         string blockPath = "/data/storage/el2/log/hiaudit";
         ForceRemoveDirectoryBMS(testLogDir);
@@ -340,11 +339,9 @@ HWTEST_F(HiAuditTest, Hi_Audit_FDSan_GetWriteFilePath_Fail_Test_0107, testing::e
         }
         hiAudit.writeLogSize_ = 4 * 1024 * 1024;
         hiAudit.GetWriteFilePath();
-        EXPECT_EQ(hiAudit.writeFd_, oldFd);
-        if (hiAudit.writeFd_ >= 0) {
-            (void)fdsan_close_with_tag(hiAudit.writeFd_, BConstants::FDSAN_UTIL_TAG);
-            hiAudit.writeFd_ = -1;
-        }
+        EXPECT_LT(hiAudit.writeFd_, 0);
+        hiAudit.GetWriteFilePath();
+        EXPECT_LT(hiAudit.writeFd_, 0);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "HiAuditTest-exception occurred in GetWriteFilePath Fail FDSan test.";

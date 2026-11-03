@@ -378,11 +378,15 @@ HWTEST_F(ServiceTest, SUB_Service_AppFileReady_0100, testing::ext::TestSize.Leve
     try {
         string fileName = MANAGE_JSON;
         EXPECT_TRUE(servicePtr_ != nullptr);
-        auto ret = servicePtr_->AppFileReady(fileName, 1, 0);
+        UniqueFd fd(open("/dev/null", O_RDONLY));
+        ASSERT_GE(fd.Get(), 0);
+        auto ret = servicePtr_->AppFileReady(fileName, fd.Release(), 0);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
         GTEST_LOG_(INFO) << "ServiceTest-AppFileReady Branches";
         fileName = "test";
-        ret = servicePtr_->AppFileReady(fileName, 1, 0);
+        fd = UniqueFd(open("/dev/null", O_RDONLY));
+        ASSERT_GE(fd.Get(), 0);
+        ret = servicePtr_->AppFileReady(fileName, fd.Release(), 0);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
@@ -406,7 +410,9 @@ HWTEST_F(ServiceTest, SUB_Service_AppFileReady_0101, testing::ext::TestSize.Leve
     try {
         string fileName = "";
         EXPECT_TRUE(servicePtr_ != nullptr);
-        auto ret = servicePtr_->AppFileReady(fileName, 1, 0);
+        UniqueFd fd(open("/dev/null", O_RDONLY));
+        ASSERT_GE(fd.Get(), 0);
+        auto ret = servicePtr_->AppFileReady(fileName, fd.Release(), 0);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
@@ -430,7 +436,9 @@ HWTEST_F(ServiceTest, SUB_Service_AppFileReady_0102, testing::ext::TestSize.Leve
     try {
         string fileName = "manage.json";
         EXPECT_TRUE(servicePtr_ != nullptr);
-        auto ret = servicePtr_->AppFileReady(fileName, 1, 0);
+        UniqueFd fd(open("/dev/null", O_RDONLY));
+        ASSERT_GE(fd.Get(), 0);
+        auto ret = servicePtr_->AppFileReady(fileName, fd.Release(), 0);
         EXPECT_EQ(ret, BError(BError::Codes::OK));
     } catch (...) {
         EXPECT_TRUE(false);
