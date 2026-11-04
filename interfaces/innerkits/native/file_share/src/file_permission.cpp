@@ -724,6 +724,10 @@ int32_t FilePermission::GrantPermissionByUser(uint32_t tokenId, const vector<Uri
 {
     LOGI("GrantPermissionByUser called, tokenId=%{public}u, count=%{public}zu", tokenId, uriPolicies.size());
 #ifdef SANDBOX_MANAGER
+    if (uriPolicies.size() == 0 || uriPolicies.size() > MAX_ARRAY_SIZE) {
+        LOGE("The number of result codes exceeds the maximum");
+        return FileManagement::LibN::E_PARAMS;
+    }
     deque<struct PolicyErrorResult> errorResults;
     vector<PolicyInfo> pathPolicies = GetPathPolicyInfoFromUriPolicyInfo(uriPolicies, errorResults, false);
     if (pathPolicies.empty()) {
