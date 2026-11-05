@@ -1622,7 +1622,7 @@ HWTEST_F(FilePermissionTest, GrantPermissionByUser_test_0001, testing::ext::Test
     std::vector<UriPolicyInfo> uriPolicies;
     uint32_t tokenId = 537688848;
     int32_t ret = FilePermission::GrantPermissionByUser(tokenId, uriPolicies);
-    EXPECT_EQ(ret, EPERM);
+    EXPECT_EQ(ret, 401); // E_PARAMS: invalid parameter
     GTEST_LOG_(INFO) << "FileShareTest-end GrantPermissionByUser_test_0001";
 }
 
