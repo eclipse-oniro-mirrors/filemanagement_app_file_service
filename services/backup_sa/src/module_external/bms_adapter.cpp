@@ -507,7 +507,7 @@ string BundleMgrAdapter::GetExtName(string bundleName, int32_t userId)
     if (ret != ERR_OK) {
         HILOGE("GetExtName: GetCloneBundleInfo failed, bundleName:%{public}s, ret:%{public}d",
             bundleName.c_str(), ret);
-        throw BError(BError::Codes::SA_BROKEN_IPC, "Failed to get bundle info");
+        throw BError(BError::Codes::SA_BOOT_EXT_FAIL, "Failed to get bundle info");
     }
     if (bundleInfo.applicationInfo.codePath == HAP_CODE_PATH ||
         bundleInfo.applicationInfo.codePath == LINUX_HAP_CODE_PATH) {
