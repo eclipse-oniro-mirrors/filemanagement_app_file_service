@@ -406,7 +406,9 @@ ErrCode MigrateManager::HandleExtOnDisconnect(BackupType scenario, bool isAppRes
         if (isAppResultReport && (scenario == BackupType::FULL_RESTORE ||
             scenario == BackupType::INCREMENTAL_RESTORE)) {
             HandleCurBundleEndWork(bundleName_, scenario);
-            servicePtr_->OnAllBundlesFinished(BError(BError::Codes::OK));
+            if (servicePtr_ != nullptr) {
+                servicePtr_->OnAllBundlesFinished(BError(BError::Codes::OK));
+            }
         } else if (!isAppResultReport) {
             bool isIncBackup = true;
             if (scenario == BackupType::FULL_BACKUP || scenario == BackupType::FULL_RESTORE) {
@@ -418,9 +420,11 @@ ErrCode MigrateManager::HandleExtOnDisconnect(BackupType scenario, bool isAppRes
                 HILOGE("Handle current app done error, bundleName:%{public}s", bundleName_.c_str());
                 return ret;
             }
-            servicePtr_->RemoveExtensionMutex(bundleName_);
-            servicePtr_->RemoveExtOnRelease(bundleName_);
-            servicePtr_->OnAllBundlesFinished(BError(BError::Codes::OK));
+            if (servicePtr_ != nullptr) {
+                servicePtr_->RemoveExtensionMutex(bundleName_);
+                servicePtr_->RemoveExtOnRelease(bundleName_);
+                servicePtr_->OnAllBundlesFinished(BError(BError::Codes::OK));
+            }
         }
         return ret;
     } catch (const BError &e) {
@@ -444,8 +448,8 @@ void MigrateManager::HandleCurBundleEndWork(std::string bundleName, const Backup
             HILOGE("servicePtr_ or session_ is null");
             return;
         }
+        std::lock_guard<std::mutex> lock(bundleEndLock_);
         if (servicePtr_->session_->OnBundleFileReady(bundleName)) {
-            std::lock_guard<std::mutex> lock(bundleEndLock_);
             servicePtr_->session_->StopFwkTimer(bundleName);
             servicePtr_->session_->StopExtTimer(bundleName);
             servicePtr_->ClearSessionAndSchedInfo(bundleName);

@@ -443,6 +443,9 @@ bool BJsonUtil::AddRestoreSpend(uint32_t restoreSpend, std::string &jsonStr)
     int arraySize = cJSON_GetArraySize(resultInfoArray);
     for (int i = 0; i < arraySize; ++i) {
         cJSON *item = cJSON_GetArrayItem(resultInfoArray, i);
+        if (item == nullptr) {
+            continue;
+        }
         if (!cJSON_HasObjectItem(item, "type")) {
             continue;
         }
