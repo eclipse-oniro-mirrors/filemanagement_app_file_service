@@ -115,6 +115,7 @@ ohos_shared_library("fileuri_native") {
     "os_account:os_account_innerkits",
     "samgr:samgr_proxy",
     "json:nlohmann_json_static",
+    "bounds_checking_function:libsec_shared",
   ]
 
   part_name = "app_file_service"
