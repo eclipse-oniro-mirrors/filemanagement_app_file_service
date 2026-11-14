@@ -75,11 +75,16 @@ const std::string ON_RESTOREEX_SPEND = "ON_RESTOREEX_SPEND";
 const std::string DO_RESTORE_SPEND = "DO_RESTORE_SPEND";
 const std::string UNTAR_SPEND = "UNTAR_SPEND";
 const std::string BIG_FILE_SPEND = "BIG_FILE_SPEND";
+const std::string TOTAL_RESTORE_FILE_COUNT = "TOTAL_RESTORE_FILE_COUNT";
+const std::string RESTORE_START_BROADCAST_INFO = "RESTORE_START_BROADCAST_INFO";
+const std::string LAST_INCREMENTAL_TIME = "LAST_INCREMENTAL_TIME";
+const std::string REMAINING_SPACE = "REMAINING_SPACE";
 
 const std::string GET_BUNDLE_INFO_SPEND = "GET_BUNDLE_INFO_SPEND";
 const std::string TOTAL_SPEND = "TOTAL_SPEND";
 const std::string SUCC_BUNDLE_CNT = "SUCC_BUNDLE_CNT";
 const std::string FAIL_BUNDLE_CNT = "FAIL_BUNDLE_CNT";
+const std::string FAIL_BUNDLE_LIST = "FAIL_BUNDLE_LIST";
 
 } // namespace OHOS::FileManagement::Backup
 #endif // OHOS_FILEMGMT_BACKUP_RADAR_CONST_INNER_H

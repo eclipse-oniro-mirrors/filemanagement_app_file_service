@@ -1920,11 +1920,15 @@ HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_Accessors_0400, testing::ext::Te
 HWTEST_F(ExtExtensionSubTest, SUB_Ext_Extension_DfxAndFinish_0400, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(extExtension, nullptr);
-    EXPECT_EQ(extExtension->UpdateDfxInfo(12345, 67, "caller.bundle"), ERR_OK);
+    DfxInfo dfxInfo;
+    dfxInfo.uniqId = 12345;
+    dfxInfo.extConnectSpend = 67;
+    dfxInfo.bundleName = "caller.bundle";
+    EXPECT_EQ(extExtension->UpdateDfxInfo(dfxInfo), ERR_OK);
     EXPECT_EQ(extExtension->appStatistic_->uniqId_, 12345);
     EXPECT_EQ(extExtension->appStatistic_->extConnectSpend_, 67U);
     EXPECT_EQ(extExtension->appStatistic_->appCaller_, "caller.bundle");
-
+ 
     extExtension->DoBackupStart();
     extExtension->DoBackupEnd();
     extExtension->OnBackupFinish();

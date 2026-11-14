@@ -854,7 +854,7 @@ private:
 
     void TotalStatStart(BizScene bizScene, std::string caller, uint64_t startTime, Mode mode = Mode::FULL);
     void TotalStatEnd(ErrCode errCode);
-    void UpdateHandleCnt(ErrCode errCode);
+    void UpdateHandleCnt(ErrCode errCode, const std::string &bundleName);
     void TotalStatReport();
     void CreateRunningLock();
 #ifdef POWER_MANAGER_ENABLED

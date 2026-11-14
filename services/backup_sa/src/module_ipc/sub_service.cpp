@@ -744,6 +744,7 @@ void Service::HandleNotSupportBundleNames(const std::vector<std::string> &srcBun
         HILOGE("bundleName:%{public}s, can not find from supportBundleNames", bundleName.c_str());
         AppStatReportErr(bundleName, "HandleNotSupportBundleNames",
             RadarError(MODULE_HAP, BError(BError::Codes::SA_BUNDLE_INFO_EMPTY)));
+        UpdateHandleCnt(BError(BError::Codes::SA_BUNDLE_INFO_EMPTY), bundleName);
         if (isIncBackup) {
             session_->GetServiceReverseProxy()->IncrementalBackupOnBundleStarted(
                 BError(BError::Codes::SA_BUNDLE_INFO_EMPTY), bundleName);
@@ -869,6 +870,7 @@ void Service::ExtConnectDied(const string &callName)
         if (backupConnection != nullptr) {
             BError connectErr = backupConnection->GetError();
             errCode = connectErr.GetCode();
+            UpdateHandleCnt(errCode, callName);
             AppStatReportErr(callName, "ExtConnectDied", RadarError(MODULE_ABILITY_MGR_SVC, connectErr));
             hasConnected = backupConnection->GetWasEverConnected();
             if (backupConnection->IsExtAbilityConnected()) {
@@ -1778,7 +1780,7 @@ void Service::TotalStatEnd(ErrCode errCode)
     }
 }
 
-void Service::UpdateHandleCnt(ErrCode errCode)
+void Service::UpdateHandleCnt(ErrCode errCode, const std::string &bundleName)
 {
     std::unique_lock<std::shared_mutex> lock(totalStatMutex_);
     if (totalStatistic_ != nullptr) {
@@ -1786,6 +1788,7 @@ void Service::UpdateHandleCnt(ErrCode errCode)
             totalStatistic_->succBundleCount_++;
         } else {
             totalStatistic_->failBundleCount_++;
+            totalStatistic_->failBundleInfos_[bundleName] = errCode;
         }
     }
 }

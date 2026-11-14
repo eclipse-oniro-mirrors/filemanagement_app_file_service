@@ -84,7 +84,7 @@ ErrCode ExtensionProxy::GetIncrementalBackupFileHandle(int &fd, int &reportFd)
     return 0;
 }
 
-ErrCode ExtensionProxy::UpdateDfxInfo(int64_t uniqId, uint32_t extConnectSpend, const std::string &bundleName)
+ErrCode ExtensionProxy::UpdateDfxInfo(const DfxInfo &info)
 {
     return 0;
 }

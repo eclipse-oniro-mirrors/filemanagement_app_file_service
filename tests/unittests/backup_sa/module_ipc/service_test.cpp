@@ -1351,12 +1351,13 @@ HWTEST_F(ServiceTest, Service_Total_Stat_End_Test, testing::ext::TestSize.Level1
 HWTEST_F(ServiceTest, Service_Update_Handle_Count_Test, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin Service_Update_Handle_Count_Test";
+    std::string bundleName = "com.example.app";
     servicePtr_->totalStatistic_ = nullptr;
-    servicePtr_->UpdateHandleCnt(0);
+    servicePtr_->UpdateHandleCnt(0, bundleName);
     servicePtr_->totalStatistic_ = totalStat_;
-    servicePtr_->UpdateHandleCnt(0);
+    servicePtr_->UpdateHandleCnt(0, bundleName);
     EXPECT_EQ(totalStat_->succBundleCount_, 1);
-    servicePtr_->UpdateHandleCnt(1);
+    servicePtr_->UpdateHandleCnt(1, bundleName);
     EXPECT_EQ(totalStat_->failBundleCount_, 1);
     GTEST_LOG_(INFO) << "ServiceTest-end Service_Update_Handle_Count_Test";
 }

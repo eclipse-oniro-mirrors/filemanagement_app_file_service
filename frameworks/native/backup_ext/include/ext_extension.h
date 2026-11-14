@@ -121,7 +121,7 @@ public:
     void ExtClear(void);
     void AsyncTaskIncrementalRestoreForUpgrade(void);
     ErrCode User0OnBackup() override;
-    ErrCode UpdateDfxInfo(int64_t uniqId, uint32_t extConnectSpend, const std::string &bundleName) override;
+    ErrCode UpdateDfxInfo(const DfxInfo &info) override;
     ErrCode CleanBundleTempDir() override;
     ErrCode HandleOnRelease(int32_t scenario) override;
     ErrCode HandleGetCompatibilityInfo(const string &extInfo, int32_t scenario, bool isExist,

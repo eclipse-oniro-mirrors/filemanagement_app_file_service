@@ -138,6 +138,10 @@ public:
     uint32_t bigFileSpend_ = 0;
     uint64_t doRestoreStart_ = 0;
     uint32_t doRestoreSpend_ = 0;
+    uint32_t totalRestoreFileCount_ = 0;
+    int32_t restoreStartBroadcast_ {-1}; // -1=无广播, 0=失败, 1=成功
+    int64_t lastIncrementalTime_ {0};
+    int64_t remainingSpace_ {-1};
 
     RadarAppStatistic() {};
     RadarAppStatistic(std::string appCaller, int64_t uniqId, BizScene bizScene)

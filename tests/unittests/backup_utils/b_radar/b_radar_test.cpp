@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 
@@ -387,5 +388,157 @@ HWTEST_F(BRadarTest, ReportRestoreRunningLock, testing::ext::TestSize.Level1)
     resCode = 0;
     EXPECT_EQ(runningLockStatistic_->radarCode_, resCode);
     GTEST_LOG_(INFO) << "BRadarTest-end ReportRestoreRunningLock";
+}
+
+/**
+ * @tc.number: backup_utils_BRadar_ConvertFailBundleInfosToJson_0100
+ * @tc.name: backup_utils_BRadar_ConvertFailBundleInfosToJson_0100
+ * @tc.desc: 测试 ConvertFailBundleInfosToJson 空map输入
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0100";
+    try {
+        std::map<std::string, int32_t> emptyMap;
+        std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(emptyMap);
+        EXPECT_EQ(result, "");
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BRadarTest-end ConvertFailBundleInfosToJson_0100";
+}
+ 
+/**
+ * @tc.number: backup_utils_BRadar_ConvertFailBundleInfosToJson_0200
+ * @tc.name: backup_utils_BRadar_ConvertFailBundleInfosToJson_0200
+ * @tc.desc: 测试 ConvertFailBundleInfosToJson 单个元素输入
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0200";
+    try {
+        std::map<std::string, int32_t> singleMap = {{"com.example.app1", 13900001}};
+        std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(singleMap);
+        std::string compact;
+        for (char c : result) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                compact += c;
+            }
+        }
+        EXPECT_TRUE(compact.find("\"com.example.app1\":13900001") != std::string::npos);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BRadarTest-end ConvertFailBundleInfosToJson_0200";
+}
+ 
+/**
+ * @tc.number: backup_utils_BRadar_ConvertFailBundleInfosToJson_0300
+ * @tc.name: backup_utils_BRadar_ConvertFailBundleInfosToJson_0300
+ * @tc.desc: 测试 ConvertFailBundleInfosToJson 多个元素输入
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0300";
+    try {
+        std::map<std::string, int32_t> multiMap = {
+            {"com.example.app1", 13900001},
+            {"com.example.app2", 13500004},
+            {"com.example.app3", 0}
+        };
+        std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(multiMap);
+        std::string compact;
+        for (char c : result) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                compact += c;
+            }
+        }
+        EXPECT_TRUE(compact.find("\"com.example.app1\":13900001") != std::string::npos);
+        EXPECT_TRUE(compact.find("\"com.example.app2\":13500004") != std::string::npos);
+        EXPECT_TRUE(compact.find("\"com.example.app3\":0") != std::string::npos);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BRadarTest-end ConvertFailBundleInfosToJson_0300";
+}
+ 
+/**
+ * @tc.number: backup_utils_BRadar_ConvertFailBundleInfosToJson_0400
+ * @tc.name: backup_utils_BRadar_ConvertFailBundleInfosToJson_0400
+ * @tc.desc: 测试 ConvertFailBundleInfosToJson bundleName包含点号
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0400, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0400";
+    try {
+        std::map<std::string, int32_t> dotMap = {{"com.huawei.test.app", 13900001}};
+        std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(dotMap);
+        std::string compact;
+        for (char c : result) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                compact += c;
+            }
+        }
+        EXPECT_TRUE(compact.find("\"com.huawei.test.app\":13900001") != std::string::npos);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BRadarTest-end ConvertFailBundleInfosToJson_0400";
+}
+ 
+/**
+ * @tc.number: backup_utils_BRadar_ConvertFailBundleInfosToJson_0500
+ * @tc.name: backup_utils_BRadar_ConvertFailBundleInfosToJson_0500
+ * @tc.desc: 测试 ConvertFailBundleInfosToJson 与RadarTotalStatistic实例结合使用
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0500, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0500";
+    try {
+        std::string caller = "ut_caller";
+        auto statistic = std::make_shared<RadarTotalStatistic>(BizScene::BACKUP, caller);
+        statistic->failBundleInfos_ = {
+            {"com.example.app1", 13900001},
+            {"com.example.app2", 13500004}
+        };
+ 
+        std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(statistic->failBundleInfos_);
+        std::string compact;
+        for (char c : result) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                compact += c;
+            }
+        }
+        EXPECT_TRUE(compact.find("\"com.example.app1\":13900001") != std::string::npos);
+        EXPECT_TRUE(compact.find("\"com.example.app2\":13500004") != std::string::npos);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
+    }
+    GTEST_LOG_(INFO) << "BRadarTest-end ConvertFailBundleInfosToJson_0500";
 }
 } // namespace OHOS::FileManagement::Backup
