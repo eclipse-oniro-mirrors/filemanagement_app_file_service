@@ -848,9 +848,9 @@ ErrCode Service::SAResultReport(const std::string bundleName, const std::string 
     UpdateHandleCnt(errCode);
     SADone(errCode, bundleName);
     if (sennario == BackupRestoreScenario::FULL_RESTORE) {
-        session_->GetServiceReverseProxy()->RestoreOnResultReport(restoreRetInfo, bundleName, ERR_OK);
+        session_->GetServiceReverseProxy()->RestoreOnResultReport(restoreRetInfo, bundleName, errCode);
     } else if (sennario == BackupRestoreScenario::INCREMENTAL_RESTORE) {
-        session_->GetServiceReverseProxy()->IncrementalRestoreOnResultReport(restoreRetInfo, bundleName, ERR_OK);
+        session_->GetServiceReverseProxy()->IncrementalRestoreOnResultReport(restoreRetInfo, bundleName, errCode);
     } else if (sennario == BackupRestoreScenario::FULL_BACKUP) {
         session_->GetServiceReverseProxy()->BackupOnResultReport(restoreRetInfo, bundleName);
         session_->GetServiceReverseProxy()->BackupOnBundleFinished(errCode, bundleName);
