@@ -490,7 +490,7 @@ HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0400, testing::ext::TestSize.L
 {
     GTEST_LOG_(INFO) << "BRadarTest-begin ConvertFailBundleInfosToJson_0400";
     try {
-        std::map<std::string, int32_t> dotMap = {{"com.huawei.test.app", 13900001}};
+        std::map<std::string, int32_t> dotMap = {{"com.example.test.app", 13900001}};
         std::string result = RadarTotalStatistic::ConvertFailBundleInfosToJson(dotMap);
         std::string compact;
         for (char c : result) {
@@ -498,7 +498,7 @@ HWTEST_F(BRadarTest, ConvertFailBundleInfosToJson_0400, testing::ext::TestSize.L
                 compact += c;
             }
         }
-        EXPECT_TRUE(compact.find("\"com.huawei.test.app\":13900001") != std::string::npos);
+        EXPECT_TRUE(compact.find("\"com.example.test.app\":13900001") != std::string::npos);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BRadarTest-an exception occurred.";
