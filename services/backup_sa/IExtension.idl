@@ -15,6 +15,7 @@
 
 package OHOS.FileManagement.Backup;
 sequenceable BackupFileInfo..OHOS.FileManagement.Backup.FileOpenResult;
+sequenceable b_radar/dfx_info..OHOS.FileManagement.Backup.DfxInfo;
 rawdata OHOS.FileManagement.Backup.BStringRawData;
 interface OHOS.FileManagement.Backup.IExtension{
     [ipccode 1] void GetFileHandleWithUniqueFd([in] String fileName, [out] int getFileHandleErrCode, [out] FileDescriptor fd);
@@ -31,7 +32,7 @@ interface OHOS.FileManagement.Backup.IExtension{
     [ipccode 11] void GetBackupInfo([out] String getBackupInfoResult);
     [ipccode 12] void UpdateFdSendRate([in] String bundleName, [in] int sendRate);
     [ipccode 13] void User0OnBackup();
-    [ipccode 14] void UpdateDfxInfo([in] long uniqId, [in] unsigned int extConnectSpend, [in] String bundleName);
+    [ipccode 14] void UpdateDfxInfo([in] DfxInfo info);
     [ipccode 15] void CleanBundleTempDir();
     [ipccode 16] void HandleOnRelease([in] int scenario);
     [ipccode 17] void HandleGetCompatibilityInfo([in] String extInfo, [in] int scenario, [in] boolean isExist,

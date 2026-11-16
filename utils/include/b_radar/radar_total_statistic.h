@@ -17,6 +17,7 @@
 #define OHOS_FILEMGMT_BACKUP_RADAR_TOTAL_STATISTIC_H
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include "radar_const.h"
 #include "b_error/b_error.h"
@@ -27,6 +28,7 @@ class RadarTotalStatistic {
 public:
     uint32_t succBundleCount_ = 0;
     uint32_t failBundleCount_ = 0;
+    std::map<std::string, int32_t> failBundleInfos_;
     Duration totalSpendTime_ = {0, 0};
     int innerErr_ = 0;
 
@@ -42,6 +44,7 @@ public:
     void Report(const std::string &func, BError errCode, uint32_t moduleId = MODULE_UNKNOWN);
     BizScene GetBizScene() { return bizScene_; }
     int64_t GetUniqId() { return uniqId_; }
+    static std::string ConvertFailBundleInfosToJson(const std::map<std::string, int32_t> &failBundleInfos);
 
 private:
     BizScene bizScene_ = BizScene::UNKNOWN;

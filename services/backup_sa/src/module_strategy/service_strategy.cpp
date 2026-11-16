@@ -140,6 +140,7 @@ void RestoreExtraPropertyStrategy::Execute(StrategyContext &context)
         bool notifyRet = DelayedSingleton<NotifyWorkService>::GetInstance()->NotifyBundleDetail(
             broadCastInfo, START_TYPE);
         HILOGI("Publish event end, notify result is:%{public}d", notifyRet);
+        ptr->SetBroadcastResult(context.bundleNameIndexInfo, notifyRet);
     }
     BJsonUtil::BundleDetailInfo uniCastInfo;
     if (BJsonUtil::FindBundleInfoByName(*context.bundleNameDetailMap,

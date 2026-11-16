@@ -739,3 +739,160 @@ HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_VerifyBundleName_0101, tes
     }
     GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_VerifyBundleName_0101";
 }
+
+/**
+ * @tc.number: SUB_backup_sa_session_SetBroadcastResult_0100
+ * @tc.name: SUB_backup_sa_session_SetBroadcastResult_0100
+ * @tc.desc: 测试 SetBroadcastResult 在 clientToken 为 0、bundle 未命中、bundle 命中三种分支
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_SetBroadcastResult_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_SetBroadcastResult_0100";
+    try {
+        EXPECT_TRUE(sessionManagerPtr_ != nullptr);
+ 
+        // clientToken == 0，直接返回，map 不应被修改
+        sessionManagerPtr_->impl_.clientToken = 0;
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->SetBroadcastResult(BUNDLE_NAME, 1);
+        EXPECT_TRUE(sessionManagerPtr_->impl_.backupExtNameMap.empty());
+ 
+        // clientToken 有效但 bundle 不在 map，直接返回
+        sessionManagerPtr_->impl_.clientToken = CLIENT_TOKEN_ID;
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->SetBroadcastResult(BUNDLE_NAME, 1);
+        EXPECT_TRUE(sessionManagerPtr_->impl_.backupExtNameMap.empty());
+ 
+        // clientToken 有效且 bundle 命中，应写入 broadcastResult
+        BackupExtInfo info;
+        info.broadcastResult = -1;
+        sessionManagerPtr_->impl_.backupExtNameMap[BUNDLE_NAME] = info;
+        sessionManagerPtr_->SetBroadcastResult(BUNDLE_NAME, 1);
+        EXPECT_EQ(sessionManagerPtr_->impl_.backupExtNameMap[BUNDLE_NAME].broadcastResult, 1);
+ 
+        // 收尾，避免污染后续用例
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.clientToken = 0;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by SetBroadcastResult.";
+    }
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_SetBroadcastResult_0100";
+}
+ 
+/**
+ * @tc.number: SUB_backup_sa_session_UpdateDfxInfo_0100
+ * @tc.name: SUB_backup_sa_session_UpdateDfxInfo_0100
+ * @tc.desc: 测试 UpdateDfxInfo 在 GetExtConnection 返回 nullptr 时直接返回（分支①）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_UpdateDfxInfo_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_UpdateDfxInfo_0100";
+    try {
+        EXPECT_TRUE(sessionManagerPtr_ != nullptr);
+        // clientToken == 0 → GetExtConnection 第一道检查返回 nullptr → 直接 return
+        sessionManagerPtr_->impl_.clientToken = 0;
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->UpdateDfxInfo(BUNDLE_NAME, 12345);
+        EXPECT_TRUE(sessionManagerPtr_->impl_.backupExtNameMap.empty());
+ 
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.clientToken = 0;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by UpdateDfxInfo_0100.";
+    }
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_UpdateDfxInfo_0100";
+}
+ 
+/**
+ * @tc.number: SUB_backup_sa_session_UpdateDfxInfo_0200
+ * @tc.name: SUB_backup_sa_session_UpdateDfxInfo_0200
+ * @tc.desc: 测试 UpdateDfxInfo 在 connection 存在但 proxy 为空时直接返回（分支②）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ */
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_UpdateDfxInfo_0200, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_UpdateDfxInfo_0200";
+    try {
+        EXPECT_TRUE(sessionManagerPtr_ != nullptr);
+        // connection 存在但 backupProxy_ 未注入 → GetBackupExtProxy() 返回 nullptr → return
+        BackupExtInfo info;
+        info.backUpConnection = sptr(new SvcBackupConnection(nullptr, nullptr, BUNDLE_NAME));
+        sessionManagerPtr_->impl_.clientToken = CLIENT_TOKEN_ID;
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.backupExtNameMap[BUNDLE_NAME] = info;
+ 
+        sessionManagerPtr_->UpdateDfxInfo(BUNDLE_NAME, 12345);
+        EXPECT_TRUE(true);
+ 
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.clientToken = 0;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by UpdateDfxInfo_0200.";
+    }
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_UpdateDfxInfo_0200";
+}
+ 
+/**
+ * @tc.number: SUB_backup_sa_session_UpdateDfxInfo_0300
+ * @tc.name: SUB_backup_sa_session_UpdateDfxInfo_0300
+ * @tc.desc: 测试 UpdateDfxInfo 在 bundle 命中 map 时填充 DfxInfo 并调用扩展 proxy（分支③）
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: I6F3GV
+ * @tc.note: 分支④(GetBackupExtNameMap 未命中)在单线程下不可达：GetExtConnection 返回非 null 已隐含 bundle 在 map 中，
+ *           随后用同一 bundleName 查同一 map 必然命中，属防御性死代码，无法写稳定确定性用例。
+ */
+HWTEST_F(SvcSessionManagerTest, SUB_backup_sa_session_UpdateDfxInfo_0300, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-begin SUB_backup_sa_session_UpdateDfxInfo_0300";
+    try {
+        EXPECT_TRUE(sessionManagerPtr_ != nullptr);
+ 
+        // 注入 mock proxy 到 connection 的 backupProxy_（private=public 可写）
+        sptr<SvcExtensionProxyMock> svcProxy = sptr(new SvcExtensionProxyMock());
+        sptr<SvcBackupConnection> conn = sptr(new SvcBackupConnection(nullptr, nullptr, BUNDLE_NAME));
+        conn->backupProxy_ = svcProxy;
+ 
+        // 注入 bundle 命中 map，预置 broadcastResult / lastIncrementalTime
+        BackupExtInfo info;
+        info.backUpConnection = conn;
+        info.broadcastResult = 1;
+        info.lastIncrementalTime = 999;
+        sessionManagerPtr_->impl_.clientToken = CLIENT_TOKEN_ID;
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.backupExtNameMap[BUNDLE_NAME] = info;
+ 
+        // 校验传给扩展的 DfxInfo 字段映射（GetConnectSpan 默认返回 0）
+        EXPECT_CALL(*svcProxy, UpdateDfxInfo(testing::AllOf(
+            testing::Field(&DfxInfo::uniqId, testing::Eq(static_cast<int64_t>(12345))),
+            testing::Field(&DfxInfo::bundleName, testing::Eq(BUNDLE_NAME)),
+            testing::Field(&DfxInfo::broadcastInfo, testing::Eq(1)),
+            testing::Field(&DfxInfo::lastIncrementalTime, testing::Eq(static_cast<int64_t>(999))),
+            testing::Field(&DfxInfo::extConnectSpend, testing::Eq(0u))))).Times(1);
+ 
+        sessionManagerPtr_->UpdateDfxInfo(BUNDLE_NAME, 12345);
+        EXPECT_TRUE(testing::Mock::VerifyAndClearExpectations(svcProxy.GetRefPtr()));
+ 
+        sessionManagerPtr_->impl_.backupExtNameMap.clear();
+        sessionManagerPtr_->impl_.clientToken = 0;
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "SvcSessionManagerTest-an exception occurred by UpdateDfxInfo_0300.";
+    }
+    GTEST_LOG_(INFO) << "SvcSessionManagerTest-end SUB_backup_sa_session_UpdateDfxInfo_0300";
+}

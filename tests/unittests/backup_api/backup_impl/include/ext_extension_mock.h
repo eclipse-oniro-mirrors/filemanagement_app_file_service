@@ -169,7 +169,7 @@ public:
         return BError(BError::Codes::OK);
     };
 
-    ErrCode UpdateDfxInfo(int64_t uniqId, uint32_t extConnectSpend, const std::string &bundleName) override
+    ErrCode UpdateDfxInfo(const DfxInfo &info) override
     {
         return ERR_OK;
     };

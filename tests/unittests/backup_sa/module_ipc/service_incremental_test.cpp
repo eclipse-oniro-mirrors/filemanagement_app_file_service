@@ -589,7 +589,7 @@ void Service::TotalStatEnd(ErrCode errCode)
     }
 }
 
-void Service::UpdateHandleCnt(ErrCode errCode)
+void Service::UpdateHandleCnt(ErrCode errCode, const std::string &bundleName)
 {
     std::unique_lock<std::shared_mutex> lock(totalStatMutex_);
     if (totalStatistic_ != nullptr) {

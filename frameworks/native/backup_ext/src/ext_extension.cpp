@@ -32,7 +32,9 @@
 #include <vector>
 
 #include <directory_ex.h>
+#include <cerrno>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 
 #include <directory_ex.h>
@@ -2115,8 +2117,7 @@ void BackupExtExtension::AppResultReport(std::string restoreRetInfo, BackupResto
     BExcepUltils::BAssert(proxy, BError::Codes::EXT_BROKEN_IPC, "Failed to obtain the ServiceClient handle");
     BJsonUtil::AddAncoFileResult(ancoRestoreRes_, restoreRetInfo);
     if (appStatistic_) {
-        uint32_t restoreSpend = appStatistic_->onRestoreSpend_.GetSpan() +
-            appStatistic_->onRestoreexSpend_.GetSpan();
+        uint32_t restoreSpend = appStatistic_->onRestoreSpend_.GetSpan() + appStatistic_->onRestoreexSpend_.GetSpan();
         BJsonUtil::AddRestoreSpend(restoreSpend, restoreRetInfo);
     }
     HILOGI("restoreRetInfo is %{public}s", restoreRetInfo.c_str());

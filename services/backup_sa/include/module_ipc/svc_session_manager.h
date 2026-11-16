@@ -32,6 +32,7 @@
 #include <refbase.h>
 
 #include "b_file_info.h"
+#include "b_radar/dfx_info.h"
 #include "b_incremental_data.h"
 #include "b_resources/b_constants.h"
 #include "service_common.h"
@@ -84,6 +85,7 @@ struct BackupExtInfo {
     std::unordered_set<std::string> compatibleDirs;
     int32_t batchSize {500};
     BConstants::ExtensionRestoreScene restoreScene {BConstants::ExtensionRestoreScene::NORMAL};
+    int32_t broadcastResult {-1};
 };
 
 class Service;
@@ -232,6 +234,8 @@ public:
     wptr<SvcBackupConnection> GetExtConnection(const BundleName &bundleName);
 
     void UpdateDfxInfo(const std::string &bundleName, uint64_t uniqId);
+
+    void SetBroadcastResult(const std::string &bundleName, int32_t result);
 
     /**
      * @brief get sa extension connection

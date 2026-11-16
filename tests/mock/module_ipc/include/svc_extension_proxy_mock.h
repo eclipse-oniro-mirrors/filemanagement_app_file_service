@@ -41,7 +41,7 @@ MOCK_METHOD(ErrCode, GetIncrementalBackupFileHandle, (int &, int &));
 MOCK_METHOD(ErrCode, GetBackupInfo, (std::string &));
 MOCK_METHOD(ErrCode, UpdateFdSendRate, (const std::string &, int32_t));
 MOCK_METHOD(ErrCode, User0OnBackup, ());
-MOCK_METHOD(ErrCode, UpdateDfxInfo, (int64_t, uint32_t, const std::string &));
+MOCK_METHOD(ErrCode, UpdateDfxInfo, (const DfxInfo &info));
 MOCK_METHOD(ErrCode, CleanBundleTempDir, ());
 MOCK_METHOD(ErrCode, HandleOnRelease, (int32_t));
 MOCK_METHOD(ErrCode, HandleGetCompatibilityInfo, (const std::string &, int32_t, bool, std::string &));

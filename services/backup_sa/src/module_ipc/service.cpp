@@ -593,6 +593,7 @@ void Service::HandleExceptionOnAppendBundles(sptr<SvcSessionManager> session,
                               [&bundleName](const auto &obj) { return obj == bundleName; });
             if (it == restoreBundleNames.end()) {
                 HILOGE("AppendBundles failed, bundleName = %{public}s.", bundleName.c_str());
+                UpdateHandleCnt(BError(BError::Codes::SA_BUNDLE_INFO_EMPTY), bundleName);
                 AppStatReportErr(bundleName, "HandleExceptionOnAppendBundles",
                     RadarError(MODULE_BMS, BError(BError::Codes::SA_BUNDLE_INFO_EMPTY)));
                 OnBundleStarted(BError(BError::Codes::SA_BUNDLE_INFO_EMPTY), session, bundleName);
@@ -680,6 +681,7 @@ void Service::SetCurrentSessProperties(std::vector<BJsonEntityCaps::BundleInfo> 
             (restoreInfo.extensionName.empty() && !SAUtils::IsSABundleName(restoreInfo.name))) {
             AppStatReportErr(restoreInfo.name, "SetCurrentSessProperties",
                 RadarError(MODULE_BMS, BError(BError::Codes::SA_FORBID_BACKUP_RESTORE)));
+            UpdateHandleCnt(BError(BError::Codes::SA_FORBID_BACKUP_RESTORE), bundleNameIndexInfo);
             OnBundleStarted(BError(BError::Codes::SA_FORBID_BACKUP_RESTORE), session_, bundleNameIndexInfo);
             session_->RemoveExtInfo(bundleNameIndexInfo);
             continue;
@@ -765,6 +767,7 @@ void Service::SetCurrentSessProperties(
             (restoreInfo.extensionName.empty() && !SAUtils::IsSABundleName(restoreInfo.name))) {
             AppStatReportErr(restoreInfo.name, "SetCurrentSessProperties",
                 RadarError(MODULE_BMS, BError(BError::Codes::SA_FORBID_BACKUP_RESTORE)));
+            UpdateHandleCnt(BError(BError::Codes::SA_FORBID_BACKUP_RESTORE), bundleNameIndexInfo);
             OnBundleStarted(BError(BError::Codes::SA_FORBID_BACKUP_RESTORE), session_, bundleNameIndexInfo);
             session_->RemoveExtInfo(bundleNameIndexInfo);
             continue;
@@ -822,14 +825,16 @@ ErrCode Service::ServiceResultReport(const std::string& restoreRetInfo, BackupRe
         }
         SendEndAppGalleryNotify(callerName);
         if (sennario == BackupRestoreScenario::FULL_RESTORE) {
-            UpdateHandleCnt(errCode);
+            UpdateHandleCnt(errCode, callerName);
             session_->GetServiceReverseProxy()->RestoreOnResultReport(restoreRetInfo, callerName, errCode);
         } else if (sennario == BackupRestoreScenario::INCREMENTAL_RESTORE) {
-            UpdateHandleCnt(errCode);
+            UpdateHandleCnt(errCode, callerName);
             session_->GetServiceReverseProxy()->IncrementalRestoreOnResultReport(restoreRetInfo, callerName, errCode);
         } else if (sennario == BackupRestoreScenario::FULL_BACKUP) {
+            UpdateHandleCnt(errCode, callerName);
             session_->GetServiceReverseProxy()->BackupOnResultReport(restoreRetInfo, callerName);
         } else if (sennario == BackupRestoreScenario::INCREMENTAL_BACKUP) {
+            UpdateHandleCnt(errCode, callerName);
             session_->GetServiceReverseProxy()->IncrementalBackupOnResultReport(restoreRetInfo, callerName);
         }
         return BError(BError::Codes::OK);
@@ -845,7 +850,7 @@ ErrCode Service::ServiceResultReport(const std::string& restoreRetInfo, BackupRe
 ErrCode Service::SAResultReport(const std::string bundleName, const std::string restoreRetInfo,
                                 const ErrCode errCode, const BackupRestoreScenario sennario)
 {
-    UpdateHandleCnt(errCode);
+    UpdateHandleCnt(errCode, bundleName);
     SADone(errCode, bundleName);
     if (sennario == BackupRestoreScenario::FULL_RESTORE) {
         session_->GetServiceReverseProxy()->RestoreOnResultReport(restoreRetInfo, bundleName, errCode);
@@ -1758,7 +1763,7 @@ ErrCode Service::SADone(ErrCode errCode, std::string bundleName)
 
 void Service::NotifyCallerCurAppDone(ErrCode errCode, const std::string &callerName)
 {
-    UpdateHandleCnt(errCode);
+    UpdateHandleCnt(errCode, callerName);
     IServiceReverseType::Scenario scenario = session_->GetScenario();
     if (scenario == IServiceReverseType::Scenario::BACKUP) {
         HILOGI("will notify clone data, scenario is Backup");
@@ -1862,11 +1867,13 @@ void Service::DoTimeout(wptr<Service> ptr, std::string bundleName)
         SendEndAppGalleryNotify(bundleName);
         thisPtr->ClearSessionAndSchedInfo(bundleName);
         thisPtr->NoticeClientFinish(bundleName, BError(BError::Codes::EXT_ABILITY_TIMEOUT));
+        thisPtr->UpdateHandleCnt(BError(BError::Codes::EXT_ABILITY_TIMEOUT), bundleName);
     } catch (...) {
         HILOGE("Unexpected exception, bundleName: %{public}s", bundleName.c_str());
         SendEndAppGalleryNotify(bundleName);
         thisPtr->ClearSessionAndSchedInfo(bundleName);
         thisPtr->NoticeClientFinish(bundleName, BError(BError::Codes::EXT_ABILITY_TIMEOUT));
+        thisPtr->UpdateHandleCnt(BError(BError::Codes::EXT_ABILITY_TIMEOUT), bundleName);
     }
     RemoveExtensionMutex(bundleName);
 }

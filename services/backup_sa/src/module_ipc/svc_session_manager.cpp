@@ -353,7 +353,32 @@ void SvcSessionManager::UpdateDfxInfo(const std::string &bundleName, uint64_t un
     if (proxy == nullptr) {
         return;
     }
-    proxy->UpdateDfxInfo(uniqId, backupConnection->GetConnectSpan(), bundleName);
+    DfxInfo info;
+    info.uniqId = uniqId;
+    info.extConnectSpend = backupConnection->GetConnectSpan();
+    info.bundleName = bundleName;
+    {
+        shared_lock<shared_mutex> lock(lock_);
+        auto [findBundleSuc, it] = GetBackupExtNameMap(bundleName);
+        if (findBundleSuc) {
+            info.broadcastInfo = it->second.broadcastResult;
+            info.lastIncrementalTime = it->second.lastIncrementalTime;
+        }
+    }
+    proxy->UpdateDfxInfo(info);
+}
+ 
+void SvcSessionManager::SetBroadcastResult(const std::string &bundleName, int32_t result)
+{
+    unique_lock<shared_mutex> lock(lock_);
+    if (!impl_.clientToken) {
+        return;
+    }
+    auto [findBundleSuc, it] = GetBackupExtNameMap(bundleName);
+    if (!findBundleSuc) {
+        return;
+    }
+    it->second.broadcastResult = result;
 }
 
 std::weak_ptr<SABackupConnection> SvcSessionManager::GetSAExtConnection(const BundleName &bundleName)

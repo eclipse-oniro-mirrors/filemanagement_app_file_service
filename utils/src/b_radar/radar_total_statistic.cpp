@@ -18,6 +18,7 @@
 #include "b_utils/b_time.h"
 #include "filemgmt_libhilog.h"
 #include "hisysevent.h"
+#include "cJSON.h"
 
 namespace OHOS::FileManagement::Backup {
 
@@ -27,8 +28,36 @@ RadarTotalStatistic::RadarTotalStatistic(BizScene bizScene, std::string callerNa
     uniqId_ = TimeUtils::GetTimeUS();
 }
 
+std::string RadarTotalStatistic::ConvertFailBundleInfosToJson(
+    const std::map<std::string, int32_t> &failBundleInfos)
+{
+    if (failBundleInfos.empty()) {
+        return "";
+    }
+ 
+    cJSON *root = cJSON_CreateObject();
+    if (root == nullptr) {
+        return "";
+    }
+ 
+    for (const auto &[bundleName, errCode] : failBundleInfos) {
+        cJSON_AddNumberToObject(root, bundleName.c_str(), errCode);
+    }
+ 
+    char *jsonStr = cJSON_Print(root);
+    cJSON_Delete(root);
+ 
+    std::string result;
+    if (jsonStr != nullptr) {
+        result = jsonStr;
+        cJSON_free(jsonStr);
+    }
+    return result;
+}
+
 void RadarTotalStatistic::Report(const std::string &func, int32_t error, std::string errMsg)
 {
+    std::string failBundleListJson = ConvertFailBundleInfosToJson(failBundleInfos_);
     HiSysEventWrite(
         DOMAIN,
         BACKUP_RESTORE_STATISTIC,
@@ -36,6 +65,7 @@ void RadarTotalStatistic::Report(const std::string &func, int32_t error, std::st
         TOTAL_SPEND, totalSpendTime_.GetSpan(),
         SUCC_BUNDLE_CNT, succBundleCount_,
         FAIL_BUNDLE_CNT, failBundleCount_,
+        FAIL_BUNDLE_LIST, failBundleListJson,
         ORG_PKG, DOMAIN_NAME,
         FUNC, func,
         CONCURRENT_ID, uniqId_,

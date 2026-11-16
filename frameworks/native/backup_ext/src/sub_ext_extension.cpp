@@ -364,9 +364,10 @@ tuple<bool, vector<string>> BackupExtExtension::CheckRestoreFileInfos()
     }
     HILOGE("(Debug) End file check result Total file: %{public}zu, err file: %{public}zu", endFileInfos_.size(),
         errFileInfos_.size());
+    size_t diff = endFileInfos_.size() > errFileInfos_.size() ? (endFileInfos_.size() - errFileInfos_.size()) : 0;
+    appStatistic_->totalRestoreFileCount_ = static_cast<uint32_t>(diff);
     if (errFiles.size()) {
         std::stringstream ss;
-        size_t diff = endFileInfos_.size() > errFileInfos_.size() ? (endFileInfos_.size() - errFileInfos_.size()) : 0;
         ss << R"("totalFile": )" << endFileInfos_.size() << R"(, "restoreFile": )" << diff;
         AppRadar::Info info (bundleName_, "", ss.str());
         AppRadar::GetInstance().RecordRestoreFuncRes(info, "BackupExtExtension::CheckRestoreFileInfos",
@@ -1017,11 +1018,13 @@ ErrCode BackupExtExtension::UpdateFdSendRate(const std::string &bundleName, int3
     }
 }
 
-ErrCode BackupExtExtension::UpdateDfxInfo(int64_t uniqId, uint32_t extConnectSpend, const std::string &bundleName)
+ErrCode BackupExtExtension::UpdateDfxInfo(const DfxInfo &info)
 {
-    appStatistic_->SetUniqId(uniqId);
-    appStatistic_->extConnectSpend_ = extConnectSpend;
-    appStatistic_->appCaller_ = bundleName;
+    appStatistic_->SetUniqId(info.uniqId);
+    appStatistic_->extConnectSpend_ = info.extConnectSpend;
+    appStatistic_->appCaller_ = info.bundleName;
+    appStatistic_->restoreStartBroadcast_ = info.broadcastInfo;
+    appStatistic_->lastIncrementalTime_ = info.lastIncrementalTime;
     return ERR_OK;
 }
 
