@@ -34,6 +34,7 @@ ohos_unittest("default_app_manager_test") {
     "${path_backup}/services/backup_sa/include/module_migrate_manager",
     "${path_backup}/interfaces/inner_api/native/backup_kit_inner/impl",
     "${path_backup}/tests/unittests/backup_api/backup_impl/include",
+    "${path_backup_mock}/module_ipc/include",
   ]
 
   deps = [

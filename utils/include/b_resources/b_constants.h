@@ -78,6 +78,7 @@ constexpr int SPAN_USERID_UID = 200000;
 constexpr int SYSTEM_UID = 0;
 constexpr int XTS_UID = 1;
 constexpr int DEFAULT_USER_ID = 100;
+constexpr int INVALID_USER_ID = -1;
 constexpr int BACKUP_UID = 1089;
 constexpr int EXTENSION_THREAD_POOL_COUNT = 1;
 constexpr int BACKUP_LOADSA_TIMEOUT_MS = 5000;
@@ -233,6 +234,15 @@ static inline std::string GetSaBundleBackupToolDir(int32_t userId)
     str.append("/data/service/el2/");
     str.append(std::to_string(userId));
     str.append("/backup/backup_tool/");
+    return str;
+}
+
+static inline std::string GetSaBundleBackupConfigHomeDir(int32_t userId)
+{
+    std::string str;
+    str.append("/data/service/el2/");
+    str.append(std::to_string(userId));
+    str.append("/backup/");
     return str;
 }
 

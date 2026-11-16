@@ -25,6 +25,7 @@
 #include "b_filesystem/b_dir.h"
 #include "b_filesystem/b_file.h"
 #include "b_ohos/startup/backup_para.h"
+#include "b_process/b_userid.h"
 #include "b_resources/b_constants.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -164,7 +165,7 @@ string BJsonEntityExtensionConfig::GetJSonSource(string_view jsonFromRealWorld, 
     } catch (const bad_any_cast &e) {
         throw BError(BError::Codes::SA_INVAL_ARG, e.what());
     }
-    string jsonFilePath = string(BConstants::GetSaBundleBackupRootDir(BConstants::DEFAULT_USER_ID)).
+    string jsonFilePath = string(BConstants::GetSaBundleBackupRootDir(BUserId::GetUserId())).
                                 append(bundleName).
                                 append("/").
                                 append(BConstants::BACKUP_CONFIG_JSON);

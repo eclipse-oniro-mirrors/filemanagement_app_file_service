@@ -69,6 +69,7 @@ public:
     }
     void DoClear();
     void DoClearInner();
+    void DestroyDefaultTask();
     void AppDone(ErrCode errCode, const std::string &bundleName);
     void ReportAppStatistic(const std::string &func, ErrCode errCode);
     void UpdateFileStat(std::string filePath, uint64_t fileSize);
@@ -110,6 +111,10 @@ public:
     ErrCode DealIncrementalDone(ErrCode errCode);
     ErrCode HandleCurAppDone(ErrCode errCode, const std::string &bundleName, bool isIncBackup);
 public:
+    int32_t GetUserId() const
+    {
+        return userId_;
+    }
     std::shared_ptr<RadarAppStatistic> appStatistic_ = nullptr;
     std::map<std::string, std::shared_ptr<ScanResultManager>> instanceMap_;
 private:

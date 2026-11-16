@@ -20,6 +20,11 @@ using namespace std;
 
 BJsonDisposalConfig::BJsonDisposalConfig() {}
 
+void BJsonDisposalConfig::SetUserId(int32_t userId)
+{
+    BBJsonDisposalConfig::config->SetUserId(userId);
+}
+
 bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName)
 {
     return BBJsonDisposalConfig::config->AppendIntoDisposalConfigFile(bundleName);
@@ -43,5 +48,10 @@ vector<string> BJsonDisposalConfig::GetBundleNameFromConfigFile()
 bool BJsonDisposalConfig::DeleteConfigFile()
 {
     return BBJsonDisposalConfig::config->DeleteConfigFile();
+}
+
+bool BJsonDisposalConfig::DeleteConfigFile(int32_t userId)
+{
+    return BBJsonDisposalConfig::config->DeleteConfigFile(userId);
 }
 } // namespace OHOS::FileManagement::Backup

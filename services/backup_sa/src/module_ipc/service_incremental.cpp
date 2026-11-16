@@ -376,6 +376,7 @@ ErrCode Service::InitIncrementalBackupSession(const sptr<IServiceReverse>& remot
                                 .activeTime = TimeUtils::GetCurrentTime()});
     if (errCode == ERR_OK) {
         HILOGE("Success to init a new incremental backup session");
+        SyncConfigUserId(session_->GetSessionUserId());
         TotalStatStart(BizScene::BACKUP, GetCallerName(), totalSpend.startMilli_, Mode::INCREMENTAL);
         ClearFailedBundles();
         CreateRunningLock();
@@ -425,6 +426,7 @@ ErrCode Service::InitIncrementalBackupSession(const sptr<IServiceReverse>& remot
                                 .callerName = GetCallerName(),
                                 .activeTime = TimeUtils::GetCurrentTime()});
     if (errCode == ERR_OK) {
+        SyncConfigUserId(session_->GetSessionUserId());
         TotalStatStart(BizScene::BACKUP, GetCallerName(), totalSpend.startMilli_, Mode::INCREMENTAL);
         ClearFailedBundles();
         CreateRunningLock();

@@ -171,7 +171,9 @@ public:
     // 以下都是非IPC接口
 public:
     void OnStart() override;
+    void OnStart(const SystemAbilityOnDemandReason &startReason) override;
     void OnStop() override;
+    void OnStartInternal();
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
     int Dump(int fd, const std::vector<std::u16string> &args) override;
 
@@ -545,10 +547,50 @@ private:
     int32_t GetUserIdDefault();
 
     /**
-     * @brief 清理用户沙箱残留数据
+     * @brief 清理指定用户的备份沙箱残留数据
+     *
+     * @param userId 用户id
+     */
+    void ClearBackupSaSandbox(int32_t userId);
+
+    /**
+     * @brief 清理指定用户的配置、备份沙箱与默认应用实例
+     *
+     * @param userId 用户id
+     */
+    void CleanupUserData(int32_t userId);
+
+    /**
+     * @brief 清理已删除用户的残留配置数据
+     *
+     * @param userId 被删除的用户id
+     */
+    void OnUserRemoved(int32_t userId);
+
+    /**
+     * @brief 将会话用户同步到配置文件，保证配置路径与业务用户一致
+     *
+     * @param userId 会话用户id
+     */
+    void SyncConfigUserId(int32_t userId)
+    {
+        configUserId_.store(userId);
+        if (disposal_ != nullptr) {
+            disposal_->SetUserId(userId);
+        }
+        if (clearRecorder_ != nullptr) {
+            clearRecorder_->SetUserId(userId);
+        }
+    }
+
+    /**
+     * @brief 复位配置文件用户，回退到当前前台用户
      *
      */
-    void ClearBackupSaSandbox();
+    void ResetConfigUserId()
+    {
+        SyncConfigUserId(BConstants::INVALID_USER_ID);
+    }
 
     /**
      * @brief 验证调用者
@@ -871,7 +913,7 @@ private:
         std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> &bundleNameDetailMap,
         const std::vector<BundleName> &bundleNames);
     std::vector<std::string> GetCurUsrDispBundleName();
-    int32_t GetCurrentActiveAccountUserId();
+    int32_t GetForegroundAccountUserId();
     void SleepForDelayTime(const std::string &bundleName);
     ErrCode GetMigrateUidGid(const std::string &destPath, const std::string &bundleName, int32_t userId,
         uid_t &uid, gid_t &gid);
@@ -906,6 +948,7 @@ private:
     sptr<SchedScheduler> sched_;
     std::shared_ptr<BJsonDisposalConfig> disposal_;
     std::shared_ptr<BJsonClearDataConfig> clearRecorder_;
+    std::atomic<int32_t> configUserId_ {BConstants::INVALID_USER_ID};
     std::atomic<bool> isInRelease_ {false};
     std::atomic<bool> isRmConfigFile_ {true};
     friend class ServiceTest;

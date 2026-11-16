@@ -22,13 +22,15 @@
 namespace OHOS::FileManagement::Backup {
 class MockIEnhanceService : public IEnhanceService {
 public:
-    MOCK_METHOD(ErrCode, CreateAncoBackupTask, (const std::string &, const sptr<IAncoBackupCallback> &), (override));
+    MOCK_METHOD(ErrCode, CreateAncoBackupTask,
+        (const std::string &, int32_t, const sptr<IAncoBackupCallback> &), (override));
     MOCK_METHOD(ErrCode, DestroyAncoBackupTask, (const std::string &), (override));
     MOCK_METHOD(ErrCode, FilterAndSaveBackupPaths, (const std::string &, std::set<std::string> &,
         std::set<std::string> &, const std::vector<std::string> &), (override));
     MOCK_METHOD(ErrCode, StartAncoScanAllDirs, (const std::string &, AncoScanResult &), (override));
     MOCK_METHOD(ErrCode, StartAncoPacket, (const std::string &, uint64_t &), (override));
-    MOCK_METHOD(ErrCode, CreateAncoRestoreTask, (const std::string &, const sptr<IAncoRestoreCallback> &), (override));
+    MOCK_METHOD(ErrCode, CreateAncoRestoreTask,
+        (const std::string &, int32_t, const sptr<IAncoRestoreCallback> &), (override));
     MOCK_METHOD(ErrCode, DestroyAncoRestoreTask, (const std::string &), (override));
     MOCK_METHOD(ErrCode, AddAncoTars, (const std::string &, const std::vector<std::string> &,
         const std::vector<int64_t> &, const std::vector<std::string> &), (override));

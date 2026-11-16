@@ -2610,25 +2610,32 @@ HWTEST_F(ServiceTest, SUB_Service_BroadCastSingle_0000, testing::ext::TestSize.L
 }
 
 /**
- * @tc.number: SUB_Service_GetCurrentActiveAccountUserId_0000
- * @tc.name: SUB_Service_GetCurrentActiveAccountUserId_0000
- * @tc.desc: 测试 GetCurrentActiveAccountUserId 的正常/异常分支
+ * @tc.number: SUB_Service_GetForegroundAccountUserId_0000
+ * @tc.name: SUB_Service_GetForegroundAccountUserId_0000
+ * @tc.desc: 测试 GetForegroundAccountUserId 的正常/异常分支
  * @tc.size: MEDIUM
  * @tc.type: FUNC
  * @tc.level Level 1
  * @tc.require: NA
  */
-HWTEST_F(ServiceTest, SUB_Service_GetCurrentActiveAccountUserId_0000, testing::ext::TestSize.Level1)
+HWTEST_F(ServiceTest, SUB_Service_GetForegroundAccountUserId_0000, testing::ext::TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_GetCurrentActiveAccountUserId_0000";
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_GetForegroundAccountUserId_0000";
     try {
-        auto userId = service->GetCurrentActiveAccountUserId();
+        auto userId = service->GetForegroundAccountUserId();
         EXPECT_EQ(userId, 100);
+
+        auto osAccountMock = make_shared<AccountSA::OsAccountManagerMock>();
+        AccountSA::OsAccountManagerMethod::osMethod = osAccountMock;
+        EXPECT_CALL(*osAccountMock, GetForegroundOsAccountLocalId(_)).WillOnce(Return(1));
+        userId = service->GetForegroundAccountUserId();
+        EXPECT_EQ(userId, BConstants::DEFAULT_USER_ID);
+        AccountSA::OsAccountManagerMethod::osMethod = nullptr;
     } catch (...) {
         EXPECT_TRUE(false);
-        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by GetCurrentActiveAccountUserId.";
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by GetForegroundAccountUserId.";
     }
-    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_GetCurrentActiveAccountUserId_0000";
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_GetForegroundAccountUserId_0000";
 }
  
 /**

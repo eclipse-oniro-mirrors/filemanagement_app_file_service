@@ -27,6 +27,7 @@
 #include "b_sa_utils_mock.h"
 #include "ipc_skeleton_mock.h"
 #include "notify_work_service_mock.h"
+#include "os_account_manager_mock.h"
 #include "sa_backup_connection_mock.h"
 #include "service_reverse_proxy_mock.h"
 #include "sms_adapter_mock.h"
@@ -495,8 +496,10 @@ HWTEST_F(ServiceTest, SUB_Service_OnStart_0200, TestSize.Level1)
         EXPECT_TRUE(true);
 
         service->isOccupyingSession_ = false;
+        service->configUserId_.store(BConstants::DEFAULT_USER_ID);
         EXPECT_CALL(*ability, Publish(_)).WillOnce(Return(false));
-        EXPECT_CALL(*jdConfig, GetBundleNameFromConfigFile()).WillOnce(Return(vector<string>(1)))
+        EXPECT_CALL(*jdConfig, GetBundleNameFromConfigFile())
+            .WillOnce(Return(vector<string>{"100-com.ohos.test"}))
             .WillOnce(Return(vector<string>()));
         EXPECT_CALL(*cdConfig, GetAllClearBundleRecords()).WillOnce(Return(vector<string>()));
         EXPECT_CALL(*skeleton, GetCallingTokenID()).WillRepeatedly(Return(0));
@@ -2940,5 +2943,106 @@ HWTEST_F(ServiceTest, SUB_Service_SetUserIdAndRestoreType_0600, TestSize.Level1)
         GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by SetUserIdAndRestoreType_0600.";
     }
     GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_SetUserIdAndRestoreType_0600";
+}
+
+/**
+ * @tc.number: SUB_Service_OnUserRemoved_0100
+ * @tc.name: SUB_Service_OnUserRemoved_0100
+ * @tc.desc: 测试 OnUserRemoved 的跳过与清理分支
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: issueIAKC3I
+ */
+HWTEST_F(ServiceTest, SUB_Service_OnUserRemoved_0100, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_OnUserRemoved_0100";
+    try {
+        ASSERT_TRUE(service != nullptr);
+        service->OnUserRemoved(BConstants::DEFAULT_USER_ID);
+        EXPECT_TRUE(true);
+
+        service->OnUserRemoved(200);
+        EXPECT_TRUE(true);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by OnUserRemoved.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_OnUserRemoved_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_CleanupUserData_0100
+ * @tc.name: SUB_Service_CleanupUserData_0100
+ * @tc.desc: 测试 CleanupUserData 的删除成功与失败分支
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: issueIAKC3I
+ */
+HWTEST_F(ServiceTest, SUB_Service_CleanupUserData_0100, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_CleanupUserData_0100";
+    try {
+        ASSERT_TRUE(service != nullptr);
+        EXPECT_CALL(*jdConfig, DeleteConfigFile(200)).WillOnce(Return(true));
+        EXPECT_CALL(*cdConfig, DeleteConfigFile(200)).WillOnce(Return(true));
+        service->CleanupUserData(200);
+
+        EXPECT_CALL(*jdConfig, DeleteConfigFile(201)).WillOnce(Return(false));
+        EXPECT_CALL(*cdConfig, DeleteConfigFile(201)).WillOnce(Return(false));
+        service->CleanupUserData(201);
+        EXPECT_TRUE(true);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by CleanupUserData.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_CleanupUserData_0100";
+}
+
+/**
+ * @tc.number: SUB_Service_OnStartReason_0100
+ * @tc.name: SUB_Service_OnStartReason_0100
+ * @tc.desc: 测试 OnStart(reason) 的按需启动分支
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: issueIAKC3I
+ */
+HWTEST_F(ServiceTest, SUB_Service_OnStartReason_0100, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_OnStartReason_0100";
+    try {
+        ASSERT_TRUE(service != nullptr);
+        auto disposal = service->disposal_;
+        auto clearRecorder = service->clearRecorder_;
+        auto sched = service->sched_;
+        service->disposal_ = nullptr;
+        service->clearRecorder_ = nullptr;
+        service->sched_ = nullptr;
+        service->isOccupyingSession_ = false;
+
+        SystemAbilityOnDemandReason reason;
+        reason.SetName("usual.event.DEVICE_ONLINE");
+        EXPECT_CALL(*ability, Publish(_)).WillOnce(Return(false));
+        service->OnStart(reason);
+
+        std::map<std::string, std::string> want;
+        OnDemandReasonExtraData extraData(BConstants::DEFAULT_USER_ID, "", want);
+        SystemAbilityOnDemandReason reason2;
+        reason2.SetName("usual.event.USER_REMOVED");
+        reason2.SetExtraData(extraData);
+        EXPECT_CALL(*ability, Publish(_)).WillOnce(Return(false));
+        service->OnStart(reason2);
+
+        service->disposal_ = disposal;
+        service->clearRecorder_ = clearRecorder;
+        service->sched_ = sched;
+        EXPECT_TRUE(true);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "ServiceTest-an exception occurred by OnStartReason.";
+    }
+    GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_OnStartReason_0100";
 }
 }

@@ -20,6 +20,11 @@ using namespace std;
 
 BJsonClearDataConfig::BJsonClearDataConfig() {}
 
+void BJsonClearDataConfig::SetUserId(int32_t userId)
+{
+    BBJsonClearDataConfig::config->SetUserId(userId);
+}
+
 bool BJsonClearDataConfig::HasClearBundleRecord()
 {
     return BBJsonClearDataConfig::config->HasClearBundleRecord();
@@ -48,5 +53,10 @@ vector<string> BJsonClearDataConfig::GetAllClearBundleRecords()
 bool BJsonClearDataConfig::DeleteConfigFile()
 {
     return BBJsonClearDataConfig::config->DeleteConfigFile();
+}
+
+bool BJsonClearDataConfig::DeleteConfigFile(int32_t userId)
+{
+    return BBJsonClearDataConfig::config->DeleteConfigFile(userId);
 }
 } // namespace OHOS::FileManagement::Backup

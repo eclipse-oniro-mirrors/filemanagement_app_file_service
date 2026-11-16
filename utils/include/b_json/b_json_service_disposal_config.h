@@ -16,16 +16,27 @@
 #ifndef OHOS_FILEMGMT_BACKUP_B_JSON_SERVICE_DISPOSAL_CONFIG_H
 #define OHOS_FILEMGMT_BACKUP_B_JSON_SERVICE_DISPOSAL_CONFIG_H
 
+#include <atomic>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
+#include <mutex>
 #include <string>
 #include <vector>
 
+#include "b_resources/b_constants.h"
 #include  "filemgmt_libhilog.h"
 
 namespace OHOS::FileManagement::Backup {
 class BJsonDisposalConfig {
 public:
+    /**
+     * @brief 设置配置文件所属用户，BConstants::INVALID_USER_ID 表示使用当前前台用户
+     *
+     * @param userId 用户id
+     */
+    void SetUserId(int32_t userId);
+
     /**
      * @brief 判断配置文件中是否存在bundlename
      *
@@ -57,9 +68,17 @@ public:
     /**
      * @brief 删除配置文件
      *
-     *
+     * @return 文件不存在或删除成功返回 true，删除失败返回 false
      */
     bool DeleteConfigFile();
+
+    /**
+     * @brief 删除指定用户的配置文件
+     *
+     * @param userId 用户id
+     * @return 文件不存在或删除成功返回 true，删除失败返回 false
+     */
+    bool DeleteConfigFile(int32_t userId);
 public:
     /**
      * @brief 构造方法
@@ -69,6 +88,10 @@ public:
     BJsonDisposalConfig();
 
 private:
+    bool AppendIntoDisposalConfigFile(const std::string& bundleName, const std::string& filePath);
+    void CreateConfigFileIfNotExist(const std::string& filePath);
+
+    std::atomic<int32_t> userId_ {BConstants::INVALID_USER_ID};
     std::mutex fileMutex_;
 };
 } // namespace OHOS::FileManagement::Backup

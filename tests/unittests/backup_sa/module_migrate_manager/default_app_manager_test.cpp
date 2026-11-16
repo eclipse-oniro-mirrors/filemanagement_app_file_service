@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "ienhance_service_mock.h"
 #include "module_ipc/service.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -214,6 +215,24 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_Differe
 }
 
 /**
+ * @tc.name: DefaultAppManagerTest_GetMigrateInstance_UserIdChanged_1710
+ * @tc.desc: Verify GetMigrateInstance recreates instance when userId changes
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_UserIdChanged_1710,
+    testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance1 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance1, nullptr);
+
+    auto instance2 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID + 1);
+    ASSERT_NE(instance2, nullptr);
+    EXPECT_NE(instance1, instance2);
+    EXPECT_EQ(instance2->GetUserId(), USER_ID + 1);
+}
+
+/**
  * @tc.name: DefaultAppManagerTest_ClearDefaultAppData_HasClearedFlag_1800
  * @tc.desc: Verify ClearDefaultAppData sets hasCleared_ flag on MigrateManager
  * @tc.type: FUNC
@@ -301,5 +320,105 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_NonDefa
 {
     auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_NORMAL, USER_ID);
     EXPECT_EQ(instance, nullptr);
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_GetUserId_2800
+ * @tc.desc: Verify GetUserId returns the user id passed to GetMigrateInstance
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetUserId_2800, testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+    EXPECT_EQ(instance->GetUserId(), USER_ID);
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_ClearUserInstances_Clear_2900
+ * @tc.desc: Verify ClearUserInstances clears instances belonging to the given user
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_ClearUserInstances_Clear_2900,
+    testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT, BUNDLE_NAME_OTHER}, true);
+    auto instance1 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    auto instance2 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_OTHER, USER_ID);
+    ASSERT_NE(instance1, nullptr);
+    ASSERT_NE(instance2, nullptr);
+
+    service_->defaultAppManager_->ClearUserInstances(USER_ID);
+    EXPECT_TRUE(instance1->hasCleared_.load());
+    EXPECT_TRUE(instance2->hasCleared_.load());
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_ClearUserInstances_OtherUser_3000
+ * @tc.desc: Verify ClearUserInstances does not clear instances of other users
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_ClearUserInstances_OtherUser_3000,
+    testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+
+    service_->defaultAppManager_->ClearUserInstances(USER_ID + 1);
+    EXPECT_FALSE(instance->hasCleared_.load());
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_NoService_3100
+ * @tc.desc: Verify DestroyDefaultTask returns when enhance service is not loaded
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_NoService_3100,
+    testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+    instance->DestroyDefaultTask();
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_WithService_3200
+ * @tc.desc: Verify DestroyDefaultTask invokes the enhance service
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_WithService_3200,
+    testing::ext::TestSize.Level1)
+{
+    MockIEnhanceService mockEnhanceService;
+    EnhanceServiceManager::GetInstance().service_ = &mockEnhanceService;
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+
+    EXPECT_CALL(mockEnhanceService, DestroyDefaultTask(BUNDLE_NAME_DEFAULT)).WillOnce(testing::Return(0));
+    instance->DestroyDefaultTask();
+    EnhanceServiceManager::GetInstance().service_ = nullptr;
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_Throw_3300
+ * @tc.desc: Verify DestroyDefaultTask swallows exceptions from the enhance service
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_Throw_3300,
+    testing::ext::TestSize.Level1)
+{
+    MockIEnhanceService mockEnhanceService;
+    EnhanceServiceManager::GetInstance().service_ = &mockEnhanceService;
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+
+    EXPECT_CALL(mockEnhanceService, DestroyDefaultTask(BUNDLE_NAME_DEFAULT)).WillOnce(testing::Throw(42));
+    instance->DestroyDefaultTask();
+    EnhanceServiceManager::GetInstance().service_ = nullptr;
 }
 } // namespace OHOS::FileManagement::Backup

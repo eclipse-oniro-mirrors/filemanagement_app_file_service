@@ -25,14 +25,13 @@
 namespace OHOS::FileManagement::Backup {
 int BUserId::GetUserId()
 {
-    std::vector<int> osAccounts;
-    ErrCode result = AccountSA::OsAccountManager::QueryActiveOsAccountIds(osAccounts);
-    if (result != ERR_OK || osAccounts.empty()) {
+    int32_t osAccountId = BConstants::DEFAULT_USER_ID;
+    ErrCode result = AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(osAccountId);
+    if (result != ERR_OK) {
         HILOGE("GetUserId error, err is %{public}d", result);
         return BConstants::DEFAULT_USER_ID;
     }
-    int osAccountId = osAccounts[0];
-    HILOGD("Current active account userId=%{public}d", osAccountId);
+    HILOGD("Current foreground account userId=%{public}d", osAccountId);
     return osAccountId;
 }
 } // namespace OHOS::FileManagement::Backup

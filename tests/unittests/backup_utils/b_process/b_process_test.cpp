@@ -22,6 +22,7 @@
 
 #include "b_process/b_process.h"
 #include "b_process/b_userid.h"
+#include "os_account_manager_mock.h"
 
 namespace OHOS::FileManagement::Backup {
 using namespace std;
@@ -143,5 +144,25 @@ HWTEST_F(BUserIdTest, SUB_backup_tool_BUserId_0000, testing::ext::TestSize.Level
     GTEST_LOG_(INFO) << "BUserIdTest-begin SUB_backup_tool_BUserId_0000";
     EXPECT_GE(BUserId::GetUserId(), 100);
     GTEST_LOG_(INFO) << "BUserIdTest-end SUB_backup_tool_BUserId_0000";
+}
+
+/**
+ * @tc.number: SUB_backup_tool_BUserId_0100
+ * @tc.name: SUB_backup_tool_BUserId_0100
+ * @tc.desc: 测试GetUserId查询失败回退默认用户
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: NA
+ */
+HWTEST_F(BUserIdTest, SUB_backup_tool_BUserId_0100, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BUserIdTest-begin SUB_backup_tool_BUserId_0100";
+    auto osAccountMock = make_shared<OHOS::AccountSA::OsAccountManagerMock>();
+    OHOS::AccountSA::OsAccountManagerMethod::osMethod = osAccountMock;
+    EXPECT_CALL(*osAccountMock, GetForegroundOsAccountLocalId(testing::_)).WillOnce(testing::Return(1));
+    EXPECT_EQ(BUserId::GetUserId(), 100);
+    OHOS::AccountSA::OsAccountManagerMethod::osMethod = nullptr;
+    GTEST_LOG_(INFO) << "BUserIdTest-end SUB_backup_tool_BUserId_0100";
 }
 } // namespace OHOS::FileManagement::Backup

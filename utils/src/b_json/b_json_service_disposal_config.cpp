@@ -18,6 +18,8 @@
 #include <sys/types.h>
 #include "unique_fd.h"
 #include "b_json/b_json_service_disposal_config.h"
+#include "b_process/b_userid.h"
+#include "b_resources/b_constants.h"
 
 #include "cJSON.h"
 
@@ -25,13 +27,29 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 namespace {
-    const string PATH_BUNDLE_BACKUP_HOME = "/data/service/el2/100/backup/";
     const string CONFIG_NAME = "RestoreDisposalConfig.json";
+
+    string GetBackupHomePath(int32_t userId)
+    {
+        return BConstants::GetSaBundleBackupConfigHomeDir(userId >= 0 ? userId : BUserId::GetUserId());
+    }
+}
+
+void BJsonDisposalConfig::SetUserId(int32_t userId)
+{
+    userId_.store(userId);
+    string filePath = GetBackupHomePath(userId) + CONFIG_NAME;
+    lock_guard<mutex> autoLock(fileMutex_);
+    CreateConfigFileIfNotExist(filePath);
 }
 
 BJsonDisposalConfig::BJsonDisposalConfig()
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
+    CreateConfigFileIfNotExist(GetBackupHomePath(userId_.load()) + CONFIG_NAME);
+}
+
+void BJsonDisposalConfig::CreateConfigFileIfNotExist(const string &filePath)
+{
     if (access(filePath.c_str(), F_OK) == 0) {
         HILOGI("file exist filePath:%{public}s", filePath.c_str());
         return;
@@ -77,7 +95,12 @@ BJsonDisposalConfig::BJsonDisposalConfig()
 
 bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName)
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    return AppendIntoDisposalConfigFile(bundleName, filePath);
+}
+
+bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName, const string& filePath)
+{
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
         HILOGE("open json failed");
@@ -130,8 +153,8 @@ bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName)
 
 bool BJsonDisposalConfig::DeleteFromDisposalConfigFile(const string& bundleName)
 {
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     ifstream input(filePath);
     if (!input.is_open()) {
         HILOGE("open json failed");
@@ -184,8 +207,8 @@ bool BJsonDisposalConfig::DeleteFromDisposalConfigFile(const string& bundleName)
 
 bool BJsonDisposalConfig::IfBundleNameInDisposalConfigFile(const string& bundleName)
 {
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
         HILOGE("open json failed");
@@ -218,7 +241,7 @@ bool BJsonDisposalConfig::IfBundleNameInDisposalConfigFile(const string& bundleN
     }
 
     if (!ifBundlename) {
-        AppendIntoDisposalConfigFile(bundleName);
+        AppendIntoDisposalConfigFile(bundleName, filePath);
         HILOGI("AppendIntoDisposalConfigFile OK");
     }
 
@@ -228,8 +251,8 @@ bool BJsonDisposalConfig::IfBundleNameInDisposalConfigFile(const string& bundleN
 
 vector<string> BJsonDisposalConfig::GetBundleNameFromConfigFile()
 {
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     vector<string> bundleNameList;
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
@@ -264,16 +287,33 @@ vector<string> BJsonDisposalConfig::GetBundleNameFromConfigFile()
 
 bool BJsonDisposalConfig::DeleteConfigFile()
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    lock_guard<mutex> autoLock(fileMutex_);
     if (access(filePath.c_str(), F_OK) != 0) {
-        HILOGE("File is not exist");
-        return false;
+        HILOGI("Disposal config file is not exist");
+        return true;
     }
     if (remove(filePath.c_str()) != 0) {
         HILOGE("Delete DisposalConfigFile failed");
         return false;
     }
     HILOGI("All Restore Finished, Delete DisposalConfigFile OK");
+    return true;
+}
+
+bool BJsonDisposalConfig::DeleteConfigFile(int32_t userId)
+{
+    string filePath = BConstants::GetSaBundleBackupConfigHomeDir(userId) + CONFIG_NAME;
+    lock_guard<mutex> autoLock(fileMutex_);
+    if (access(filePath.c_str(), F_OK) != 0) {
+        HILOGI("Disposal config file is not exist, userId=%{public}d", userId);
+        return true;
+    }
+    if (remove(filePath.c_str()) != 0) {
+        HILOGE("Delete DisposalConfigFile failed, userId=%{public}d", userId);
+        return false;
+    }
+    HILOGI("Delete DisposalConfigFile OK, userId=%{public}d", userId);
     return true;
 }
 } // namespace OHOS::FileManagement::Backup
