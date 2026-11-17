@@ -1013,7 +1013,7 @@ ErrCode Service::VerifySendRateParam()
 
 ErrCode Service::HandleCurBundleFileReady(const std::string &bundleName, const std::string &fileName, bool isIncBackup)
 {
-    auto backUpConnection = session_->GetExtConnection(bundleName);
+    auto backUpConnection = session_->GetExtConnection(bundleName).promote();
     if (backUpConnection == nullptr) {
         HILOGE("AppFileReady error, backUpConnection is empty, bundleName:%{public}s", bundleName.c_str());
         return BError(BError::Codes::SA_INVAL_ARG);
@@ -1045,7 +1045,7 @@ ErrCode Service::HandleCurBundleFileReady(const std::string &bundleName, const s
 
 ErrCode Service::HandleCurAppDone(ErrCode errCode, const std::string &bundleName, bool isIncBackup)
 {
-    auto backUpConnection = session_->GetExtConnection(bundleName);
+    auto backUpConnection = session_->GetExtConnection(bundleName).promote();
     if (backUpConnection == nullptr) {
         HILOGE("App finish error, backUpConnection is empty, bundleName:%{public}s", bundleName.c_str());
         return BError(BError::Codes::SA_INVAL_ARG);
@@ -1638,7 +1638,7 @@ void Service::HandleOnReleaseAndDisconnect(sptr<SvcSessionManager> sessionPtr, c
         HILOGE("SessionPtr is nullptr.");
         return;
     }
-    auto sessionConnection = sessionPtr->GetExtConnection(bundleName);
+    auto sessionConnection = sessionPtr->GetExtConnection(bundleName).promote();
     if (sessionConnection == nullptr) {
         HILOGE("Error, sessionConnection is empty, bundleName:%{public}s", bundleName.c_str());
         return;

@@ -888,7 +888,7 @@ void Service::HandleCurBundleEndWork(std::string bundleName, const BackupRestore
                 return;
             }
             std::lock_guard<std::mutex> lock(mutexPtr->callbackMutex);
-            auto backUpConnection = session_->GetExtConnection(bundleName);
+            auto backUpConnection = session_->GetExtConnection(bundleName).promote();
             if (backUpConnection == nullptr) {
                 HILOGE("backUpConnection is empty, bundle:%{public}s", bundleName.c_str());
                 return;
@@ -1404,7 +1404,7 @@ ErrCode Service::ClearResidualBundleData(const std::string &bundleName)
     if (session_ == nullptr) {
         return BError(BError::Codes::SA_INVAL_ARG);
     }
-    auto backUpConnection = session_->GetExtConnection(bundleName);
+    auto backUpConnection = session_->GetExtConnection(bundleName).promote();
     if (backUpConnection == nullptr) {
         HILOGE("BackUpConnection is empty, bundle:%{public}s", bundleName.c_str());
         return BError(BError::Codes::SA_INVAL_ARG);
