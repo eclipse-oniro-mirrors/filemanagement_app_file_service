@@ -94,21 +94,4 @@ bool DefaultAppManager::ClearDefaultAppData()
     return true;
 }
 
-void DefaultAppManager::ClearUserInstances(int32_t userId)
-{
-    std::vector<sptr<MigrateManager>> instances;
-    {
-        std::unique_lock<std::shared_mutex> lock(defaultAppMutex_);
-        for (auto &[bundleName, manager] : defaultAppMap_) {
-            if (manager != nullptr && manager->GetUserId() == userId) {
-                instances.emplace_back(manager);
-                manager = nullptr;
-            }
-        }
-    }
-    for (auto &instance : instances) {
-        instance->DoClear();
-    }
-}
-
 } // namespace OHOS::FileManagement::Backup

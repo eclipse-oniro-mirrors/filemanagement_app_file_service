@@ -336,41 +336,6 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetUserId_2800, testing::e
 }
 
 /**
- * @tc.name: DefaultAppManagerTest_ClearUserInstances_Clear_2900
- * @tc.desc: Verify ClearUserInstances clears instances belonging to the given user
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_ClearUserInstances_Clear_2900,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT, BUNDLE_NAME_OTHER}, true);
-    auto instance1 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
-    auto instance2 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_OTHER, USER_ID);
-    ASSERT_NE(instance1, nullptr);
-    ASSERT_NE(instance2, nullptr);
-
-    service_->defaultAppManager_->ClearUserInstances(USER_ID);
-    EXPECT_TRUE(instance1->hasCleared_.load());
-    EXPECT_TRUE(instance2->hasCleared_.load());
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_ClearUserInstances_OtherUser_3000
- * @tc.desc: Verify ClearUserInstances does not clear instances of other users
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_ClearUserInstances_OtherUser_3000,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
-    ASSERT_NE(instance, nullptr);
-
-    service_->defaultAppManager_->ClearUserInstances(USER_ID + 1);
-    EXPECT_FALSE(instance->hasCleared_.load());
-}
-
-/**
  * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_NoService_3100
  * @tc.desc: Verify DestroyDefaultTask returns when enhance service is not loaded
  * @tc.type: FUNC

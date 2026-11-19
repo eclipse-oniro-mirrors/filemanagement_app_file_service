@@ -87,7 +87,6 @@ const std::string BACKUPSERVICE_WORK_STATUS_ON = "true";
 const std::string BACKUPSERVICE_WORK_STATUS_OFF = "false";
 const std::string BACKUP_PERMISSION = "ohos.permission.BACKUP";
 const int IPC_ERROR = 29189;
-const std::string USER_REMOVED_EVENT = "usual.event.USER_REMOVED";
 } // namespace
 
 /* Shell/Xts user id equal to 0/1, we need set default 100 */
@@ -211,20 +210,6 @@ void Service::ExtensionConnectFailRadarReport(const std::string &bundleName, con
     }
 }
 
-void Service::OnStart(const SystemAbilityOnDemandReason &startReason)
-{
-    HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
-    if (startReason.GetName() == USER_REMOVED_EVENT) {
-        int32_t userId = startReason.GetExtraData().GetCode();
-        HILOGI("SA OnStart by user removed event, userId=%{public}d", userId);
-        // 只清理被删除用户的数据，不清理当前前台用户的备份沙箱。
-        OnUserRemoved(userId);
-        OnStartInternal();
-        return;
-    }
-    OnStart();
-}
-
 void Service::OnStart()
 {
     OnStartInternal();
@@ -290,32 +275,6 @@ void Service::ClearBackupSaSandbox(int32_t userId)
         HILOGE("Clear Backup SA sandbox failed, userId=%{public}d, errCode=%{public}d", userId, e.GetCode());
     } catch (...) {
         HILOGE("Clear Backup SA sandbox failed unexpectedly, userId=%{public}d", userId);
-    }
-}
-
-void Service::OnUserRemoved(int32_t userId)
-{
-    HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
-    if (userId <= BConstants::DEFAULT_USER_ID) {
-        HILOGI("Skip cleanup for invalid removed userId=%{public}d", userId);
-        return;
-    }
-    CleanupUserData(userId);
-    HILOGI("OnUserRemoved finished, userId=%{public}d", userId);
-}
-
-void Service::CleanupUserData(int32_t userId)
-{
-    if (disposal_ != nullptr && !disposal_->DeleteConfigFile(userId)) {
-        HILOGE("Failed to delete disposal config, userId=%{public}d", userId);
-    }
-    if (clearRecorder_ != nullptr && !clearRecorder_->DeleteConfigFile(userId)) {
-        HILOGE("Failed to delete clear data config, userId=%{public}d", userId);
-    }
-    // 清理该用户自身的备份沙箱，避免残留的备份/恢复临时数据长期占用空间。
-    ClearBackupSaSandbox(userId);
-    if (defaultAppManager_ != nullptr) {
-        defaultAppManager_->ClearUserInstances(userId);
     }
 }
 

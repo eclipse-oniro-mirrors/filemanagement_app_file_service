@@ -19,9 +19,6 @@
                                 "value": "true"
                             }
                         ]
-                    },
-                    {
-                        "name": "usual.event.USER_REMOVED"
                     }
                 ]
             },

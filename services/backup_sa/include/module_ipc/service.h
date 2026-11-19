@@ -171,7 +171,6 @@ public:
     // 以下都是非IPC接口
 public:
     void OnStart() override;
-    void OnStart(const SystemAbilityOnDemandReason &startReason) override;
     void OnStop() override;
     void OnStartInternal();
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
@@ -552,20 +551,6 @@ private:
      * @param userId 用户id
      */
     void ClearBackupSaSandbox(int32_t userId);
-
-    /**
-     * @brief 清理指定用户的配置、备份沙箱与默认应用实例
-     *
-     * @param userId 用户id
-     */
-    void CleanupUserData(int32_t userId);
-
-    /**
-     * @brief 清理已删除用户的残留配置数据
-     *
-     * @param userId 被删除的用户id
-     */
-    void OnUserRemoved(int32_t userId);
 
     /**
      * @brief 将会话用户同步到配置文件，保证配置路径与业务用户一致

@@ -33,8 +33,6 @@ int32_t Service::GetUserIdDefault()
 
 void Service::OnStart() {}
 
-void Service::OnStart(const SystemAbilityOnDemandReason &startReason) {}
-
 void Service::OnStop() {}
 
 ErrCode Service::GetLocalCapabilities(int &fd)
