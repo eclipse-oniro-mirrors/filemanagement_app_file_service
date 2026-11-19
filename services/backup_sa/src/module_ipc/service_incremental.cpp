@@ -320,13 +320,14 @@ ErrCode Service::GetAppLocalListAndDoIncrementalBackup(const BStringRawData &com
             return BError(BError::Codes::SA_INVAL_ARG);
         }
         CounterHelper counterHelper(session_, __PRETTY_FUNCTION__);
-        session_->SetSessionUserId(GetUserIdDefault());
+        int32_t userId = GetUserIdDefault();
         std::string bundleName;
         ErrCode ret = VerifyCallerAndGetCallerName(bundleName);
         if (ret != ERR_OK) {
             HILOGE("Get AppLocalList failed, Get bundle failed, ret:%{public}d", ret);
             return ret;
         }
+        ession_->SetSessionUserId(userId);
         auto dirs = DeserializeCompatDirs(compatibleDirsRD);
         HILOGI("compatibleDirs size=%{public}zu, bundleName=%{public}s", dirs.size(), bundleName.c_str());
         session_->SetCompatibleDirs(bundleName, dirs);
@@ -471,12 +472,12 @@ ErrCode Service::AppendBundlesIncrementalBackupSession(const std::vector<BIncrem
             HandleExceptionOnAppendBundles(session_, bundleNames, {});
             return ret;
         }
-        auto backupInfos = BundleMgrAdapter::GetBundleInfosForAppendBundles(bundlesToBackup,
-            session_->GetSessionUserId());
+        int32_t userId = session_->GetSessionUserId();
+        auto backupInfos = BundleMgrAdapter::GetBundleInfosForAppendBundles(bundlesToBackup, userId);
         std::vector<std::string> supportBackupNames = GetSupportBackupBundleNames(backupInfos, true, bundleNames);
         AppendBundles(supportBackupNames);
         SetBundleIncDataInfo(bundlesToBackup, supportBackupNames);
-        SetCurrentBackupSessProperties(supportBackupNames, session_->GetSessionUserId(), backupInfos, true);
+        SetCurrentBackupSessProperties(supportBackupNames, userId, backupInfos, true);
         OnStartSched();
         return BError(BError::Codes::OK);
     } catch (const BError &e) {
@@ -516,11 +517,10 @@ ErrCode Service::AppendBundlesIncrementalBackupSession(const std::vector<BIncrem
         }
         std::vector<std::string> bundleNamesOnly;
         std::map<std::string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
+        int32_t userId = session_->GetSessionUserId();
         std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> bundleNameDetailMap =
-            BJsonUtil::BuildBundleInfos(bundleNames, infos, bundleNamesOnly,
-            session_->GetSessionUserId(), bundleSettingInfos);
-        auto backupInfos = BundleMgrAdapter::GetBundleInfosForAppendBundles(bundlesToBackup,
-            session_->GetSessionUserId());
+            BJsonUtil::BuildBundleInfos(bundleNames, infos, bundleNamesOnly, userId, bundleSettingInfos);
+        auto backupInfos = BundleMgrAdapter::GetBundleInfosForAppendBundles(bundlesToBackup, userId);
         std::vector<std::string> supportBackupNames = GetSupportBackupBundleNames(backupInfos, true, bundleNames);
         AppendBundles(supportBackupNames);
         SetBundleIncDataInfo(bundlesToBackup, supportBackupNames);

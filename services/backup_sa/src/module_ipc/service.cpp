@@ -1911,23 +1911,23 @@ void Service::ReleaseOnException()
     }
 }
 
-void Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId)
+int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId)
 {
     session_->SetImplRestoreType(restoreType);
+    int32_t effectiveUserId = GetUserIdDefault();
     if (userId != DEFAULT_INVAL_VALUE) {
         auto multiuser = BMultiuser::ParseUid(IPCSkeleton::GetCallingUid());
         if (multiuser.userId == BConstants::SYSTEM_UID || multiuser.userId == BConstants::XTS_UID) {
-            session_->SetSessionUserId(userId);
+            effectiveUserId = userId;
         } else {
             HILOGE(
                 "Non-privileged caller, callingUid=%{public}d, parsed userId=%{public}d, requested userId=%{public}d, "
                 "fallback to default",
                 IPCSkeleton::GetCallingUid(), multiuser.userId, userId);
-            session_->SetSessionUserId(GetUserIdDefault());
         }
-    } else {
-        session_->SetSessionUserId(GetUserIdDefault());
     }
+    session_->SetSessionUserId(effectiveUserId);
+    return effectiveUserId;
 }
 
 void Service::ClearRecord()

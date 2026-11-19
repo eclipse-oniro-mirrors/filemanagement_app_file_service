@@ -432,6 +432,7 @@ public:
     ErrCode AppendBundlesSessionWithDetail(const std::vector<BundleName> &bundleNames,
         const std::vector<std::string> &detailInfos,
         BizScene &scene,
+        int32_t userId,
         UniqueFd fd = UniqueFd(BConstants::INVALID_FD_NUM));
 public:
     /**
@@ -783,7 +784,7 @@ private:
 
     bool CancelSessionClean(sptr<SvcSessionManager> session, std::string bundleName);
 
-    void SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId);
+    int32_t SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId);
 
     ErrCode VerifySendRateParam();
     ErrCode UpdateDefaultAppSendRate(const std::string &bundleName, int32_t sendRate, bool &result);
@@ -930,14 +931,14 @@ private:
     std::shared_mutex statMapMutex_;
     std::map<std::string, std::shared_ptr<RadarAppStatistic>> saStatisticMap_;
     std::map<std::string, BundleBroadCastInfo> bundleBroadCastInfoMap_;
-    std::shared_mutex extOnReleaseLock_;
+        std::shared_mutex extOnReleaseLock_;
 #ifdef POWER_MANAGER_ENABLED
     std::shared_mutex runningLockMutex_;
     std::shared_ptr<PowerMgr::RunningLock> runningLock_ = nullptr;
     std::shared_ptr<RadarRunningLockStatistic> runningLockStatistic_ = nullptr;
 #endif
 public:
-    std::map<BundleName, std::shared_ptr<ExtensionMutexInfo>> backupExtMutexMap_;
+        std::map<BundleName, std::shared_ptr<ExtensionMutexInfo>> backupExtMutexMap_;
     std::map<BundleName, BundleTaskInfo> failedBundles_;
     std::atomic<uint32_t> successBundlesNum_ {0};
     std::vector<BJsonUtil::BundleDataSize> bundleDataSizeList_;
