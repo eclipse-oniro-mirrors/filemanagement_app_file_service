@@ -153,8 +153,8 @@ bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName,
 
 bool BJsonDisposalConfig::DeleteFromDisposalConfigFile(const string& bundleName)
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     ifstream input(filePath);
     if (!input.is_open()) {
         HILOGE("open json failed");
@@ -207,8 +207,8 @@ bool BJsonDisposalConfig::DeleteFromDisposalConfigFile(const string& bundleName)
 
 bool BJsonDisposalConfig::IfBundleNameInDisposalConfigFile(const string& bundleName)
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
         HILOGE("open json failed");
@@ -251,8 +251,8 @@ bool BJsonDisposalConfig::IfBundleNameInDisposalConfigFile(const string& bundleN
 
 vector<string> BJsonDisposalConfig::GetBundleNameFromConfigFile()
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     vector<string> bundleNameList;
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
@@ -287,8 +287,8 @@ vector<string> BJsonDisposalConfig::GetBundleNameFromConfigFile()
 
 bool BJsonDisposalConfig::DeleteConfigFile()
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     if (access(filePath.c_str(), F_OK) != 0) {
         HILOGI("Disposal config file is not exist");
         return true;

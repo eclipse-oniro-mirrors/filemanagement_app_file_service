@@ -112,9 +112,8 @@ static cJSON* ReadClearConfigToCjson(const string &filePath)
 
 bool BJsonClearDataConfig::HasClearBundleRecord()
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
-
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
@@ -135,8 +134,8 @@ bool BJsonClearDataConfig::HasClearBundleRecord()
 
 bool BJsonClearDataConfig::FindClearBundleRecord(const string& bundleName)
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
@@ -165,8 +164,8 @@ bool BJsonClearDataConfig::FindClearBundleRecord(const string& bundleName)
 
 bool BJsonClearDataConfig::InsertClearBundleRecord(const string& bundleName)
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
@@ -204,8 +203,8 @@ bool BJsonClearDataConfig::InsertClearBundleRecord(const string& bundleName)
 
 bool BJsonClearDataConfig::DeleteClearBundleRecord(const string& bundleName)
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
@@ -249,8 +248,8 @@ bool BJsonClearDataConfig::DeleteClearBundleRecord(const string& bundleName)
 
 vector<string> BJsonClearDataConfig::GetAllClearBundleRecords()
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
@@ -277,8 +276,8 @@ vector<string> BJsonClearDataConfig::GetAllClearBundleRecords()
 
 bool BJsonClearDataConfig::DeleteConfigFile()
 {
-    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     if (access(filePath.c_str(), F_OK) != 0) {
         HILOGI("Clear data config file is not exist");
         return true;

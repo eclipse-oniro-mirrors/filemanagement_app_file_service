@@ -36,6 +36,7 @@ public:
     bool IsDefaultBundle(const std::string &bundleName);
     sptr<MigrateManager> GetMigrateInstance(const std::string &bundleName, int32_t userId);
     bool ClearDefaultAppData();
+
 private:
     std::map<std::string, sptr<MigrateManager>> defaultAppMap_;
     std::shared_mutex defaultAppMutex_;
