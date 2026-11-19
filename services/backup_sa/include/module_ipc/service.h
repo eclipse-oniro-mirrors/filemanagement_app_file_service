@@ -172,7 +172,6 @@ public:
 public:
     void OnStart() override;
     void OnStop() override;
-    void OnStartInternal();
     void StopAll(const wptr<IRemoteObject> &obj, bool force = false);
     int Dump(int fd, const std::vector<std::u16string> &args) override;
 

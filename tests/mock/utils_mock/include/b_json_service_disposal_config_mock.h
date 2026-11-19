@@ -29,7 +29,6 @@ public:
     virtual bool DeleteFromDisposalConfigFile(const std::string&) = 0;
     virtual std::vector<std::string> GetBundleNameFromConfigFile() = 0;
     virtual bool DeleteConfigFile();
-    virtual bool DeleteConfigFile(int32_t userId) = 0;
 public:
     BBJsonDisposalConfig() = default;
     virtual ~BBJsonDisposalConfig() = default;
@@ -45,7 +44,6 @@ public:
     MOCK_METHOD(bool, DeleteFromDisposalConfigFile, (const std::string&));
     MOCK_METHOD((std::vector<std::string>), GetBundleNameFromConfigFile, ());
     MOCK_METHOD(bool, DeleteConfigFile, ());
-    MOCK_METHOD(bool, DeleteConfigFile, (int32_t userId));
 };
 } // namespace OHOS::FileManagement::Backup
 #endif // OHOS_FILEMGMT_BACKUP_B_B_JSON_SERVICE_DISPOSAL_CONFIG_MOCK_H

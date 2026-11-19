@@ -22,34 +22,13 @@ DefaultAppManager::DefaultAppManager(wptr<Service> servicePtr) : servicePtr_(ser
 
 sptr<MigrateManager> DefaultAppManager::GetMigrateInstance(const std::string &bundleName, int32_t userId)
 {
-    sptr<MigrateManager> oldInstance;
-    {
-        std::unique_lock<std::shared_mutex> lock(defaultAppMutex_);
-        auto it = defaultAppMap_.find(bundleName);
-        if (it == defaultAppMap_.end()) {
-            return nullptr;
-        }
-        if (it->second != nullptr && it->second->GetUserId() == userId) {
-            return it->second;
-        }
-        oldInstance = it->second;
-        it->second = nullptr;
-    }
-    // DoClear 会调用 enhance 服务，必须在锁外执行，避免持锁 IPC 与重入死锁。
-    if (oldInstance != nullptr) {
-        HILOGI("UserId changed for bundleName:%{public}s, recreate migrate instance.", bundleName.c_str());
-        oldInstance->DoClear();
-    }
     std::unique_lock<std::shared_mutex> lock(defaultAppMutex_);
     auto it = defaultAppMap_.find(bundleName);
     if (it == defaultAppMap_.end()) {
         return nullptr;
     }
-    if (it->second != nullptr) {
-        if (it->second->GetUserId() == userId) {
-            return it->second;
-        }
-        return nullptr;
+    if (it->second != nullptr && it->second->GetUserId() == userId) {
+        return it->second;
     }
     auto instance = sptr(new MigrateManager(servicePtr_, bundleName, userId));
     defaultAppMap_[bundleName] = instance;

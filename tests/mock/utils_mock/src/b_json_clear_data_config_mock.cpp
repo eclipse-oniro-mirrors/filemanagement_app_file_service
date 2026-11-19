@@ -54,9 +54,4 @@ bool BJsonClearDataConfig::DeleteConfigFile()
 {
     return BBJsonClearDataConfig::config->DeleteConfigFile();
 }
-
-bool BJsonClearDataConfig::DeleteConfigFile(int32_t userId)
-{
-    return BBJsonClearDataConfig::config->DeleteConfigFile(userId);
-}
 } // namespace OHOS::FileManagement::Backup

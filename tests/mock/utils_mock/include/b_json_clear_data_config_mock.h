@@ -29,7 +29,6 @@ public:
     virtual bool DeleteClearBundleRecord(const std::string&) = 0;
     virtual std::vector<std::string> GetAllClearBundleRecords() = 0;
     virtual bool DeleteConfigFile() = 0;
-    virtual bool DeleteConfigFile(int32_t userId) = 0;
 public:
     BBJsonClearDataConfig() = default;
     virtual ~BBJsonClearDataConfig() = default;
@@ -46,7 +45,6 @@ public:
     MOCK_METHOD(bool, DeleteClearBundleRecord, (const std::string&));
     MOCK_METHOD((std::vector<std::string>), GetAllClearBundleRecords, ());
     MOCK_METHOD(bool, DeleteConfigFile, ());
-    MOCK_METHOD(bool, DeleteConfigFile, (int32_t userId));
 };
 } // namespace OHOS::FileManagement::Backup
 #endif // OHOS_FILEMGMT_BACKUP_B_JSON_CLEAR_DATA_CONFIG_MOCK_H

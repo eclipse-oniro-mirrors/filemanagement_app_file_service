@@ -49,9 +49,4 @@ bool BJsonDisposalConfig::DeleteConfigFile()
 {
     return BBJsonDisposalConfig::config->DeleteConfigFile();
 }
-
-bool BJsonDisposalConfig::DeleteConfigFile(int32_t userId)
-{
-    return BBJsonDisposalConfig::config->DeleteConfigFile(userId);
-}
 } // namespace OHOS::FileManagement::Backup

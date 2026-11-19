@@ -37,9 +37,9 @@ namespace {
 
 void BJsonDisposalConfig::SetUserId(int32_t userId)
 {
-    userId_.store(userId);
     string filePath = GetBackupHomePath(userId) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    userId_.store(userId);
     CreateConfigFileIfNotExist(filePath);
 }
 
@@ -298,22 +298,6 @@ bool BJsonDisposalConfig::DeleteConfigFile()
         return false;
     }
     HILOGI("All Restore Finished, Delete DisposalConfigFile OK");
-    return true;
-}
-
-bool BJsonDisposalConfig::DeleteConfigFile(int32_t userId)
-{
-    string filePath = BConstants::GetSaBundleBackupConfigHomeDir(userId) + CONFIG_NAME;
-    lock_guard<mutex> autoLock(fileMutex_);
-    if (access(filePath.c_str(), F_OK) != 0) {
-        HILOGI("Disposal config file is not exist, userId=%{public}d", userId);
-        return true;
-    }
-    if (remove(filePath.c_str()) != 0) {
-        HILOGE("Delete DisposalConfigFile failed, userId=%{public}d", userId);
-        return false;
-    }
-    HILOGI("Delete DisposalConfigFile OK, userId=%{public}d", userId);
     return true;
 }
 } // namespace OHOS::FileManagement::Backup

@@ -74,14 +74,6 @@ public:
      */
     bool DeleteConfigFile();
 
-    /**
-     * @brief 删除指定用户的配置文件
-     *
-     * @param userId 用户id
-     * @return 文件不存在或删除成功返回 true，删除失败返回 false
-     */
-    bool DeleteConfigFile(int32_t userId);
-
 public:
     /**
      * @brief 构造方法

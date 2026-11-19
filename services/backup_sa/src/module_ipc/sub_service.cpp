@@ -1950,7 +1950,8 @@ std::vector<std::string> Service::GetCurUsrDispBundleName()
     }
     bundleNameList = disposal_->GetBundleNameFromConfigFile();
     // 与配置路径使用同一用户来源：会话期间用会话用户，否则用前台用户。
-    auto curUserId = configUserId_.load() >= 0 ? configUserId_.load() : GetForegroundAccountUserId();
+    int32_t cfgUserId = configUserId_.load();
+    auto curUserId = cfgUserId >= 0 ? cfgUserId : GetForegroundAccountUserId();
     for (auto it = bundleNameList.begin(); it != bundleNameList.end();) {
         auto [bundle, userId] = SplitBundleName(*it);
         if (userId != curUserId) {

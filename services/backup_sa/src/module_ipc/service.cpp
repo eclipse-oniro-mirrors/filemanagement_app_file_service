@@ -212,12 +212,6 @@ void Service::ExtensionConnectFailRadarReport(const std::string &bundleName, con
 
 void Service::OnStart()
 {
-    OnStartInternal();
-    ClearBackupSaSandbox(GetForegroundAccountUserId());
-}
-
-void Service::OnStartInternal()
-{
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
     HILOGI("SA OnStart Begin.");
     EnhanceServiceManager::GetInstance().LoadService();
@@ -257,6 +251,7 @@ void Service::OnStartInternal()
         SetOccupySession(false);
         StopAll(nullptr, true);
     }
+    ClearBackupSaSandbox(GetForegroundAccountUserId());
     HILOGI("SA OnStart End, res = %{public}d", res);
 }
 

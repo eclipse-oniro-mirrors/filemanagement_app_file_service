@@ -40,9 +40,9 @@ namespace {
 
 void BJsonClearDataConfig::SetUserId(int32_t userId)
 {
-    userId_.store(userId);
     string filePath = GetBackupHomePath(userId) + CONFIG_NAME;
     lock_guard<mutex> autoLock(fileMutex_);
+    userId_.store(userId);
     CreateConfigFileIfNotExist(filePath);
 }
 
@@ -288,22 +288,6 @@ bool BJsonClearDataConfig::DeleteConfigFile()
         return false;
     }
     HILOGI("All Restore Finished, Delete ClearDataConfigFile OK");
-    return true;
-}
-
-bool BJsonClearDataConfig::DeleteConfigFile(int32_t userId)
-{
-    string filePath = BConstants::GetSaBundleBackupConfigHomeDir(userId) + CONFIG_NAME;
-    lock_guard<mutex> autoLock(fileMutex_);
-    if (access(filePath.c_str(), F_OK) != 0) {
-        HILOGI("Clear data config file is not exist, userId=%{public}d", userId);
-        return true;
-    }
-    if (remove(filePath.c_str()) != 0) {
-        HILOGE("Delete ClearDataConfigFile failed, userId=%{public}d", userId);
-        return false;
-    }
-    HILOGI("Delete ClearDataConfigFile OK, userId=%{public}d", userId);
     return true;
 }
 

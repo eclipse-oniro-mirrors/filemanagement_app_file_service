@@ -306,7 +306,6 @@ void MigrateManager::DoClear()
     try {
         if (!isClearData_) {
             HILOGI("configured not clear data.");
-            DestroyDefaultTask();
             return;
         }
         if (!hasCleared_.load()) {
@@ -330,20 +329,6 @@ void MigrateManager::DoClearInner()
         enhanceService->DestroyDefaultTask(bundleName_);
     } catch (...) {
         HILOGE("Failed to clear");
-    }
-}
-
-void MigrateManager::DestroyDefaultTask()
-{
-    try {
-        auto enhanceService = EnhanceServiceManager::GetInstance().GetServiceInstance();
-        if (!enhanceService) {
-            HILOGW("enhance service is not loaded");
-            return;
-        }
-        enhanceService->DestroyDefaultTask(bundleName_);
-    } catch (...) {
-        HILOGE("Failed to destroy default task");
     }
 }
 
