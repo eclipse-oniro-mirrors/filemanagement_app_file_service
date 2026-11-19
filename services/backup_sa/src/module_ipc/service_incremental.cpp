@@ -327,7 +327,7 @@ ErrCode Service::GetAppLocalListAndDoIncrementalBackup(const BStringRawData &com
             HILOGE("Get AppLocalList failed, Get bundle failed, ret:%{public}d", ret);
             return ret;
         }
-        ession_->SetSessionUserId(userId);
+        session_->SetSessionUserId(userId);
         auto dirs = DeserializeCompatDirs(compatibleDirsRD);
         HILOGI("compatibleDirs size=%{public}zu, bundleName=%{public}s", dirs.size(), bundleName.c_str());
         session_->SetCompatibleDirs(bundleName, dirs);

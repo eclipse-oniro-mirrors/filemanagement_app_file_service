@@ -931,14 +931,14 @@ private:
     std::shared_mutex statMapMutex_;
     std::map<std::string, std::shared_ptr<RadarAppStatistic>> saStatisticMap_;
     std::map<std::string, BundleBroadCastInfo> bundleBroadCastInfoMap_;
-        std::shared_mutex extOnReleaseLock_;
+    std::shared_mutex extOnReleaseLock_;
 #ifdef POWER_MANAGER_ENABLED
     std::shared_mutex runningLockMutex_;
     std::shared_ptr<PowerMgr::RunningLock> runningLock_ = nullptr;
     std::shared_ptr<RadarRunningLockStatistic> runningLockStatistic_ = nullptr;
 #endif
 public:
-        std::map<BundleName, std::shared_ptr<ExtensionMutexInfo>> backupExtMutexMap_;
+    std::map<BundleName, std::shared_ptr<ExtensionMutexInfo>> backupExtMutexMap_;
     std::map<BundleName, BundleTaskInfo> failedBundles_;
     std::atomic<uint32_t> successBundlesNum_ {0};
     std::vector<BJsonUtil::BundleDataSize> bundleDataSizeList_;
