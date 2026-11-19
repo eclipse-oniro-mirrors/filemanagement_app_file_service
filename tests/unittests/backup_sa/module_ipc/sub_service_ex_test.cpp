@@ -47,7 +47,8 @@ HWTEST_F(ServiceTest, SUB_Service_CreateAncoBackupTask_0000, testing::ext::TestS
 HWTEST_F(ServiceTest, SUB_Service_CreateAncoBackupTask_0001, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_CreateAncoBackupTask_0001";
-    EXPECT_CALL(*mockEnhanceService, CreateAncoBackupTask(_, _, _)).WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
+    EXPECT_CALL(*mockEnhanceService, CreateAncoBackupTask(_, _, _))
+        .WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
     EXPECT_CALL(*skeleton, GetCallingTokenID()).WillOnce(Return(0));
     EXPECT_CALL(*token, GetTokenType(_)).WillOnce(Return(Security::AccessToken::ATokenTypeEnum::TOKEN_HAP));
     EXPECT_CALL(*token, GetHapTokenInfo(_, _)).WillOnce(Return(0));
@@ -419,7 +420,8 @@ HWTEST_F(ServiceTest, SUB_Service_CreateAncoRestoreTask_0000, testing::ext::Test
 HWTEST_F(ServiceTest, SUB_Service_CreateAncoRestoreTask_0001, testing::ext::TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ServiceTest-begin SUB_Service_CreateAncoRestoreTask_0001";
-    EXPECT_CALL(*mockEnhanceService, CreateAncoRestoreTask(_, _, _)).WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
+    EXPECT_CALL(*mockEnhanceService, CreateAncoRestoreTask(_, _, _))
+        .WillOnce(Return(BError(BError::Codes::SA_INVAL_ARG)));
     EXPECT_CALL(*skeleton, GetCallingTokenID()).WillOnce(Return(0));
     EXPECT_CALL(*token, GetTokenType(_)).WillOnce(Return(Security::AccessToken::ATokenTypeEnum::TOKEN_HAP));
     EXPECT_CALL(*token, GetHapTokenInfo(_, _)).WillOnce(Return(0));
