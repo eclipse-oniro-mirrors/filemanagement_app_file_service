@@ -1914,7 +1914,6 @@ void Service::ReleaseOnException()
 int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId)
 {
     session_->SetImplRestoreType(restoreType);
-    int32_t effectiveUserId = GetUserIdDefault();
     if (userId != DEFAULT_INVAL_VALUE) {
         auto multiuser = BMultiuser::ParseUid(IPCSkeleton::GetCallingUid());
         if (multiuser.userId == BConstants::SYSTEM_UID || multiuser.userId == BConstants::XTS_UID) {
