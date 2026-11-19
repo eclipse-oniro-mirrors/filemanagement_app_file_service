@@ -1928,7 +1928,7 @@ int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t us
             session_->SetSessionUserId(userId);
         }
     } else {
-         userId = GetUserIdDefault();
+        userId = GetUserIdDefault();
         session_->SetSessionUserId(userId);
     }
     return userId;
