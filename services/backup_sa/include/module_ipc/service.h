@@ -432,6 +432,7 @@ public:
     ErrCode AppendBundlesSessionWithDetail(const std::vector<BundleName> &bundleNames,
         const std::vector<std::string> &detailInfos,
         BizScene &scene,
+        int32_t userId,
         UniqueFd fd = UniqueFd(BConstants::INVALID_FD_NUM));
 public:
     /**
@@ -783,7 +784,7 @@ private:
 
     bool CancelSessionClean(sptr<SvcSessionManager> session, std::string bundleName);
 
-    void SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId);
+    int32_t SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId);
 
     ErrCode VerifySendRateParam();
     ErrCode UpdateDefaultAppSendRate(const std::string &bundleName, int32_t sendRate, bool &result);

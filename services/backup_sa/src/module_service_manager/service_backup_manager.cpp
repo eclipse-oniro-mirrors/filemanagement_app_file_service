@@ -100,7 +100,7 @@ ErrCode Service::AppendBundlesDetailsBackupSession(const std::vector<BundleName>
         HandleExceptionOnAppendBundles(session_, bundleNames, {});
         return ret;
     }
-    return AppendBundlesSessionWithDetail(bundleNames, bundleInfos, bizScene);
+    return AppendBundlesSessionWithDetail(bundleNames, bundleInfos, bizScene, session_->GetSessionUserId());
 }
 
 ErrCode Service::SetSessPropertiesBackup(const std::vector<std::string> &bundleNames,
@@ -469,14 +469,15 @@ ErrCode Service::AppendBundlesRestoreSessionDataByDetail(int fd, const std::vect
         return ret;
     }
     restoreType_ = static_cast<RestoreTypeEnum>(restoreType);
-    SetUserIdAndRestoreType(restoreType_, userId);
+    int32_t effectiveUserId = SetUserIdAndRestoreType(restoreType_, userId);
     auto bizScene = BizScene::RESTORE;
-    return AppendBundlesSessionWithDetail(bundleNames, detailInfos, bizScene, std::move(fdUnique));
+    return AppendBundlesSessionWithDetail(bundleNames, detailInfos, bizScene, effectiveUserId, std::move(fdUnique));
 }
 
 ErrCode Service::AppendBundlesSessionWithDetail(const std::vector<BundleName> &bundleNames,
     const std::vector<std::string> &detailInfos,
     BizScene &scene,
+    int32_t userId,
     UniqueFd fd)
 {
     if (session_ == nullptr) {
@@ -488,8 +489,7 @@ ErrCode Service::AppendBundlesSessionWithDetail(const std::vector<BundleName> &b
         std::vector<std::string> bundleNamesOnly;
         std::map<std::string, BJsonUtil::BundleSettingInfo> bundleSettingInfos;
         std::map<std::string, std::vector<BJsonUtil::BundleDetailInfo>> bundleNameDetailMap =
-            BJsonUtil::BuildBundleInfos(bundleNames, detailInfos, bundleNamesOnly,
-            session_->GetSessionUserId(), bundleSettingInfos);
+            BJsonUtil::BuildBundleInfos(bundleNames, detailInfos, bundleNamesOnly, userId, bundleSettingInfos);
         std::vector<BundleName> newBundleNames = HandleBroadcastOnlyBundles(bundleNameDetailMap, bundleNames);
         if (newBundleNames.empty()) {
             HILOGE("newBundleNames is empty.");

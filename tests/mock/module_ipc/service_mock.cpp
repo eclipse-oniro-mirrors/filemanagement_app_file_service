@@ -411,7 +411,10 @@ void SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId) {}
 void Service::CallOnBundleEndByScenario(const std::string &bundleName, BackupRestoreScenario scenario,
     ErrCode errCode) {}
 
-void Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId) {}
+int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t userId)
+{
+    return userId;
+}
 
 ErrCode Service::GetBackupDataSize(bool isPreciseScan, const std::vector<BIncrementalData> &bundleNameList)
 {
