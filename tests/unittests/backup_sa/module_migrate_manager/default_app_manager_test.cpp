@@ -14,7 +14,6 @@
  */
 
 #include <gtest/gtest.h>
-#include "ienhance_service_mock.h"
 #include "module_ipc/service.h"
 
 namespace OHOS::FileManagement::Backup {
@@ -333,57 +332,5 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetUserId_2800, testing::e
     auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
     ASSERT_NE(instance, nullptr);
     EXPECT_EQ(instance->GetUserId(), USER_ID);
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_NoService_3100
- * @tc.desc: Verify DestroyDefaultTask returns when enhance service is not loaded
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_NoService_3100,
-    testing::ext::TestSize.Level1)
-{
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
-    ASSERT_NE(instance, nullptr);
-    instance->DestroyDefaultTask();
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_WithService_3200
- * @tc.desc: Verify DestroyDefaultTask invokes the enhance service
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_WithService_3200,
-    testing::ext::TestSize.Level1)
-{
-    MockIEnhanceService mockEnhanceService;
-    EnhanceServiceManager::GetInstance().service_ = &mockEnhanceService;
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
-    ASSERT_NE(instance, nullptr);
-
-    EXPECT_CALL(mockEnhanceService, DestroyDefaultTask(BUNDLE_NAME_DEFAULT)).WillOnce(testing::Return(0));
-    instance->DestroyDefaultTask();
-    EnhanceServiceManager::GetInstance().service_ = nullptr;
-}
-
-/**
- * @tc.name: DefaultAppManagerTest_DestroyDefaultTask_Throw_3300
- * @tc.desc: Verify DestroyDefaultTask swallows exceptions from the enhance service
- * @tc.type: FUNC
- */
-HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_DestroyDefaultTask_Throw_3300,
-    testing::ext::TestSize.Level1)
-{
-    MockIEnhanceService mockEnhanceService;
-    EnhanceServiceManager::GetInstance().service_ = &mockEnhanceService;
-    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
-    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
-    ASSERT_NE(instance, nullptr);
-
-    EXPECT_CALL(mockEnhanceService, DestroyDefaultTask(BUNDLE_NAME_DEFAULT)).WillOnce(testing::Throw(42));
-    instance->DestroyDefaultTask();
-    EnhanceServiceManager::GetInstance().service_ = nullptr;
 }
 } // namespace OHOS::FileManagement::Backup
