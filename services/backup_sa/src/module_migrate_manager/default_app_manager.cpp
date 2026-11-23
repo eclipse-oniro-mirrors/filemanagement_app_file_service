@@ -27,7 +27,7 @@ sptr<MigrateManager> DefaultAppManager::GetMigrateInstance(const std::string &bu
     if (it == defaultAppMap_.end()) {
         return nullptr;
     }
-    if (it->second != nullptr) {
+    if (it->second != nullptr && it->second->GetUserId() == userId) {
         return it->second;
     }
     auto instance = sptr(new MigrateManager(servicePtr_, bundleName, userId));

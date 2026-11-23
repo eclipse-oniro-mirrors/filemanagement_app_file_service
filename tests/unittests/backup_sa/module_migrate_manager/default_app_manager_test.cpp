@@ -214,6 +214,24 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_Differe
 }
 
 /**
+ * @tc.name: DefaultAppManagerTest_GetMigrateInstance_UserIdChanged_1710
+ * @tc.desc: Verify GetMigrateInstance recreates instance when userId changes
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_UserIdChanged_1710,
+    testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance1 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance1, nullptr);
+
+    auto instance2 = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID + 1);
+    ASSERT_NE(instance2, nullptr);
+    EXPECT_NE(instance1, instance2);
+    EXPECT_EQ(instance2->GetUserId(), USER_ID + 1);
+}
+
+/**
  * @tc.name: DefaultAppManagerTest_ClearDefaultAppData_HasClearedFlag_1800
  * @tc.desc: Verify ClearDefaultAppData sets hasCleared_ flag on MigrateManager
  * @tc.type: FUNC
@@ -301,5 +319,18 @@ HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetMigrateInstance_NonDefa
 {
     auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_NORMAL, USER_ID);
     EXPECT_EQ(instance, nullptr);
+}
+
+/**
+ * @tc.name: DefaultAppManagerTest_GetUserId_2800
+ * @tc.desc: Verify GetUserId returns the user id passed to GetMigrateInstance
+ * @tc.type: FUNC
+ */
+HWTEST_F(DefaultAppManagerTest, DefaultAppManagerTest_GetUserId_2800, testing::ext::TestSize.Level1)
+{
+    service_->defaultAppManager_->SetDefaultBundleName({BUNDLE_NAME_DEFAULT}, true);
+    auto instance = service_->defaultAppManager_->GetMigrateInstance(BUNDLE_NAME_DEFAULT, USER_ID);
+    ASSERT_NE(instance, nullptr);
+    EXPECT_EQ(instance->GetUserId(), USER_ID);
 }
 } // namespace OHOS::FileManagement::Backup

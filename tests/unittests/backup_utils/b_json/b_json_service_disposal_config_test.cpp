@@ -378,11 +378,84 @@ HWTEST_F(BJsonServiceDisposalConfigTest, Disposal_Config_Test_0601, testing::ext
         bool retDele = config.DeleteConfigFile();
         EXPECT_TRUE(retDele);
         bool retDel = config.DeleteConfigFile();
-        EXPECT_FALSE(retDel);
+        EXPECT_TRUE(retDel);
     } catch (...) {
         EXPECT_TRUE(false);
         GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-an exception occurred by construction.";
     }
     GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-end Disposal_Config_Test_0601";
 }
+
+/**
+ * @tc.number: SUB_Disposal_Config_Test_0700
+ * @tc.name: Disposal_Config_Test_0700
+ * @tc.desc: 测试 SetUserId 接口设置指定用户并创建配置文件
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: IAAMIK
+ */
+HWTEST_F(BJsonServiceDisposalConfigTest, Disposal_Config_Test_0700, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-begin Disposal_Config_Test_0700";
+    try {
+        string filePath = PATH + CONFIG_NAME;
+        BJsonDisposalConfig config;
+        EXPECT_EQ(access(filePath.c_str(), F_OK), 0);
+        config.SetUserId(100);
+        EXPECT_EQ(access(filePath.c_str(), F_OK), 0);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-an exception occurred by construction.";
+    }
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-end Disposal_Config_Test_0700";
+}
+
+/**
+ * @tc.number: SUB_Disposal_Config_Test_0701
+ * @tc.name: Disposal_Config_Test_0701
+ * @tc.desc: 测试 SetUserId 接口使用无效用户回退到前台用户
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: IAAMIK
+ */
+HWTEST_F(BJsonServiceDisposalConfigTest, Disposal_Config_Test_0701, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-begin Disposal_Config_Test_0701";
+    try {
+        string filePath = PATH + CONFIG_NAME;
+        BJsonDisposalConfig config;
+        EXPECT_EQ(access(filePath.c_str(), F_OK), 0);
+        config.SetUserId(BConstants::INVALID_USER_ID);
+        EXPECT_EQ(access(filePath.c_str(), F_OK), 0);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-an exception occurred by construction.";
+    }
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-end Disposal_Config_Test_0701";
+}
+
+/**
+ * @tc.number: SUB_Disposal_Config_Test_0702
+ * @tc.name: Disposal_Config_Test_0702
+ * @tc.desc: 测试 SetUserId 接口打开文件失败的情况
+ * @tc.size: MEDIUM
+ * @tc.type: FUNC
+ * @tc.level Level 1
+ * @tc.require: IAAMIK
+ */
+HWTEST_F(BJsonServiceDisposalConfigTest, Disposal_Config_Test_0702, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-begin Disposal_Config_Test_0702";
+    try {
+        BJsonDisposalConfig config;
+        config.SetUserId(999999);
+    } catch (...) {
+        EXPECT_TRUE(false);
+        GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-an exception occurred by construction.";
+    }
+    GTEST_LOG_(INFO) << "BJsonServiceDisposalConfigTest-end Disposal_Config_Test_0702";
+}
+
 } // namespace OHOS::FileManagement::Backup

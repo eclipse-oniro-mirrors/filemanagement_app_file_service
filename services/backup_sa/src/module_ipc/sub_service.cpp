@@ -609,7 +609,7 @@ ErrCode Service::LaunchBackupExtension(const BundleName &bundleName)
     }
     return ConnectBackupExtension(bundleName, action);
 }
- 
+
 ErrCode Service::ConnectBackupExtension(const BundleName &bundleName, BConstants::ExtensionAction action)
 {
     IServiceReverseType::Scenario scenario = session_->GetScenario();
@@ -1929,17 +1929,16 @@ void Service::TryToClearDispose(const BundleName &bundleName)
     }
 }
 
-int32_t Service::GetCurrentActiveAccountUserId()
+// 返回默认显示上的前台用户；查询失败时回退主用户 100（与 BUserId::GetUserId 保持一致）。
+int32_t Service::GetForegroundAccountUserId()
 {
-    std::vector<int> osAccounts;
-    ErrCode result = AccountSA::OsAccountManager::QueryActiveOsAccountIds(osAccounts);
-    if (result != ERR_OK || osAccounts.empty()) {
-        HILOGE("QueryActiveOsAccountIds error, err is %{public}d", result);
+    int32_t osAccountId = BConstants::DEFAULT_USER_ID;
+    ErrCode result = AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(osAccountId);
+    if (result != ERR_OK) {
+        HILOGE("GetForegroundOsAccountLocalId error, err is %{public}d", result);
         return BConstants::DEFAULT_USER_ID;
     }
-    // index0为当前用户的userid，例如处于隐私空间则获取对应的userid
-    int osAccountId = osAccounts[0];
-    HILOGI("Current active account userId=%{public}d", osAccountId);
+    HILOGI("Current foreground account userId=%{public}d", osAccountId);
     return osAccountId;
 }
  
@@ -1950,7 +1949,9 @@ std::vector<std::string> Service::GetCurUsrDispBundleName()
         return bundleNameList;
     }
     bundleNameList = disposal_->GetBundleNameFromConfigFile();
-    auto curUserId = GetCurrentActiveAccountUserId();
+    // 与配置路径使用同一用户来源：会话期间用会话用户，否则用前台用户。
+    int32_t cfgUserId = configUserId_.load();
+    auto curUserId = cfgUserId >= 0 ? cfgUserId : GetForegroundAccountUserId();
     for (auto it = bundleNameList.begin(); it != bundleNameList.end();) {
         auto [bundle, userId] = SplitBundleName(*it);
         if (userId != curUserId) {

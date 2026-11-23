@@ -251,13 +251,12 @@ void Service::OnStart()
         SetOccupySession(false);
         StopAll(nullptr, true);
     }
-    ClearBackupSaSandbox();
+    ClearBackupSaSandbox(GetForegroundAccountUserId());
     HILOGI("SA OnStart End, res = %{public}d", res);
 }
 
-void Service::ClearBackupSaSandbox()
+void Service::ClearBackupSaSandbox(int32_t userId)
 {
-    int32_t userId = GetCurrentActiveAccountUserId();
     std::string path = BConstants::GetSaBundleBackupRootDir(userId);
     try {
         BExcepUltils::VerifyPath(path, false);
@@ -289,6 +288,7 @@ void Service::OnStop()
     }
     StorageMgrAdapter::UpdateMemPara(oldMemoryParaSize);
     EnhanceServiceManager::GetInstance().UnloadService();
+    ResetConfigUserId();
     HILOGI("SA OnStop End.");
 }
 
@@ -322,7 +322,6 @@ UniqueFd Service::GetLocalCapabilities()
         string path = BConstants::GetSaBundleBackupRootDir(GetUserIdDefault());
         BExcepUltils::VerifyPath(path, false);
         CreateDirIfNotExist(path);
-        BDir::ClearDirectory(path);
         UniqueFd fd(open(path.data(), O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR));
         if (fd < 0) {
             HILOGE("Failed to open config file = %{public}s, err = %{public}d", GetAnonyPath(path).c_str(), errno);
@@ -1334,6 +1333,7 @@ void Service::SessionDeactive()
             if (!bundleNameList.empty()) {
                 DelClearBundleRecord(bundleNameList);
             }
+            ResetConfigUserId();
             return;
         }
         ProcessDeactiveCleanup(bundleNameList, ret);
@@ -1377,6 +1377,7 @@ void Service::ProcessDeactiveCleanup(std::vector<std::string> &bundleNameList, E
     if (clearRecorder_ != nullptr && !ret && isRmConfigFile_.load()) {
         clearRecorder_->DeleteConfigFile();
     }
+    ResetConfigUserId();
     StopAll(nullptr, true);
     if (session_->GetSessionCnt() <= 0) {
         HILOGI("do unload Service.");
@@ -1918,6 +1919,7 @@ int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t us
         auto multiuser = BMultiuser::ParseUid(IPCSkeleton::GetCallingUid());
         if (multiuser.userId == BConstants::SYSTEM_UID || multiuser.userId == BConstants::XTS_UID) {
             session_->SetSessionUserId(userId);
+            SyncConfigUserId(session_->GetSessionUserId());
             return userId;
         } else {
             HILOGE(
@@ -1931,6 +1933,7 @@ int32_t Service::SetUserIdAndRestoreType(RestoreTypeEnum restoreType, int32_t us
         userId = GetUserIdDefault();
         session_->SetSessionUserId(userId);
     }
+    SyncConfigUserId(session_->GetSessionUserId());
     return userId;
 }
 

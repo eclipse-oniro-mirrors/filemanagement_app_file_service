@@ -21,6 +21,8 @@
 #include <fstream>
 #include "unique_fd.h"
 #include "filemgmt_libhilog.h"
+#include "b_process/b_userid.h"
+#include "b_resources/b_constants.h"
 
 #include "cJSON.h"
 
@@ -28,13 +30,29 @@ namespace OHOS::FileManagement::Backup {
 using namespace std;
 
 namespace {
-    const string PATH_BUNDLE_BACKUP_HOME = "/data/service/el2/100/backup/";
     const string CONFIG_NAME = "ClearDataConfig.json";
+
+    string GetBackupHomePath(int32_t userId)
+    {
+        return BConstants::GetSaBundleBackupConfigHomeDir(userId >= 0 ? userId : BUserId::GetUserId());
+    }
+}
+
+void BJsonClearDataConfig::SetUserId(int32_t userId)
+{
+    string filePath = GetBackupHomePath(userId) + CONFIG_NAME;
+    lock_guard<mutex> autoLock(fileMutex_);
+    userId_.store(userId);
+    CreateConfigFileIfNotExist(filePath);
 }
 
 BJsonClearDataConfig::BJsonClearDataConfig()
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
+    CreateConfigFileIfNotExist(GetBackupHomePath(userId_.load()) + CONFIG_NAME);
+}
+
+void BJsonClearDataConfig::CreateConfigFileIfNotExist(const string &filePath)
+{
     if (access(filePath.c_str(), F_OK) == 0) {
         HILOGI("file exist filePath:%{public}s", filePath.c_str());
         return;
@@ -78,9 +96,8 @@ BJsonClearDataConfig::BJsonClearDataConfig()
     HILOGI("Creat filePath ok :%{public}s", filePath.c_str());
 }
 
-static cJSON* ReadClearConfigToCjson()
+static cJSON* ReadClearConfigToCjson(const string &filePath)
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     ifstream inFile(filePath);
     if (!inFile.is_open()) {
         HILOGE("open json failed");
@@ -96,8 +113,8 @@ static cJSON* ReadClearConfigToCjson()
 bool BJsonClearDataConfig::HasClearBundleRecord()
 {
     lock_guard<mutex> autoLock(fileMutex_);
-
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return false;
@@ -118,7 +135,8 @@ bool BJsonClearDataConfig::HasClearBundleRecord()
 bool BJsonClearDataConfig::FindClearBundleRecord(const string& bundleName)
 {
     lock_guard<mutex> autoLock(fileMutex_);
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return false;
@@ -147,7 +165,8 @@ bool BJsonClearDataConfig::FindClearBundleRecord(const string& bundleName)
 bool BJsonClearDataConfig::InsertClearBundleRecord(const string& bundleName)
 {
     lock_guard<mutex> autoLock(fileMutex_);
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return false;
@@ -171,7 +190,7 @@ bool BJsonClearDataConfig::InsertClearBundleRecord(const string& bundleName)
         }
     }
 
-    if (!WriteClearBundleRecord(bundleName)) {
+    if (!WriteClearBundleRecord(bundleName, filePath)) {
         HILOGE("InsertClearBundleRecord Failed");
         cJSON_Delete(jsonObjectDis);
         return false;
@@ -185,7 +204,8 @@ bool BJsonClearDataConfig::InsertClearBundleRecord(const string& bundleName)
 bool BJsonClearDataConfig::DeleteClearBundleRecord(const string& bundleName)
 {
     lock_guard<mutex> autoLock(fileMutex_);
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return false;
@@ -211,7 +231,6 @@ bool BJsonClearDataConfig::DeleteClearBundleRecord(const string& bundleName)
         cJSON_Delete(jsonObjectDis);
         return false;
     }
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     ofstream output(filePath);
     if (!output.is_open()) {
         HILOGE("open json failed");
@@ -230,7 +249,8 @@ bool BJsonClearDataConfig::DeleteClearBundleRecord(const string& bundleName)
 vector<string> BJsonClearDataConfig::GetAllClearBundleRecords()
 {
     lock_guard<mutex> autoLock(fileMutex_);
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return {};
@@ -256,10 +276,11 @@ vector<string> BJsonClearDataConfig::GetAllClearBundleRecords()
 
 bool BJsonClearDataConfig::DeleteConfigFile()
 {
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
+    lock_guard<mutex> autoLock(fileMutex_);
+    string filePath = GetBackupHomePath(userId_.load()) + CONFIG_NAME;
     if (access(filePath.c_str(), F_OK) != 0) {
-        HILOGE("File is not exist");
-        return false;
+        HILOGI("Clear data config file is not exist");
+        return true;
     }
     if (remove(filePath.c_str()) != 0) {
         HILOGE("Delete ClearDataConfigFile failed");
@@ -269,9 +290,9 @@ bool BJsonClearDataConfig::DeleteConfigFile()
     return true;
 }
 
-bool BJsonClearDataConfig::WriteClearBundleRecord(const string& bundleName)
+bool BJsonClearDataConfig::WriteClearBundleRecord(const string& bundleName, const string& filePath)
 {
-    cJSON *jsonObjectDis = ReadClearConfigToCjson();
+    cJSON *jsonObjectDis = ReadClearConfigToCjson(filePath);
     if (jsonObjectDis == nullptr) {
         HILOGE("parse json failed");
         return false;
@@ -298,7 +319,6 @@ bool BJsonClearDataConfig::WriteClearBundleRecord(const string& bundleName)
         cJSON_Delete(jsonObjectDis);
         return false;
     }
-    string filePath = PATH_BUNDLE_BACKUP_HOME + CONFIG_NAME;
     ofstream outFile(filePath);
     if (!outFile.is_open()) {
         HILOGE("open json failed");

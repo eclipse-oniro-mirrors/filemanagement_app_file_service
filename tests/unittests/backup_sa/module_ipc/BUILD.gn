@@ -622,6 +622,7 @@ ohos_unittest("backup_service_other_test") {
     "${path_backup_mock}/accesstoken/src/accesstoken_kit_mock.cpp",
     "${path_backup_mock}/module_external/src/bms_adapter_mock.cpp",
     "${path_backup_mock}/module_external/src/sms_adapter_mock.cpp",
+    "${path_backup_mock}/module_external/src/os_account_manager_mock.cpp",
     "${path_backup_mock}/module_ipc/service_stub_mock.cpp",
     "${path_backup_mock}/module_ipc/src/app_gallery_dispose_proxy_mock.cpp",
     "${path_backup_mock}/module_ipc/src/ipc_skeleton_mock.cpp",

@@ -323,6 +323,7 @@ ErrCode Service::InitSession(const sptr<IServiceReverse>& remote,
         .activeTime = TimeUtils::GetCurrentTime(),
     });
     if (ret == ERR_OK) {
+        SyncConfigUserId(session_->GetSessionUserId());
         TotalStatStart(scene, GetCallerName(), totalSpend.startMilli_);
         ClearFailedBundles();
         successBundlesNum_ = 0;

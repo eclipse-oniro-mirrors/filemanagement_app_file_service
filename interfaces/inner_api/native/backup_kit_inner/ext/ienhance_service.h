@@ -65,13 +65,14 @@ class IEnhanceService {
 public:
     virtual ~IEnhanceService() = default;
 
-    virtual ErrCode CreateAncoBackupTask(const std::string &bundleName, const sptr<IAncoBackupCallback> &callback) = 0;
+    virtual ErrCode CreateAncoBackupTask(const std::string &bundleName, int32_t userId,
+        const sptr<IAncoBackupCallback> &callback) = 0;
     virtual ErrCode DestroyAncoBackupTask(const std::string &bundleName) = 0;
     virtual ErrCode FilterAndSaveBackupPaths(const std::string &bundleName, std::set<std::string> &includes,
         std::set<std::string> &compatIncludes, const std::vector<std::string> &excludes) = 0;
     virtual ErrCode StartAncoScanAllDirs(const std::string &bundleName, AncoScanResult &scanResult) = 0;
     virtual ErrCode StartAncoPacket(const std::string &bundleName, uint64_t &smallFileCount) = 0;
-    virtual ErrCode CreateAncoRestoreTask(const std::string &bundleName,
+    virtual ErrCode CreateAncoRestoreTask(const std::string &bundleName, int32_t userId,
         const sptr<IAncoRestoreCallback> &callback) = 0;
     virtual ErrCode DestroyAncoRestoreTask(const std::string &bundleName) = 0;
     virtual ErrCode AddAncoTars(const std::string &bundleName, const std::vector<std::string> &tarFiles,

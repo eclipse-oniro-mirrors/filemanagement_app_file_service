@@ -22,6 +22,7 @@
 namespace OHOS::FileManagement::Backup {
 class BBJsonClearDataConfig {
 public:
+    virtual void SetUserId(int32_t userId) = 0;
     virtual bool HasClearBundleRecord() = 0;
     virtual bool FindClearBundleRecord(const std::string&) = 0;
     virtual bool InsertClearBundleRecord(const std::string&) = 0;
@@ -37,6 +38,7 @@ public:
 
 class BJsonClearDataConfigMock : public BBJsonClearDataConfig {
 public:
+    MOCK_METHOD(void, SetUserId, (int32_t userId));
     MOCK_METHOD(bool, HasClearBundleRecord, ());
     MOCK_METHOD(bool, FindClearBundleRecord, (const std::string&));
     MOCK_METHOD(bool, InsertClearBundleRecord, (const std::string&));

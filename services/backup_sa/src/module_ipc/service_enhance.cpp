@@ -50,8 +50,13 @@ ErrCode Service::ExecuteEnhanceServiceOperationWithAuth(
 
 ErrCode Service::CreateAncoBackupTask(const sptr<IAncoBackupCallback> &callback)
 {
+    if (session_ == nullptr) {
+        HILOGE("CreateAncoBackupTask error, session is empty");
+        return BError(BError::Codes::SA_INVAL_ARG);
+    }
+    int32_t userId = session_->GetSessionUserId();
     auto func = [&](IEnhanceService *enhanceService, const std::string &callerName) {
-        return enhanceService->CreateAncoBackupTask(callerName, callback);
+        return enhanceService->CreateAncoBackupTask(callerName, userId, callback);
     };
     auto ret = ExecuteEnhanceServiceOperationWithAuth(func);
     if (ret != ERR_OK) {
@@ -111,8 +116,13 @@ ErrCode Service::StartAncoPacket(uint64_t &smallFileCount)
 
 ErrCode Service::CreateAncoRestoreTask(const sptr<IAncoRestoreCallback> &callback)
 {
+    if (session_ == nullptr) {
+        HILOGE("CreateAncoRestoreTask error, session is empty");
+        return BError(BError::Codes::SA_INVAL_ARG);
+    }
+    int32_t userId = session_->GetSessionUserId();
     auto func = [&](IEnhanceService *enhanceService, const std::string &callerName) {
-        return enhanceService->CreateAncoRestoreTask(callerName, callback);
+        return enhanceService->CreateAncoRestoreTask(callerName, userId, callback);
     };
     auto ret = ExecuteEnhanceServiceOperationWithAuth(func);
     if (ret != ERR_OK) {

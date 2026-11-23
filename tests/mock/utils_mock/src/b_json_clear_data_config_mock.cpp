@@ -20,6 +20,11 @@ using namespace std;
 
 BJsonClearDataConfig::BJsonClearDataConfig() {}
 
+void BJsonClearDataConfig::SetUserId(int32_t userId)
+{
+    BBJsonClearDataConfig::config->SetUserId(userId);
+}
+
 bool BJsonClearDataConfig::HasClearBundleRecord()
 {
     return BBJsonClearDataConfig::config->HasClearBundleRecord();

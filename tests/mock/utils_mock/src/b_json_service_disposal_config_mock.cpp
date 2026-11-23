@@ -20,6 +20,11 @@ using namespace std;
 
 BJsonDisposalConfig::BJsonDisposalConfig() {}
 
+void BJsonDisposalConfig::SetUserId(int32_t userId)
+{
+    BBJsonDisposalConfig::config->SetUserId(userId);
+}
+
 bool BJsonDisposalConfig::AppendIntoDisposalConfigFile(const string& bundleName)
 {
     return BBJsonDisposalConfig::config->AppendIntoDisposalConfigFile(bundleName);

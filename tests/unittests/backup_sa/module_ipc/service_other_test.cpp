@@ -27,6 +27,7 @@
 #include "b_sa_utils_mock.h"
 #include "ipc_skeleton_mock.h"
 #include "notify_work_service_mock.h"
+#include "os_account_manager_mock.h"
 #include "sa_backup_connection_mock.h"
 #include "service_reverse_proxy_mock.h"
 #include "sms_adapter_mock.h"
@@ -495,8 +496,10 @@ HWTEST_F(ServiceTest, SUB_Service_OnStart_0200, TestSize.Level1)
         EXPECT_TRUE(true);
 
         service->isOccupyingSession_ = false;
+        service->configUserId_.store(BConstants::DEFAULT_USER_ID);
         EXPECT_CALL(*ability, Publish(_)).WillOnce(Return(false));
-        EXPECT_CALL(*jdConfig, GetBundleNameFromConfigFile()).WillOnce(Return(vector<string>(1)))
+        EXPECT_CALL(*jdConfig, GetBundleNameFromConfigFile())
+            .WillOnce(Return(vector<string>{"100-com.ohos.test"}))
             .WillOnce(Return(vector<string>()));
         EXPECT_CALL(*cdConfig, GetAllClearBundleRecords()).WillOnce(Return(vector<string>()));
         EXPECT_CALL(*skeleton, GetCallingTokenID()).WillRepeatedly(Return(0));
@@ -2941,4 +2944,5 @@ HWTEST_F(ServiceTest, SUB_Service_SetUserIdAndRestoreType_0600, TestSize.Level1)
     }
     GTEST_LOG_(INFO) << "ServiceTest-end SUB_Service_SetUserIdAndRestoreType_0600";
 }
+
 }

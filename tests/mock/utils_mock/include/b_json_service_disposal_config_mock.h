@@ -23,6 +23,7 @@
 namespace OHOS::FileManagement::Backup {
 class BBJsonDisposalConfig {
 public:
+    virtual void SetUserId(int32_t userId) = 0;
     virtual bool IfBundleNameInDisposalConfigFile(const std::string&) = 0;
     virtual bool AppendIntoDisposalConfigFile(const std::string&) = 0;
     virtual bool DeleteFromDisposalConfigFile(const std::string&) = 0;
@@ -37,6 +38,7 @@ public:
 
 class BJsonDisposalConfigMock : public BBJsonDisposalConfig {
 public:
+    MOCK_METHOD(void, SetUserId, (int32_t userId));
     MOCK_METHOD(bool, IfBundleNameInDisposalConfigFile, (const std::string&));
     MOCK_METHOD(bool, AppendIntoDisposalConfigFile, (const std::string&));
     MOCK_METHOD(bool, DeleteFromDisposalConfigFile, (const std::string&));
