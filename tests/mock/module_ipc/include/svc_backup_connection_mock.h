@@ -21,7 +21,7 @@
 #include "module_ipc/svc_backup_connection.h"
 
 namespace OHOS::FileManagement::Backup {
-class BSvcBackupConnection : public RefBase {
+class BSvcBackupConnection : public SvcBackupConnection {
 public:
     virtual ErrCode ConnectBackupExtAbility(AAFwk::Want&, int32_t, bool) = 0;
     virtual ErrCode DisconnectBackupExtAbility() = 0;
@@ -30,7 +30,7 @@ public:
     virtual sptr<IExtension> GetBackupExtProxy() = 0;
     virtual bool WaitDisconnectDone() = 0;
 public:
-    BSvcBackupConnection() = default;
+    BSvcBackupConnection() : SvcBackupConnection(nullptr, nullptr, "") {}
     virtual ~BSvcBackupConnection() = default;
 public:
     static inline sptr<BSvcBackupConnection> connect = nullptr;
