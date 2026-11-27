@@ -340,7 +340,20 @@ napi_value PropNOperation::DoGetBackupVersion(napi_env env, napi_callback_info i
         NError(E_PERMISSION_SYS).ThrowErr(env);
         return nullptr;
     }
-    std::string result = BConstants::BACKUP_VERSION;
+    ServiceClient::InvaildInstance();
+    auto proxy = ServiceClient::GetInstance();
+    if (!proxy) {
+        HILOGE("called DoGetBackupVersion, failed to get proxy");
+        NError(BError(BError::Codes::SDK_BROKEN_IPC).GetCode()).ThrowErr(env);
+        return nullptr;
+    }
+    std::string result;
+    ErrCode errCode = proxy->GetBackupVersion(result);
+    if (errCode != ERR_OK) {
+        HILOGE("proxy->GetBackupVersion failed, errCode:%{public}d", errCode);
+        NError(errCode).ThrowErr(env);
+        return nullptr;
+    }
     napi_value nResult;
     napi_status status = napi_create_string_utf8(env, result.c_str(), result.size(), &nResult);
     if (status != napi_ok) {

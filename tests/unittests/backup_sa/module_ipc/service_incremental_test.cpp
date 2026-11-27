@@ -380,6 +380,12 @@ ErrCode Service::GetBackupInfo(const BundleName &bundleName, std::string &result
     return BService::serviceMock->GetBackupInfo(bundleName, result);
 }
 
+ErrCode Service::GetBackupVersion(std::string &version)
+{
+    version = BConstants::BACKUP_VERSION;
+    return BError(BError::Codes::OK);
+}
+
 ErrCode Service::UpdateTimer(const BundleName &bundleName, uint32_t timeOut, bool &result)
 {
     return BService::serviceMock->UpdateTimer(bundleName, timeOut, result);

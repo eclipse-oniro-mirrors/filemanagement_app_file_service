@@ -1504,6 +1504,19 @@ ErrCode Service::GetBackupInfo(const BundleName &bundleName, std::string &result
     }
 }
 
+ErrCode Service::GetBackupVersion(std::string &version)
+{
+    HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);
+    ErrCode ret = VerifyCaller();
+    if (ret != ERR_OK) {
+        HILOGE("GetBackupVersion failed, verify caller failed, ret:%{public}d", ret);
+        return ret;
+    }
+    version = BConstants::BACKUP_VERSION;
+    HILOGI("GetBackupVersion success, version: %{public}s", version.c_str());
+    return BError(BError::Codes::OK);
+}
+
 ErrCode Service::AppendBundlesClearSession(const std::vector<BundleName> &bundleNames)
 {
     HITRACE_METER_NAME(HITRACE_TAG_FILEMANAGEMENT, __PRETTY_FUNCTION__);

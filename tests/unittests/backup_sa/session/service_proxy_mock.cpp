@@ -210,6 +210,11 @@ ErrCode ServiceProxy::GetBackupInfo(const std::string &bundleName, std::string &
     return BError(BError::Codes::OK);
 }
 
+ErrCode ServiceProxy::GetBackupVersion(std::string &version)
+{
+    return BError(BError::Codes::OK);
+}
+
 ErrCode ServiceProxy::UpdateTimer(const BundleName &bundleName, uint32_t timeout, bool &result)
 {
     return BError(BError::Codes::OK);
