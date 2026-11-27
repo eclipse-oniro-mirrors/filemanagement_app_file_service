@@ -726,7 +726,7 @@ private:
     sptr<SvcDeathRecipient> deathRecipient_;
     Impl impl_;
     ImplEnhance implEnhance_;
-    uint32_t extConnectNum_ {0};
+    std::atomic<uint32_t> extConnectNum_ {0};
     Utils::Timer timer_ {"backupTimer"};
     std::atomic<int> sessionCnt_ {0};
     int32_t memoryParaCurSize_ {BConstants::DEFAULT_VFS_CACHE_PRESSURE};

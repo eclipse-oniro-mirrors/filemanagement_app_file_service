@@ -131,7 +131,13 @@ ErrCode SvcBackupConnection::ConnectBackupExtAbility(AAFwk::Want &want, int32_t 
     isCleanMode_ = isCleanMode;
     connectSpend_.Start();
     ErrCode ret = AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want, this, userId, amsTimeout);
-    HILOGI("Called end, ret:%{public}d, userId:%{public}d.", ret, userId);
+    if (ret != ERR_OK) {
+        HILOGE("ConnectAbility failed, ret=%{public}d", ret);
+        connState_ = ConnState::IDLE;
+        connectSpend_.End();
+        return ret;
+    }
+    HILOGI("Called end, ret=%{public}d, userId=%{public}d.", ret, userId);
     return ret;
 }
 

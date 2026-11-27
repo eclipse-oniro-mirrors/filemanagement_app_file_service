@@ -201,22 +201,25 @@ ErrCode MigrateManager::CreateDefaultTask(const string &bundleName)
 void MigrateManager::WaitToSendFd(std::chrono::system_clock::time_point &startTime, int &fdSendNum)
 {
     HILOGD("WaitToSendFd Begin");
-    std::unique_lock<std::mutex> lock(startSendMutex_);
-    startSendFdRateCon_.wait(lock, [this] { return sendRate_ > 0; });
-    if (fdSendNum >= sendRate_) {
-        HILOGI("current time fd num is max rate, bundle name:%{public}s, rate:%{public}d", bundleName_.c_str(),
-            sendRate_);
-        auto curTime = std::chrono::system_clock::now();
-        auto useTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count();
-        if (useTimeMs < MAX_FD_GROUP_USE_TIME) {
-            int32_t sleepTime = MAX_FD_GROUP_USE_TIME - useTimeMs;
-            HILOGI("will wait time:%{public}d ms", sleepTime);
-            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
-        } else {
-            HILOGW("current fd send num exceeds one second");
+    {
+        std::unique_lock<std::mutex> lock(startSendMutex_);
+        startSendFdRateCon_.wait(lock, [this] { return sendRate_ > 0; });
+        if (fdSendNum < sendRate_) {
+            return;
         }
+        HILOGI(
+            "current time fd num is max rate, bundle name:%{public}s, rate:%{public}d", bundleName_.c_str(), sendRate_);
         fdSendNum = 0;
         startTime = std::chrono::system_clock::now();
+    }
+    auto curTime = std::chrono::system_clock::now();
+    auto useTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count();
+    if (useTimeMs < MAX_FD_GROUP_USE_TIME) {
+        int32_t sleepTime = MAX_FD_GROUP_USE_TIME - useTimeMs;
+        HILOGI("will wait time:%{public}d ms", sleepTime);
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+    } else {
+        HILOGW("current fd send num exceeds one second");
     }
     HILOGD("WaitToSendFd End");
 }

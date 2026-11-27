@@ -180,7 +180,10 @@ std::shared_ptr<IFileInfo> ScanResultManager::GetFileInfo()
         std::shared_ptr<IFileInfo> fileInfo = pendingFileQueue_.front();
         pendingFileQueue_.pop();
         if (fileInfo != nullptr && !fileInfo->isBigFile_) {
-            currentTarSize_.fetch_sub(fileInfo->sta_.st_size);
+            if (fileInfo->sta_.st_size > 0) {
+                uint64_t fileSize = static_cast<uint64_t>(fileInfo->sta_.st_size);
+                currentTarSize_.fetch_sub(fileSize);
+            }
             if (currentTarSize_.load() < GetMaxTarSize()) {
                 StartPacket();
             }
