@@ -25,10 +25,13 @@ using namespace std;
 
 ErrCode SABackupConnection::ConnectBackupSAExt(std::string bundleName, std::string extension, std::string extInfo)
 {
-    bundleName_ = bundleName;
-    extension_ = extension;
-    extInfo_ = extInfo;
-    saId_ = std::atoi(bundleName.c_str());
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        bundleName_ = bundleName;
+        extension_ = extension;
+        extInfo_ = extInfo;
+        saId_ = std::atoi(bundleName.c_str());
+    }
     return LoadBackupSAExt();
 }
 
@@ -60,11 +63,13 @@ ErrCode SABackupConnection::DisconnectBackupSAExt()
 bool SABackupConnection::IsSAExtConnected()
 {
     HILOGI("called begin");
+    std::lock_guard<std::mutex> lock(mutex_);
     return isConnected_.load();
 }
 
 sptr<ILocalAbilityManager> SABackupConnection::GetBackupSAExtProxy()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return proxy_;
 }
 
@@ -93,10 +98,13 @@ ErrCode SABackupConnection::LoadBackupSAExt()
     }
     for (ISystemAbilityManager::SaExtensionInfo saExtentionInfo : saExtentionInfos) {
         if (saExtentionInfo.saId == saId_) {
-            isConnected_.store(true);
-            isLoaded_.store(false);
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                isConnected_.store(true);
+                isLoaded_.store(false);
+                proxy_ = iface_cast<ILocalAbilityManager>(saExtentionInfo.processObj);
+            }
             HILOGI("Get running sa proxy success.");
-            proxy_ = iface_cast<ILocalAbilityManager>(saExtentionInfo.processObj);
             onConnectedCb_(bundleName_);
             return BError(BError::Codes::OK);
         }
@@ -121,20 +129,20 @@ ErrCode SABackupConnection::LoadBackupSAExtInner()
         HILOGE("Failed to Load systemAbility, systemAbility:%{public}d. ret code:%{public}d", saId_, ret);
         return BError(BError::Codes::SA_EXT_ERR_SAMGR);
     }
+    unique_lock<mutex> lock(mutex_);
     isLoaded_.store(true);
     reloadNum_.store(reloadNum_.load() + 1);
-    unique_lock<mutex> lock(mutex_);
     auto waitStatus =
         loadCallback->proxyConVar_.wait_for(lock, std::chrono::milliseconds(BConstants::BACKUP_LOADSA_TIMEOUT_MS),
                                             [loadCallback]() { return loadCallback->isLoadSuccess_.load(); });
     if (!waitStatus) {
         HILOGE("Load sa %{public}d timeout", saId_);
-        lock.unlock();
         isConnected_.store(false);
+        lock.unlock();
         return LoadBackupSAExt();
     }
-    lock.unlock();
     isConnected_.store(true);
+    lock.unlock();
     return LoadBackupSAExt();
 }
 
@@ -177,9 +185,14 @@ ErrCode SABackupConnection::CallBackupSA()
 {
     auto task = [this]() {
         HILOGI("called begin");
-        if (proxy_) {
+        sptr<ILocalAbilityManager> localProxy;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            localProxy = proxy_;
+        }
+        if (localProxy) {
             HILOGI("SA backup called begin");
-            int32_t ret = proxy_->SystemAbilityExtProc(BConstants::EXTENSION_BACKUP, saId_, this);
+            int32_t ret = localProxy->SystemAbilityExtProc(BConstants::EXTENSION_BACKUP, saId_, this);
             HILOGI("SA backup done %{public}d", ret);
             int fd = parcel_.ReadFileDescriptor();
             std::string result = parcel_.ReadString();
@@ -202,9 +215,14 @@ ErrCode SABackupConnection::CallRestoreSA(UniqueFd fd)
     fd_ = move(fd);
     auto task = [this]() {
         HILOGI("called begin");
-        if (proxy_) {
+        sptr<ILocalAbilityManager> localProxy;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            localProxy = proxy_;
+        }
+        if (localProxy) {
             HILOGI("SA restore called begin");
-            int32_t ret = proxy_->SystemAbilityExtProc(BConstants::EXTENSION_RESTORE, saId_, this);
+            int32_t ret = localProxy->SystemAbilityExtProc(BConstants::EXTENSION_RESTORE, saId_, this);
             HILOGI("SA restore done %{public}d", ret);
             std::string result = parcel_.ReadString();
             onRestoreCb_(bundleName_, result, ret);
