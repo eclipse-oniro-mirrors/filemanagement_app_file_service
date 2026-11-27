@@ -200,11 +200,13 @@ IServiceReverseType::Scenario SvcSessionManager::GetScenario()
 
 int32_t SvcSessionManager::GetSessionUserId()
 {
+    shared_lock<shared_mutex> lock(lock_);
     return impl_.userId;
 }
 
 void SvcSessionManager::SetSessionUserId(int32_t userId)
 {
+    unique_lock<shared_mutex> lock(lock_);
     impl_.userId = userId;
 }
 

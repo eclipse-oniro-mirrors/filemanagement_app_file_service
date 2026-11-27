@@ -93,7 +93,8 @@ std::string TimeUtils::GetCurrentTime()
     auto time = std::chrono::system_clock::to_time_t(now);
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
     std::stringstream strTime;
-    strTime << (std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S:")) << (std::setfill('0'))
+    struct tm tmResult;
+    strTime << (std::put_time(localtime_r(&time, &tmResult), "%Y-%m-%d %H:%M:%S:")) << (std::setfill('0'))
             << (std::setw(BConstants::INDEX)) << (ms.count() % BConstants::MS_1000);
     return strTime.str();
 }
