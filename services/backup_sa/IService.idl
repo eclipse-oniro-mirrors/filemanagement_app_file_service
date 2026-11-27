@@ -106,4 +106,5 @@ interface OHOS.FileManagement.Backup.IService{
     [ipccode 61, ipcincapacity 131071] void GetIncrementalFileHandles([in] String bundleName, [in] BStringRawData fileNames);
     [ipccode 62, ipcincapacity 131071] void AppFileReadysWithoutFd([in] BStringRawData fileNames, [in] int[] errCodes);
     [ipccode 63, ipcincapacity 131071] void AppFileReadys([in] BStringRawData fileNames, [in] FileDescriptor[] fds, [in] int[] errCodes);
+    [ipccode 64] void GetBackupVersion([out] String version);
  }

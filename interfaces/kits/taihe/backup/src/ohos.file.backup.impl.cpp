@@ -801,7 +801,20 @@ private:
         ::taihe::set_business_error(SYSTEM_PERMISSION, "IsSystemApp error");
         return ::taihe::string("");
     }
-    std::string result = OHOS::FileManagement::Backup::BConstants::BACKUP_VERSION;
+    ServiceClient::InvaildInstance();
+    auto proxy = ServiceClient::GetInstance();
+    if (!proxy) {
+        HILOGE("called getBackupVersion, failed to get proxy");
+        ::taihe::set_business_error((int32_t)BackupErrorCode::E_IPCSS, "failed to get proxy");
+        return ::taihe::string("");
+    }
+    std::string result;
+    ErrCode errCode = proxy->GetBackupVersion(result);
+    if (BError(BError::Codes::OK) != errCode) {
+        HILOGE("proxy->GetBackupVersion failed, errCode:%{public}d", errCode);
+        ::taihe::set_business_error((int32_t)errCode, "proxy->GetBackupVersion error");
+        return ::taihe::string("");
+    }
     return ::taihe::string(result);
 }
 

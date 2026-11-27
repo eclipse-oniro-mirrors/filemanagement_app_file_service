@@ -282,6 +282,11 @@ ErrCode Service::GetBackupInfo(const BundleName &bundleName, std::string &result
     return BError(BError::Codes::OK);
 }
 
+ErrCode Service::GetBackupVersion(std::string &version)
+{
+    return BError(BError::Codes::OK);
+}
+
 ErrCode Service::StartExtTimer(bool &isExtStart)
 {
     return BError(BError::Codes::OK);

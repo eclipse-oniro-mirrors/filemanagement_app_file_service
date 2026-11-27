@@ -131,6 +131,7 @@ public:
     ErrCode GetIncrementalFileHandles(const std::string &bundleName,
                                       const BStringRawData &fileNamesRD) override;
     ErrCode GetBackupInfo(const BundleName &bundleName, std::string &result) override;
+    ErrCode GetBackupVersion(std::string &version) override;
     ErrCode UpdateTimer(const BundleName &bundleName, uint32_t timeout, bool &result) override;
     ErrCode UpdateSendRate(const std::string &bundleName, int32_t sendRate, bool &result) override;
     ErrCode ReportAppProcessInfo(const std::string& processInfo,  BackupRestoreScenario sennario) override;
